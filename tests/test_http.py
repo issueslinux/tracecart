@@ -289,6 +289,44 @@ class WebFlowTests(unittest.TestCase):
                 self.assertEqual(exported["root"]["children"][-1]["details"]["model_generated_questions"], 2)
                 self.assertEqual(ai.call_count, 2)
 
+    def test_real_two_publisher_spec_crosscheck_http_and_export(self):
+        import source_crosscheck as cross
+        from unittest.mock import patch
+
+        def fake_fetch(url):
+            merchant = ('<h1>SHT40 Specifications & Features</h1>'
+                        '<p>Relative humidity accuracy: up to ±1.8 %RH</p>'
+                        '<p>Temperature accuracy: up to ±0.2 °C</p>'
+                        '<script type="application/ld+json">{"@type":"Product",'
+                        '"name":"SHT40 board","offers":{"price":"5.95",'
+                        '"priceCurrency":"USD"}}</script>')
+            oem = ('<h1>SHT40</h1><span>Typ. relative humidity accuracy</span>'
+                   '<span>1.8</span><span>%RH</span><span>Typ. temperature accuracy</span>'
+                   '<span>0.2</span><span>°C</span>')
+            html = merchant if url == cross.MERCHANT_URL else oem
+            return html.encode(), html
+
+        with patch.object(cross, "_download", side_effect=lambda u, max_bytes: fake_fetch(u)):
+            with patch.object(cross, "_check_robots",
+                              return_value="User-agent: *\nAllow: /\n"):
+                status, lab = self.request("GET", "/research")
+                self.assertEqual(status, 200)
+                self.assertIn("Cross-check SHT40 against Sensirion", lab)
+                status, page = self.request("POST", "/research/crosscheck", {
+                    "csrf": self.csrf
+                })
+                self.assertEqual(status, 200)
+                self.assertIn("Two-publisher SHT40 documentation cross-check", page)
+                self.assertIn("ABSTAIN", page)
+                rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', page).group(1)
+                status, raw = self.request("GET", "/research/report/" + rid + ".json")
+                self.assertEqual(status, 200)
+                doc = json.loads(raw)
+                self.assertEqual(len(doc["crosscheck"]), 2)
+                self.assertTrue(all(x["documents_agree"] for x in doc["crosscheck"]))
+                self.assertEqual(doc["root"]["children"][-1]["status"], "ABSTAIN")
+                self.assertEqual(doc["source_collection"]["independent_product_tests_collected"], 0)
+
     def test_live_source_collection_rejects_non_allowlisted_website(self):
         status, body = self.request("POST", "/research/collect", {
             "csrf": self.csrf,

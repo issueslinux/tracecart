@@ -1,0 +1,638 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T20:03:04.656318+00:00",
+  "root": {
+    "id": "research-root",
+    "kind": "research",
+    "title": "Compare Adafruit SHT40 board listing against OEM chip specifications",
+    "status": "INVESTIGATED_WITH_OPEN_QUESTIONS",
+    "details": {
+      "category": "electronics humidity sensor",
+      "scope": "Only provided offers and excerpts, no web retrieval was performed",
+      "method": "rule_based_questions_and_independent_critic",
+      "no_automatic_purchase": true
+    },
+    "children": [
+      {
+        "id": "offer-product_4885",
+        "kind": "offer",
+        "title": "Adafruit Sensirion SHT40 Temperature & Humidity Sensor",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "product_4885",
+          "price": "5.95",
+          "currency": "USD",
+          "source_url": "https://www.adafruit.com/product/4885"
+        },
+        "children": [
+          {
+            "id": "question-product_4885-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_4885-price",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_4885_price",
+                "kind": "evidence",
+                "title": "Evidence merchant_4885_price",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_4885_price",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.price=5.95 USD (excludes shipping/tax).",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+                  "retrieved_at": "2026-11-01T20:03:04.655411+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "5920d3a72702aafb",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-price",
+                  "evidence_ids": [
+                    "merchant_4885_price"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "996698e80d3fdfae",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-price",
+                      "evidence_ids": [
+                        "merchant_4885_price"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "cdff2212a766a376",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "e25d31752ac2fe4f",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "fad3f2926cb49487",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "85fa2cd27d8dbe28",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "95a2d1413ff2622f",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "aa579608f45b8081",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "f1a6d20fc5687dd3",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "77c5b864edac486a",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-availability",
+            "kind": "question",
+            "title": "Does the merchant claim this product is presently in stock?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_4885-availability",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_4885_availability",
+                "kind": "evidence",
+                "title": "Evidence merchant_4885_availability",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_4885_availability",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.availability=InStock.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+                  "retrieved_at": "2026-11-01T20:03:04.655411+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "03129dab59aef172",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-availability",
+                  "evidence_ids": [
+                    "merchant_4885_availability"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "3d514a99e1f08673",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-availability",
+                      "evidence_ids": [
+                        "merchant_4885_availability"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-declared_condition",
+            "kind": "question",
+            "title": "Does the merchant explicitly declare a product condition?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_4885-declared_condition",
+              "importance": 4,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_4885_condition",
+                "kind": "evidence",
+                "title": "Evidence merchant_4885_condition",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_4885_condition",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+                  "retrieved_at": "2026-11-01T20:03:04.655411+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "72aed5bfa67f7ac4",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-declared_condition",
+                  "evidence_ids": [
+                    "merchant_4885_condition"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "c8c182423b7b12a6",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-declared_condition",
+                      "evidence_ids": [
+                        "merchant_4885_condition"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-typical_humidity_accuracy",
+            "kind": "question",
+            "title": "Do merchant and manufacturer documents agree on SHT40 typical relative humidity accuracy (%RH)?",
+            "status": "CORROBORATED",
+            "details": {
+              "question_id": "product_4885-typical_humidity_accuracy",
+              "importance": 4,
+              "support_count": 2,
+              "contradiction_count": 0,
+              "reason": "At least two different publisher domains support the claim; editorial independence still requires review.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-sht40_typical_humidity_accuracy_merchant",
+                "kind": "evidence",
+                "title": "Evidence sht40_typical_humidity_accuracy_merchant",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "sht40_typical_humidity_accuracy_merchant",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant documented: Relative humidity accuracy: up to ±1.8 %RH",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Published nominal spec; not independent measurement",
+                  "source_content_sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+                  "retrieved_at": "2026-11-01T20:03:03.974434+00:00",
+                  "extraction_method": "visible_text_exact_label_merchant"
+                },
+                "children": []
+              },
+              {
+                "id": "source-sht40_typical_humidity_accuracy_oem",
+                "kind": "evidence",
+                "title": "Evidence sht40_typical_humidity_accuracy_oem",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "sht40_typical_humidity_accuracy_oem",
+                  "source_url": "https://sensirion.com/products/catalog/SHT40",
+                  "source_type": "manufacturer",
+                  "excerpt": "Component manufacturer documented: 1.8 %RH",
+                  "duplicate_url": false,
+                  "publisher_domain": "sensirion.com",
+                  "duplicate_publisher": false,
+                  "observation": "Published nominal spec; not independent measurement",
+                  "source_content_sha256": "ad5e3bfc57c54a948ac1fe76eb02762d196fca1a4e46c00cb5bad39a0cf3b64b",
+                  "retrieved_at": "2026-11-01T20:03:04.595918+00:00",
+                  "extraction_method": "visible_text_exact_label_oem"
+                },
+                "children": []
+              },
+              {
+                "id": "cf8324724bc82e04",
+                "kind": "follow_up",
+                "title": "Has an independent laboratory measured the assembled board's accuracy?",
+                "status": "OPEN",
+                "details": {
+                  "trigger_question_id": "product_4885-typical_humidity_accuracy",
+                  "evidence_ids": [],
+                  "purpose": "Search external offers, tests or reviews to answer this question.",
+                  "origin": "external_question_proposal"
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-typical_temperature_accuracy",
+            "kind": "question",
+            "title": "Do merchant and manufacturer documents agree on SHT40 typical temperature accuracy (°C)?",
+            "status": "CORROBORATED",
+            "details": {
+              "question_id": "product_4885-typical_temperature_accuracy",
+              "importance": 4,
+              "support_count": 2,
+              "contradiction_count": 0,
+              "reason": "At least two different publisher domains support the claim; editorial independence still requires review.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-sht40_typical_temperature_accuracy_merchant",
+                "kind": "evidence",
+                "title": "Evidence sht40_typical_temperature_accuracy_merchant",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "sht40_typical_temperature_accuracy_merchant",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant documented: Temperature accuracy: up to ±0.2 °C",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Published nominal spec; not independent measurement",
+                  "source_content_sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+                  "retrieved_at": "2026-11-01T20:03:03.974434+00:00",
+                  "extraction_method": "visible_text_exact_label_merchant"
+                },
+                "children": []
+              },
+              {
+                "id": "source-sht40_typical_temperature_accuracy_oem",
+                "kind": "evidence",
+                "title": "Evidence sht40_typical_temperature_accuracy_oem",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "sht40_typical_temperature_accuracy_oem",
+                  "source_url": "https://sensirion.com/products/catalog/SHT40",
+                  "source_type": "manufacturer",
+                  "excerpt": "Component manufacturer documented: 0.2 °C",
+                  "duplicate_url": false,
+                  "publisher_domain": "sensirion.com",
+                  "duplicate_publisher": false,
+                  "observation": "Published nominal spec; not independent measurement",
+                  "source_content_sha256": "ad5e3bfc57c54a948ac1fe76eb02762d196fca1a4e46c00cb5bad39a0cf3b64b",
+                  "retrieved_at": "2026-11-01T20:03:04.595918+00:00",
+                  "extraction_method": "visible_text_exact_label_oem"
+                },
+                "children": []
+              },
+              {
+                "id": "db3ee52f7991fb48",
+                "kind": "follow_up",
+                "title": "Is the assembled breakout board accuracy affected by self-heating?",
+                "status": "OPEN",
+                "details": {
+                  "trigger_question_id": "product_4885-typical_temperature_accuracy",
+                  "evidence_ids": [],
+                  "purpose": "Search external offers, tests or reviews to answer this question.",
+                  "origin": "external_question_proposal"
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "question-review",
+        "kind": "question_review",
+        "title": "Review of generated questions",
+        "status": "AUDIT_ONLY",
+        "details": {
+          "candidates": [
+            {
+              "trigger_question_id": "product_4885-typical_humidity_accuracy",
+              "question": "Has an independent laboratory measured the assembled board's accuracy?",
+              "origin": "external_question_proposal",
+              "result": "OPEN_QUESTION_ADDED"
+            },
+            {
+              "trigger_question_id": "product_4885-typical_temperature_accuracy",
+              "question": "Is the assembled breakout board accuracy affected by self-heating?",
+              "origin": "external_question_proposal",
+              "result": "OPEN_QUESTION_ADDED"
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "id": "decision-final",
+        "kind": "decision",
+        "title": "Purchase decision / next step",
+        "status": "ABSTAIN",
+        "details": {
+          "recommendation": "No purchase recommendation until material gaps and critic objections are reviewed.",
+          "unresolved_by_offer": {
+            "product_4885": [
+              "product_4885-price",
+              "product_4885-condition",
+              "product_4885-seller",
+              "product_4885-returns",
+              "product_4885-alternatives",
+              "product_4885-availability",
+              "product_4885-declared_condition"
+            ]
+          },
+          "criterion_count_by_offer": {
+            "product_4885": 9
+          },
+          "reason": "Evidence completeness is insufficient; do not turn source-count into a utility score.",
+          "eligible_for_payment": false,
+          "model_generated_questions": 2
+        },
+        "children": []
+      }
+    ]
+  },
+  "all_questions_preserved": true,
+  "provenance": "Two distinct publishers of specifications; no external reviews or measurements",
+  "limitations": [
+    "Source snippets are input claims, not independently validated.",
+    "Distinct URLs need not represent independent publishers.",
+    "Critic flags gaps; it does not confirm product defects."
+  ],
+  "source_collection": {
+    "collector": "merchant_vs_sensirion_sht40_visible_html",
+    "fetched_pages": 2,
+    "requested_pages": 2,
+    "source_failures": [],
+    "review_sources_collected": 0,
+    "independent_product_tests_collected": 0,
+    "retrieval_policy": "two fixed HTTPS URLs; robots checked; no redirects; bounded payload",
+    "source_documents": {
+      "merchant": {
+        "url": "https://www.adafruit.com/product/4885",
+        "sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+        "retrieved_at": "2026-11-01T20:03:03.974434+00:00"
+      },
+      "oem": {
+        "url": "https://sensirion.com/products/catalog/SHT40",
+        "sha256": "ad5e3bfc57c54a948ac1fe76eb02762d196fca1a4e46c00cb5bad39a0cf3b64b",
+        "retrieved_at": "2026-11-01T20:03:04.595918+00:00"
+      }
+    },
+    "source_scope": "Retailer breakout board vs OEM chip nominal specs, not laboratory measurements",
+    "current_merchant_listing": {
+      "price_usd": "5.95",
+      "availability": "Merchant JSON-LD offers.availability=InStock."
+    }
+  },
+  "crosscheck": [
+    {
+      "metric": "typical_humidity_accuracy",
+      "unit": "%RH",
+      "merchant_value": "1.8",
+      "manufacturer_value": "1.8",
+      "documents_agree": true,
+      "scope": "SHT40 sensor chip, NOT measured breakout-board performance"
+    },
+    {
+      "metric": "typical_temperature_accuracy",
+      "unit": "°C",
+      "merchant_value": "0.2",
+      "manufacturer_value": "0.2",
+      "documents_agree": true,
+      "scope": "SHT40 sensor chip, NOT measured breakout-board performance"
+    }
+  ],
+  "sha256": "a0e2f6bd479783540964253e4a3629504ce3dd9912ae5fbc750a7f89b3082793"
+}

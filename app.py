@@ -18,6 +18,7 @@ from core import (CATALOG, CONSENT_TEXT, CheckoutStore, SandboxPayPal,
 from decision_tree import (ReportStore, analyze, generate_question_proposals,
                            to_html_tree, MAX_DOC_BYTES)
 from source_collector import collect_and_analyze, attach_collection_provenance
+from source_crosscheck import collect_spec_crosscheck
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -162,9 +163,17 @@ https://www.adafruit.com/product/3400</textarea></label>
                 Ask separate local Qwen RESEARCHER and CRITIC roles to propose
                 further source questions (no invented evidence; may take some time)</label>
                 <button>Collect live source claims &amp; inspect critic tree</button>
-                </form><p class="warning">Retail price and stock may change.
+                </form>
+                <h3>Manufacturer corroboration: Adafruit SHT40 board</h3>
+                <p>Read actual merchant and Sensirion OEM pages and check whether the
+                two documents agree on chip-level nominal humidity and temperature
+                accuracy. This is NOT an independent laboratory test or evidence
+                about the assembled board's measured performance.</p>
+                <form action="/research/crosscheck" method="post">{}
+                <button>Cross-check SHT40 against Sensirion</button></form>
+                <p class="warning">Retail price and stock may change.
                 Collector records retrieval date; sources are not independently validated.</p>
-                </section>""".format(self.hidden(), sample, self.hidden()))
+                </section>""".format(self.hidden(), sample, self.hidden(), self.hidden()))
         elif path.startswith("/research/report/"):
             tail = path[len("/research/report/"):]
             is_json = tail.endswith(".json")
@@ -208,12 +217,18 @@ https://www.adafruit.com/product/3400</textarea></label>
                 <p>Successfully retrieved merchant product pages: <strong>{}</strong>
                 of {} requested. External customer reviews: <strong>{}</strong>.
                 Independent product tests: <strong>{}</strong>.</p>
-                <p class="warning">All collected price, stock and condition facts
-                come from the merchant. They are not independently corroborated.</p>
+                <p class="warning">{}</p>
                 <p>Retrieval policy: {}</p></section>""".format(
                     h(collection["fetched_pages"]), h(collection["requested_pages"]),
                     h(collection["review_sources_collected"]),
                     h(collection["independent_product_tests_collected"]),
+                    h("Two source publishers: retailer declares board price/availability; "
+                      "Sensirion declares chip nominal accuracy. No independent "
+                      "measurements, test reports or reviews."
+                      if collection.get("collector") ==
+                      "merchant_vs_sensirion_sht40_visible_html"
+                      else "All collected price, stock and condition facts come from "
+                           "the merchant and are not independently corroborated."),
                     h(collection["retrieval_policy"])))
             if collection["source_failures"]:
                 collection_html += '<section class="warning"><b>Failed sources:</b> {}</section>'.format(
@@ -235,6 +250,22 @@ https://www.adafruit.com/product/3400</textarea></label>
             {} </section>""".format(
             h(report["sha256"]), branch_count, h(summary["children"][-1]["status"]),
             h(report["generated_at"]), h(rid), to_html_tree(report))
+        crosscheck = report.get("crosscheck", [])
+        if crosscheck:
+            stats = "".join(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+                    h(row["metric"]), h(row["merchant_value"]),
+                    h(row["manufacturer_value"]), h("AGREE" if row["documents_agree"]
+                                                   else "CONFLICT"))
+                for row in crosscheck)
+            table = ("""<section><h2>Two-publisher SHT40 documentation cross-check</h2>
+               <p><strong>Scope:</strong> nominal SHT40 chip specifications only.
+               Agreement of documents does not establish independently tested
+               sensor performance or the quality of the assembled breakout.</p>
+               <table><thead><tr><th>Metric</th><th>Merchant</th>
+               <th>Component manufacturer</th><th>Documents</th></tr></thead>
+               <tbody>{}</tbody></table></section>""".format(stats))
+            body = table + body
         body = collection_html + body
         # Native <details> is interactive without JavaScript and works with CSP.
         self.send_page(body)
@@ -307,6 +338,10 @@ https://www.adafruit.com/product/3400</textarea></label>
                 row = self.server.store.reconcile_sandbox_order(
                     form.get("quote_id", ""), form.get("order_id", ""), paypal)
                 self.quote_page(row)
+            elif self.path == "/research/crosscheck":
+                report, sourced = collect_spec_crosscheck()
+                rid = self.server.reports.save(report)
+                self.research_report_page(rid, report)
             elif self.path == "/research/collect":
                 urls = [x.strip() for x in form.get("product_urls", "").splitlines()
                         if x.strip()]
