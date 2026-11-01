@@ -589,6 +589,68 @@ class WebFlowTests(unittest.TestCase):
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM cart_research_jobs").fetchone()[0], 0)
 
+    def test_second_real_seller_url_live_comparison_is_exported_no_payment(self):
+        from test_live_offer_compare import SELECTED, SECOND, META, BASE
+        import sqlite3
+        job_id = "A" * 24
+        import cart_research as cart
+        with patch.object(cart, "generate_local_ai_questions", return_value=[]):
+            report = cart.research_cart(SELECTED, fetch=lambda u, host, headers=None: (
+                {"items": []} if host == "prices.openfoodfacts.org"
+                else {"products": []}))
+        report["source_intake"] = {**BASE["source_intake"],
+                                   "price_status": "SELLER_DECLARED",
+                                   "extraction_method": "Product JSON-LD",
+                                   "barcode_status": "FOUND",
+                                   "availability_claim": ""}
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            db.execute(
+                "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
+                "VALUES (?,?,?,?,?,NULL)",
+                (job_id, json.dumps(SELECTED), "READY",
+                 "2026-11-02T00:00:00+00:00", json.dumps(report)))
+        status, original = self.request("GET", "/cart/status/" + job_id)
+        self.assertEqual(status, 200)
+        self.assertIn("Check a second real store offer", original)
+        self.assertIn("Search shopping listings", original)
+        with patch("live_offer_compare.extract_product_page",
+                   return_value=(SECOND, META)) as extractor:
+            status, body = self.request("POST", "/cart/compare-live", {
+                "csrf": self.csrf, "job_id": job_id,
+                "competitor_url": SECOND["merchant_url"]})
+        self.assertEqual(status, 200)
+        self.assertIn("SECOND LIVE MERCHANT SOURCE", body)
+        self.assertIn("-10.00%", body)
+        self.assertIn("0.7200", body)
+        self.assertIn("NO_FORCED_WINNER", body)
+        extractor.assert_called_once()
+        rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', body).group(1)
+        status, raw = self.request("GET", "/research/report/" + rid + ".json")
+        self.assertEqual(status, 200)
+        report = json.loads(raw)
+        self.assertEqual(report["live_competitor_comparison"]["status"],
+                         "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON")
+        self.assertEqual(report["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
+
+    def test_second_offer_csrf_rejection_does_not_fetch(self):
+        from test_live_offer_compare import SELECTED, SECOND, BASE
+        import sqlite3
+        job_id = "B" * 24
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            db.execute(
+                "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
+                "VALUES (?,?,?,?,?,NULL)",
+                (job_id, json.dumps(SELECTED), "READY",
+                 "2026-11-02T00:00:00+00:00", json.dumps(BASE)))
+        with patch("live_offer_compare.extract_product_page") as extractor:
+            status, _ = self.request("POST", "/cart/compare-live", {
+                "csrf": "invalid", "job_id": job_id,
+                "competitor_url": SECOND["merchant_url"]})
+        self.assertEqual(status, 400)
+        extractor.assert_not_called()
+
     def test_cross_origin_host_and_csrf_rejected(self):
         status, _ = self.request("GET", "/", headers={"Host": "malicious.example"})
         self.assertEqual(status, 403)

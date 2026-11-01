@@ -5,6 +5,27 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: check a second real store offer before checkout
+
+After submitting the selected product URL in `/cart` and receiving the
+initial analysis, paste an optional **second retailer product URL** into the
+new comparison form. TraceCart safely retrieves that seller page under the
+same robots.txt/public-HTTPS restrictions, preserves exact source
+provenance, displays both source-declared prices and cost per wash when
+available, and exports the complete augmented evidence/critic tree.
+A seller-listed percentage difference is calculated **only** if both
+pages were retrieved and declared matching GTIN, compatible wash counts,
+prices and currency. No delivery or checkout-total verification is implied.
+
+**Real 2 November 2026 observation:** Amazon Ariel Color 100 washes:
+76.99 PLN (snapshot from 1 November), Granes Ariel **Professional** Color
+100 washes: 87.99 PLN (newly retrieved page and JSON-LD). **No comparable
+savings claim:** Amazon did not disclose GTIN and the Professional variant
+may differ. The earlier search-indexed 94.99 PLN for Granes was not
+current in its downloaded HTML, demonstrating why snippets are inadequate.
+[Complete live report](examples/live_amazon_vs_granes_2026-11-02.json) ·
+[method, source attempts and limitations](docs/LIVE_SECOND_OFFER.md).
+
 ## Store-agnostic product URL intake — real Amazon + fallback validation
 
 **Default process is universal**, not a custom Amazon, Allegro or Adafruit

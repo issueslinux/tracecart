@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 import secrets
 import sys
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit, urlencode
 
 from core import (CATALOG, CONSENT_TEXT, CheckoutStore, SandboxPayPal,
                   ollama_suggestion)
@@ -22,6 +22,7 @@ from source_collector import collect_and_analyze, attach_collection_provenance
 from source_crosscheck import collect_spec_crosscheck
 from comparison import compare
 from cart_research import CartResearchJobs
+from live_offer_compare import compare_live_offer
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -404,7 +405,27 @@ https://www.adafruit.com/product/3400</textarea></label>
             h(title), h(displayed_price), h(context["category"]),
             h(len(questions)), h(context["local_ai_question_generation"]),
             h(job_id), lines, question_summary, attempt_html, to_html_tree(report))
-        self.send_page(source_details + econ_html + body)
+        search_url = "https://www.google.com/search?" + urlencode({
+            "tbm": "shop", "q": result["item"]["title"][:140]})
+        competitor_form = ("""<section><h2>Check a second real store offer</h2>
+            <p>Find a second merchant's product URL, paste it here and
+            TraceCart will read its public Product metadata using the same
+            robots.txt and HTTPS restrictions. A price from a search snippet
+            is never used as evidence. Comparison of listed prices requires
+            matching seller-declared GTINs and currency; shipping and final
+            checkout total remain unknown.</p>
+            <p><a href="{}" target="_blank" rel="noopener noreferrer">
+            Search shopping listings (external)</a></p>
+            <form method="post" action="/cart/compare-live">{}
+            <input type="hidden" name="job_id" value="{}">
+            <label>Alternative retailer product URL
+            <input type="text" name="competitor_url" maxlength="1200"
+            placeholder="https://another-shop.example/product/..."
+            required></label>
+            <button>Verify second page and compare source claims</button>
+            </form></section>""".format(
+                h(search_url), self.hidden(), h(job_id)))
+        self.send_page(source_details + econ_html + competitor_form + body)
 
     def send_json_report(self, report, rid):
         content = json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
@@ -474,6 +495,40 @@ https://www.adafruit.com/product/3400</textarea></label>
                <table><thead><tr><th>Metric</th><th>Merchant</th>
                <th>Component manufacturer</th><th>Documents</th></tr></thead>
                <tbody>{}</tbody></table></section>""".format(stats))
+            body = table + body
+        live = report.get("live_competitor_comparison")
+        if live:
+            other = live.get("alternative") or {}
+            source = live.get("alternative_source") or {}
+            selected = live["selected"]
+            def shown(item):
+                return ("{} {}".format(item["price"], item["currency"])
+                        if item.get("price") is not None else "UNKNOWN")
+            delta = live.get("seller_listed_price_delta_pct_vs_selected")
+            table = ("""<section><div class="tag">SECOND LIVE MERCHANT SOURCE</div>
+                <h2>Second-offer evidence · {}</h2>
+                <table><tr><th>Selected</th><th>Second seller</th></tr>
+                <tr><td>{}<br>Seller-listed price: {}<br>
+                Cost/wash: {}</td><td>{}<br>Seller-listed price: {}<br>
+                Cost/wash: {}</td></tr></table>
+                <p>Second source: <a href="{}" target="_blank"
+                rel="noopener noreferrer">{}</a></p>
+                <p>Retrieved: {} · Page SHA-256: <code>{}</code></p>
+                <p>GTIN equality claimed: {} · Listed price change vs selected: {}.</p>
+                <p class="warning">Seller assertions only, not verified
+                checkout totals. No automatic purchase. Missing or conflicting
+                identity, price or currency prevents a cheaper-equivalent claim.
+                Shipping, discounts, actual dose and product performance remain
+                unknown. The complete source/critic tree is below.</p></section>""".format(
+                    h(live["status"]), h(selected["title"]), h(shown(selected)),
+                    h(live["selected_cost_per_wash"].get("cost_per_wash") or "UNKNOWN"),
+                    h(other.get("title") or "NOT RETRIEVED"), h(shown(other)),
+                    h(live["alternative_cost_per_wash"].get("cost_per_wash") or "UNKNOWN"),
+                    h(live["alternative_requested_url"]), h(live["alternative_requested_url"]),
+                    h(source.get("retrieved_at") or "NOT DOWNLOADED"),
+                    h(source.get("page_sha256") or "NOT AVAILABLE"),
+                    h(live["same_gtin_claimed"]),
+                    h(delta + "%" if delta is not None else "NOT COMPARABLE")))
             body = table + body
         comparison = report.get("comparison_summary")
         if comparison:
@@ -629,6 +684,16 @@ https://www.adafruit.com/product/3400</textarea></label>
                         "title", "price", "currency", "barcode", "merchant_url")}
                     job_id = self.server.cart_jobs.submit(item)
                 self.cart_status_page(job_id, self.server.cart_jobs.read(job_id))
+            elif self.path == "/cart/compare-live":
+                job = self.server.cart_jobs.read(form.get("job_id", ""))
+                if job["state"] != "READY" or not job.get("report"):
+                    raise ValueError("Original cart research must be READY")
+                if not form.get("competitor_url"):
+                    raise ValueError("Second product URL required")
+                report = compare_live_offer(
+                    job["report"], job["item"], form["competitor_url"])
+                rid = self.server.reports.save(report)
+                self.research_report_page(rid, report)
             elif self.path == "/propose":
                 sku, quantity, _ = ollama_suggestion(form.get("description", ""))
                 row = self.server.store.quote(sku, quantity)
