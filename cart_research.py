@@ -514,8 +514,8 @@ class CartResearchJobs:
         return job_id
 
     def submit_url(self, product_url):
-        from product_intake import validate_product_url
-        url = validate_product_url(product_url)
+        from product_intake import normalized_product_url
+        url = normalized_product_url(product_url)
         job_id = secrets.token_urlsafe(18)
         with self._db() as db:
             db.execute("INSERT INTO cart_research_jobs(id,item,state,created) VALUES (?,?,?,?)",
@@ -527,23 +527,31 @@ class CartResearchJobs:
 
     def _work_url(self, job_id, url):
         from product_intake import (
-            extract_product_page, limited_allegro_identity, SourceAccessDenied)
+            extract_product_page, generic_url_identity,
+            SourceAccessDenied, SourceRedirect, SourceHTTPFailure)
         with self._db() as db:
             db.execute("UPDATE cart_research_jobs SET state='RUNNING' WHERE id=?", (job_id,))
         try:
             try:
                 item, source = extract_product_page(url)
-            except SourceAccessDenied as exc:
-                # Do not bypass the retailer's access controls. Only parse
-                # the user's own URL when the host/path is an Allegro product
-                # link with a valid product UUID.
-                item, source = limited_allegro_identity(
+            except (SourceAccessDenied, SourceRedirect, SourceHTTPFailure) as exc:
+                item, source = generic_url_identity(
                     url, "HTTP_" + str(exc.status))
             except ValueError as exc:
-                if "blocked by robots.txt" not in str(exc):
+                # Product-page access/metadata failure is recoverable using
+                # only the customer-provided URL, regardless of retailer.
+                # Invalid/dangerous URL, unsafe DNS and SSRF errors still fail.
+                known = {
+                    "Product source blocked by robots.txt": "ROBOTS_DISALLOW",
+                    "No reliable product name can be extracted from this page": "METADATA_MISSING",
+                    "Ambiguous page with multiple Product objects": "METADATA_AMBIGUOUS",
+                    "Unsupported product response content type": "UNSUPPORTED_PAGE_TYPE",
+                    "Page exceeds bounded source size": "SOURCE_TOO_LARGE",
+                }
+                reason = known.get(str(exc))
+                if reason is None:
                     raise
-                item, source = limited_allegro_identity(
-                    url, "ROBOTS_DISALLOW")
+                item, source = generic_url_identity(url, reason)
             clean = validate_cart(item)
             with self._db() as db:
                 db.execute("UPDATE cart_research_jobs SET item=? WHERE id=?",

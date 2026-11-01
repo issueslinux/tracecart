@@ -8,13 +8,14 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from html.parser import HTMLParser
+from html import unescape
 import http.client
 import ipaddress
 import json
 import re
 import socket
 import ssl
-from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote
+from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote, urljoin, parse_qsl, urlencode
 from urllib.robotparser import RobotFileParser
 
 USER_AGENT = "TraceCartResearchBot/0.5 (+https://github.com/issueslinux/tracecart)"
@@ -28,6 +29,120 @@ class SourceAccessDenied(ValueError):
     def __init__(self, status):
         self.status = int(status)
         super().__init__("Product page access denied, HTTP {}".format(self.status))
+
+
+class SourceRedirect(ValueError):
+    """An HTTP redirect that requires origin+robots checks before following."""
+    def __init__(self, status, location):
+        self.status = int(status)
+        self.location = str(location or "")[:1600]
+        super().__init__("Product source redirects, HTTP {}".format(status))
+
+
+class SourceHTTPFailure(ValueError):
+    """Non-successful remote page response (not a URL validation failure)."""
+    def __init__(self, status):
+        self.status = int(status)
+        super().__init__("Product source unavailable, HTTP {}".format(status))
+
+
+def normalized_product_url(url):
+    """Generic removal of tracking parameters and path referral suffixes.
+
+    Identifying offerId is retained for any seller, but search keywords,
+    marketing/referrer and potentially sensitive query values are discarded.
+    """
+    safe = validate_product_url(url)
+    p = urlsplit(safe)
+    segments = p.path.split("/")
+    segments = [x for x in segments if x]
+    for i, segment in enumerate(segments):
+        if segment.lower().startswith(("ref=", "ref_", "ref-")):
+            segments = segments[:i]
+            break
+    path = "/" + "/".join(segments) if segments else "/"
+    query_pairs = []
+    for key, value in parse_qsl(p.query, keep_blank_values=False):
+        if key == "offerId" and re.fullmatch(r"[0-9]{5,20}", value):
+            query_pairs.append((key, value))
+    return urlunsplit(("https", p.hostname, path,
+                       urlencode(query_pairs), ""))
+
+
+def generic_url_identity(url, access_reason):
+    """Store-agnostic, *UNVERIFIED* identity from the URL the buyer supplied.
+
+    Never use blocked page contents, manufacture a price, or substitute search
+    snippets as proof. Works for readable slugs on ANY publicly addressed
+    HTTPS domain, not merely a known marketplace.
+    """
+    safe = normalized_product_url(url)
+    p = urlsplit(safe)
+    segments = [unquote(v) for v in p.path.split("/") if v]
+    # Identify common generic URL markers; NOT vendor-specific APIs.
+    marker = ("dp", "gp", "product", "produkt", "products", "item",
+              "items", "p", "offer", "oferta")
+    ids = []
+    for i, seg in enumerate(segments[:-1]):
+        if seg.casefold() in marker and re.fullmatch(r"[A-Za-z0-9_-]{6,40}", segments[i+1]):
+            ids.append(segments[i+1])
+    for seg in segments:
+        match = re.search(r"([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$", seg, flags=re.I)
+        if match:
+            ids.append(match.group(1))
+    options = []
+    for segment in segments:
+        seg = re.sub(r"-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", "", segment, flags=re.I)
+        if seg.casefold() in marker or seg.startswith(("ref=", "ref_")):
+            continue
+        if re.fullmatch(r"[A-Z0-9]{10}", seg) or re.fullmatch(
+                r"[a-f0-9-]{32,36}", seg, flags=re.I):
+            continue
+        label = re.sub(r"[_+\-]+", " ", seg)
+        label = re.sub(r"[^\w\s,.%°]", " ", label, flags=re.UNICODE)
+        label = " ".join(label.split())
+        if len(label) >= 8 and len(re.findall(r"[A-Za-zÀ-ž]{3,}", label)) >= 2:
+            options.append((len(label.split()), len(label), label))
+    options.sort(reverse=True)
+    title = options[0][2][:180] if options else None
+    if title:
+        title = re.sub(r"\b([0-9]{1,3}) ([0-9]) (kg|l|g|ml)\b",
+                       r"\1,\2 \3", title, flags=re.I)
+    # Unreadable URLs still yield an auditable partial result, but should NOT
+    # generate claims about what product this is or assume a brand/category.
+    if title is None:
+        title = "Unidentified product from " + p.hostname
+        confidence = "INSUFFICIENT_URL_DESCRIPTION"
+    else:
+        confidence = "URL_TITLE_UNVERIFIED"
+    query = parse_qs(p.query, keep_blank_values=False)
+    offer_id = (query.get("offerId") or [None])[0]
+    item = {"title": title, "price": None, "currency": None,
+            "barcode": "", "merchant_url": safe}
+    metadata = {
+        "source_url": safe,
+        "extraction_method": "Generic URL path (NOT downloaded page)",
+        "intake_status": "URL_ONLY_UNVERIFIED",
+        "url_title_confidence": confidence,
+        "retrieved_at": None,
+        "attempted_at": datetime.now(timezone.utc).isoformat(),
+        "page_sha256": None,
+        "robots_url": "https://" + p.hostname + "/robots.txt",
+        "source_type": "user_supplied_url_NO_PAGE_CONTENT",
+        "brand": "", "sku": "",
+        "product_url_identifiers": ids[:3],
+        "allegro_offer_id": offer_id if p.hostname.endswith("allegro.pl") else None,
+        "availability_claim": "",
+        "price_status": "NOT_VERIFIED_PAGE_BLOCKED",
+        "barcode_status": "NOT_VERIFIED_PAGE_BLOCKED",
+        "access_problem": access_reason,
+        "limitations": [
+            "Product identity is inferred only from the user's URL path.",
+            "URL words are NOT confirmed as the actual seller's product title.",
+            "No seller price, stock, delivery cost, GTIN or full description retrieved.",
+        ],
+    }
+    return item, metadata
 
 
 def limited_allegro_identity(url, access_reason):
@@ -150,8 +265,10 @@ def _read(url, max_bytes, expected_mimes, timeout=12):
             # Redirects cannot be silently followed to a local or unsafe URL.
             if response.status in (401, 403, 429):
                 raise SourceAccessDenied(response.status)
-            raise ValueError("Product source unavailable or redirects (HTTP {})".format(
-                response.status))
+            if response.status in (301, 302, 303, 307, 308):
+                raise SourceRedirect(response.status,
+                                     response.getheader("Location", ""))
+            raise SourceHTTPFailure(response.status)
         mime = response.getheader("Content-Type", "").split(";")[0].strip().lower()
         if mime not in expected_mimes:
             raise ValueError("Unsupported product response content type")
@@ -230,8 +347,9 @@ def _products_from_html(parser):
 def _clean(value, limit=180):
     if not isinstance(value, str):
         return ""
-    # Avoid injecting HTML, script or excessive untrusted input into prompts.
-    return re.sub(r"\\s+", " ", re.sub(r"<[^>]*>", " ", value)).strip()[:limit]
+    # Decode entities from actual seller titles; strip markup and collapse
+    # whitespace before passing descriptive text to the research planner.
+    return " ".join(re.sub(r"<[^>]*>", " ", unescape(value)).split())[:limit]
 
 
 def _price(value):
@@ -304,8 +422,30 @@ def extract_product_page(url, fetch=None):
     rp.parse(robots_bytes.decode("utf-8", "replace").splitlines())
     if not rp.can_fetch(USER_AGENT, safe):
         raise ValueError("Product source blocked by robots.txt")
-    html = getter(safe, MAX_PAGE_BYTES, ("text/html", "application/xhtml+xml"))
-    item, metadata = extract_from_html(safe, html)
+    current = safe
+    seen = {safe}
+    for _ in range(3):
+        try:
+            html = getter(current, MAX_PAGE_BYTES,
+                          ("text/html", "application/xhtml+xml"))
+            break
+        except SourceRedirect as redirect:
+            target = validate_product_url(urljoin(current, redirect.location))
+            # Redirects are only followed for SAME HOST. Any new path must
+            # remain permitted under the same robots policy; never forward
+            # user credentials or tokens.
+            if urlsplit(target).hostname != parsed.hostname:
+                raise SourceRedirect(redirect.status, "CROSS_ORIGIN_BLOCKED")
+            if target in seen:
+                raise SourceRedirect(redirect.status, "REDIRECT_LOOP")
+            if not rp.can_fetch(USER_AGENT, target):
+                raise ValueError("Product source blocked by robots.txt")
+            seen.add(target)
+            current = target
+    else:
+        raise SourceRedirect(302, "REDIRECT_LIMIT")
+    item, metadata = extract_from_html(current, html)
+    metadata["source_url"] = current
     metadata["retrieved_at"] = datetime.now(timezone.utc).isoformat()
     metadata["page_sha256"] = sha256(html).hexdigest()
     metadata["robots_url"] = robots_url
