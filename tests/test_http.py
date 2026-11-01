@@ -214,6 +214,92 @@ class WebFlowTests(unittest.TestCase):
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
 
+    def test_live_source_collection_http_and_report(self):
+        from decision_tree import analyze
+        from source_collector import ProductCollector
+        source = ProductCollector(
+            robots_text="User-agent: *\nAllow: /product/\n",
+            download=lambda url: (
+                b'<script type="application/ld+json">{"@type":"Product",'
+                b'"name":"Mock merchant product","sku":"1083","offers":'
+                b'{"price":"9.95","priceCurrency":"USD",'
+                b'"availability":"http://schema.org/InStock"}}</script>',
+                '<script type="application/ld+json">{"@type":"Product",'
+                '"name":"Mock merchant product","sku":"1083","offers":'
+                '{"price":"9.95","priceCurrency":"USD",'
+                '"availability":"http://schema.org/InStock"}}</script>',
+            ))
+        collected = source.collect(["https://www.adafruit.com/product/1083"])
+        report = analyze({k: collected[k] for k in ("goal", "category", "offers")})
+        report["source_collection"] = collected["collection"]
+        with patch.object(app, "collect_and_analyze", return_value=(report, collected)) as fetch:
+            status, form_page = self.request("GET", "/research")
+            self.assertEqual(status, 200)
+            self.assertIn("LIVE merchant source collection", form_page)
+            status, body = self.request("POST", "/research/collect", {
+                "csrf": self.csrf,
+                "product_urls": "https://www.adafruit.com/product/1083"
+            })
+            self.assertEqual(status, 200)
+            self.assertIn("come from the merchant", body.lower())
+            self.assertIn("External customer reviews", body)
+            self.assertIn("0</strong>", body)
+            fetch.assert_called_once()
+            rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', body).group(1)
+            status, text = self.request("GET", "/research/report/" + rid + ".json")
+            self.assertEqual(status, 200)
+            downloaded = json.loads(text)
+            self.assertEqual(downloaded["source_collection"]["fetched_pages"], 1)
+
+    def test_live_sources_with_separate_ai_critic_roles(self):
+        from decision_tree import analyze
+        from source_collector import ProductCollector
+        from unittest.mock import patch
+        collector = ProductCollector(
+            robots_text="User-agent: *\nAllow: /product/\n",
+            download=lambda u: (
+                b'<script type="application/ld+json">{"@type":"Product",'
+                b'"name":"Mock","offers":{"price":"9.95","priceCurrency":"USD"}}</script>',
+                '<script type="application/ld+json">{"@type":"Product",'
+                '"name":"Mock","offers":{"price":"9.95","priceCurrency":"USD"}}</script>'))
+        collected = collector.collect(["https://www.adafruit.com/product/1083"])
+        baseline = analyze({k: collected[k] for k in ("goal","category","offers")})
+        from source_collector import attach_collection_provenance
+        baseline = attach_collection_provenance(baseline, collected)
+        with patch.object(app, "collect_and_analyze",
+                          return_value=(baseline, collected)):
+            with patch.object(app, "generate_question_proposals", side_effect=[
+                    [{"trigger_question_id": "product_1083-price",
+                      "text": "Does the price include applicable shipping fees?",
+                      "origin": "model_researcher"}],
+                    [{"trigger_question_id": "product_1083-price",
+                      "text": "Can a separate merchant verify this quoted price?",
+                      "origin": "model_critic"}],
+                ]) as ai:
+                status, body = self.request("POST", "/research/collect", {
+                    "csrf": self.csrf,
+                    "ask_ai": "yes",
+                    "product_urls": "https://www.adafruit.com/product/1083"
+                })
+                self.assertEqual(status, 200)
+                rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', body).group(1)
+                status, response = self.request("GET", "/research/report/" + rid + ".json")
+                self.assertEqual(status, 200)
+                exported = json.loads(response)
+                self.assertEqual(exported["root"]["children"][-1]["details"]["model_generated_questions"], 2)
+                self.assertEqual(ai.call_count, 2)
+
+    def test_live_source_collection_rejects_non_allowlisted_website(self):
+        status, body = self.request("POST", "/research/collect", {
+            "csrf": self.csrf,
+            "product_urls": "http://127.0.0.1:8765/product/247"
+        })
+        self.assertEqual(status, 400)
+        import sqlite3
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM research_reports").fetchone()[0], 0)
+
     def test_cross_origin_host_and_csrf_rejected(self):
         status, _ = self.request("GET", "/", headers={"Host": "malicious.example"})
         self.assertEqual(status, 403)

@@ -5,6 +5,50 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## LIVE offer source collector — first verified merchant integration (2026-11-01)
+
+The /research interface now offers two paths: import previously collected
+offers/reviews as JSON, or **fetch live product pages directly** from the
+explicitly allowlisted merchant Adafruit. Enter 1–5 full HTTPS product URLs,
+one per line. This is a concrete external data integration, not a fabricated
+example. The connector is **not a general web search engine yet**.
+
+**Technical safeguards:** Python standard-library HTML/JSON-LD Product/Offer
+extraction, robots.txt preflight, non-public host rejection, strict Adafruit
+product URL allowlist, HTTP redirect refusal, timeout/response-size caps, a
+minimum 2-second spacing between product fetches, and no login or authentication.
+Sources retain the original link, retrieval timestamp, publisher domain, source
+type, SHA-256 of the exact downloaded page bytes and the extracted field.
+
+**Evidence discipline:** listed price, stock and declared condition are
+**merchant assertions**, not independently confirmed facts. Multiple URLs at
+one publisher do not count as independent corroboration. External customer
+reviews and third-party tests **are not collected** in this initial connector
+(and are counted as zero in its reports). The separate deterministic critic
+runs on every result; the optional local Qwen researcher and critic can propose
+new **open questions** about these real source records, not facts or payments.
+Every failed fetch is visible in the full tree and source report. We never
+silently replace missing sources with model text. With unresolved claims the
+final recommendation remains **ABSTAIN**, and no payment can be authorized
+from the report.
+
+**Live-verified historical example:** On 2026-11-01 the collector read real
+Adafruit pages for ADS1015 (1083, merchant price USD 9.95, InStock),
+SHT40 (4885, USD 5.95, InStock), and Raspberry Pi Zero W (3400,
+USD 15.00, OutOfStock). These items are different products; do **not**
+interpret the three prices as directly comparable purchase alternatives.
+Prices and availability may have changed since that snapshot.
+
+- [Offline expandable full tree from actual source retrieval](examples/live_adafruit_2026-11-01.html)
+- [Audited live tree JSON with provenance and final abstention](examples/live_adafruit_2026-11-01.json)
+- [Actual external evidence input JSON](examples/live_adafruit_2026-11-01_input.json)
+- [Real Chromium screenshot of source-linked tree](media/live-merchant-evidence-browser.png)
+
+The local full workflow was verified with 3 real HTTP fetches, 9 extracted
+merchant claims, an expandable 68-branch report, a persistent JSON download,
+and a final ABSTAIN. **No reviews, independent testing, ranking calibration,
+payment or hackathon submission was completed in this step.**
+
 ## Evidence Critic and Complete Decision Tree (experimental)
 
 TraceCart now builds a transparent, expandable decision tree from supplied
@@ -38,7 +82,9 @@ Artifacts:
 
 ![Expandable evidence/critic tree](media/tracecart-critic-tree-browser.png)
 
-CURRENT LIMITATION: This module does NOT autonomously search the Internet.
+CURRENT LIMITATION: This module does NOT yet discover or search across
+arbitrary marketplaces or review sites. The new connector only fetches explicitly
+specified product URLs from one supported merchant.
 The sample offers and reviews use reserved example domains and are not real
 product evidence. Automated source collection, publisher deduplication,
 independent source verification and calibrated multi-criteria rankings remain

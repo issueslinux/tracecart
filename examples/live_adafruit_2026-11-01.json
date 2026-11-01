@@ -1,0 +1,1223 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T19:50:52.374767+00:00",
+  "root": {
+    "id": "research-root",
+    "kind": "research",
+    "title": "2026-11-01 live product claims: compare seller-stated USD price and stock; independent critique",
+    "status": "INVESTIGATED_WITH_OPEN_QUESTIONS",
+    "details": {
+      "category": "electronic components",
+      "scope": "Only provided offers and excerpts, no web retrieval was performed",
+      "method": "rule_based_questions_and_independent_critic",
+      "no_automatic_purchase": true
+    },
+    "children": [
+      {
+        "id": "offer-product_1083",
+        "kind": "offer",
+        "title": "ADS1015 12-Bit ADC - 4 Channel with Programmable Gain Amplifier",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "product_1083",
+          "price": "9.95",
+          "currency": "USD",
+          "source_url": "https://www.adafruit.com/product/1083"
+        },
+        "children": [
+          {
+            "id": "question-product_1083-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_1083-price",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_1083_price",
+                "kind": "evidence",
+                "title": "Evidence merchant_1083_price",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_1083_price",
+                  "source_url": "https://www.adafruit.com/product/1083",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.price=9.95 USD (excludes shipping/tax).",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "d1bc41bac7b7bfdc57f1ec1b9ac1126f64974c8e39eb23444d08702c0a812b05",
+                  "retrieved_at": "2026-11-01T19:50:48.379460+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "b6e1c140ede1fc45",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_1083-price",
+                  "evidence_ids": [
+                    "merchant_1083_price"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "797de2c364b045b0",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_1083-price",
+                      "evidence_ids": [
+                        "merchant_1083_price"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_1083-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_1083-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "22a20e6d662f5061",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_1083-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "b7fc0b613c916d37",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_1083-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_1083-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_1083-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "6efcdfaf7fd976f3",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_1083-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "0d3ff999aad70c6b",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_1083-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_1083-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_1083-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "43e6c40182dd92dc",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_1083-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "d94867eb36fc3594",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_1083-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_1083-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_1083-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "192cf8ef56a20928",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_1083-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "290b85af492db3c6",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_1083-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_1083-availability",
+            "kind": "question",
+            "title": "Does the merchant claim this product is presently in stock?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_1083-availability",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_1083_availability",
+                "kind": "evidence",
+                "title": "Evidence merchant_1083_availability",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_1083_availability",
+                  "source_url": "https://www.adafruit.com/product/1083",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.availability=InStock.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "d1bc41bac7b7bfdc57f1ec1b9ac1126f64974c8e39eb23444d08702c0a812b05",
+                  "retrieved_at": "2026-11-01T19:50:48.379460+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "0b48866845970fb7",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_1083-availability",
+                  "evidence_ids": [
+                    "merchant_1083_availability"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "efe435522235d5c6",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_1083-availability",
+                      "evidence_ids": [
+                        "merchant_1083_availability"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_1083-declared_condition",
+            "kind": "question",
+            "title": "Does the merchant explicitly declare a product condition?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_1083-declared_condition",
+              "importance": 4,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_1083_condition",
+                "kind": "evidence",
+                "title": "Evidence merchant_1083_condition",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_1083_condition",
+                  "source_url": "https://www.adafruit.com/product/1083",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "d1bc41bac7b7bfdc57f1ec1b9ac1126f64974c8e39eb23444d08702c0a812b05",
+                  "retrieved_at": "2026-11-01T19:50:48.379460+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "07e22c21cfde33ec",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_1083-declared_condition",
+                  "evidence_ids": [
+                    "merchant_1083_condition"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "a39dce977a69f2eb",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_1083-declared_condition",
+                      "evidence_ids": [
+                        "merchant_1083_condition"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "offer-product_4885",
+        "kind": "offer",
+        "title": "Adafruit Sensirion SHT40 Temperature & Humidity Sensor",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "product_4885",
+          "price": "5.95",
+          "currency": "USD",
+          "source_url": "https://www.adafruit.com/product/4885"
+        },
+        "children": [
+          {
+            "id": "question-product_4885-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_4885-price",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_4885_price",
+                "kind": "evidence",
+                "title": "Evidence merchant_4885_price",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_4885_price",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.price=5.95 USD (excludes shipping/tax).",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "1548a98548d1a45f7f1e542d350fbd2b7fa31207f293e14189a8a26c65e6efd6",
+                  "retrieved_at": "2026-11-01T19:50:50.417382+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "c5e946198452d584",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-price",
+                  "evidence_ids": [
+                    "merchant_4885_price"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "b35dfa484fc2f1a5",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-price",
+                      "evidence_ids": [
+                        "merchant_4885_price"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "1f4a601d9fd6da0f",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "7c6e6e076569cb9b",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "fdbd0d32c928b74f",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "384f985f5f72161a",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "a0c1042fb0a0edee",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "4f5ad08316a39444",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_4885-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "fc129d1e4eaa5284",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "5da1d5f0134fc289",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-availability",
+            "kind": "question",
+            "title": "Does the merchant claim this product is presently in stock?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_4885-availability",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_4885_availability",
+                "kind": "evidence",
+                "title": "Evidence merchant_4885_availability",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_4885_availability",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.availability=InStock.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "1548a98548d1a45f7f1e542d350fbd2b7fa31207f293e14189a8a26c65e6efd6",
+                  "retrieved_at": "2026-11-01T19:50:50.417382+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "7f29e4ada4f81b9d",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-availability",
+                  "evidence_ids": [
+                    "merchant_4885_availability"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "86bd275a9f4436d0",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-availability",
+                      "evidence_ids": [
+                        "merchant_4885_availability"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_4885-declared_condition",
+            "kind": "question",
+            "title": "Does the merchant explicitly declare a product condition?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_4885-declared_condition",
+              "importance": 4,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_4885_condition",
+                "kind": "evidence",
+                "title": "Evidence merchant_4885_condition",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_4885_condition",
+                  "source_url": "https://www.adafruit.com/product/4885",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "1548a98548d1a45f7f1e542d350fbd2b7fa31207f293e14189a8a26c65e6efd6",
+                  "retrieved_at": "2026-11-01T19:50:50.417382+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "36503e2ccfaac4e3",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_4885-declared_condition",
+                  "evidence_ids": [
+                    "merchant_4885_condition"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "10698aa13679f0f0",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_4885-declared_condition",
+                      "evidence_ids": [
+                        "merchant_4885_condition"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "offer-product_3400",
+        "kind": "offer",
+        "title": "Raspberry Pi Zero W",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "product_3400",
+          "price": "15.00",
+          "currency": "USD",
+          "source_url": "https://www.adafruit.com/product/3400"
+        },
+        "children": [
+          {
+            "id": "question-product_3400-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_3400-price",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_3400_price",
+                "kind": "evidence",
+                "title": "Evidence merchant_3400_price",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_3400_price",
+                  "source_url": "https://www.adafruit.com/product/3400",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.price=15.00 USD (excludes shipping/tax).",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "dbe7427f3ffd6d81204a9ec0d23c9541fad3f501f5559ba3c022906e3806a903",
+                  "retrieved_at": "2026-11-01T19:50:52.373287+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "6cbcf2bcfc99c95f",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_3400-price",
+                  "evidence_ids": [
+                    "merchant_3400_price"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "c2b7365fee84c746",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_3400-price",
+                      "evidence_ids": [
+                        "merchant_3400_price"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_3400-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_3400-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "969e0fea45894f46",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_3400-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "124e153341d934d7",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_3400-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_3400-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_3400-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "9c581a803d747208",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_3400-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "935205dcc28e7f4a",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_3400-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_3400-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_3400-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "eec51106969df01e",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_3400-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "9b774751220c06d3",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_3400-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_3400-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "product_3400-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "759124700c8102cd",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_3400-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "dd2ab76abd954df6",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_3400-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_3400-availability",
+            "kind": "question",
+            "title": "Does the merchant claim this product is presently in stock?",
+            "status": "REFUTED",
+            "details": {
+              "question_id": "product_3400-availability",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 1,
+              "reason": "Supplied evidence contradicts this claim.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_3400_availability",
+                "kind": "evidence",
+                "title": "Evidence merchant_3400_availability",
+                "status": "CONTRADICTS",
+                "details": {
+                  "source_id": "merchant_3400_availability",
+                  "source_url": "https://www.adafruit.com/product/3400",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD offers.availability=OutOfStock.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "dbe7427f3ffd6d81204a9ec0d23c9541fad3f501f5559ba3c022906e3806a903",
+                  "retrieved_at": "2026-11-01T19:50:52.373287+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "990666648e093f2d",
+                "kind": "critic",
+                "title": "Critic: Supplied evidence contradicts this claim.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_3400-availability",
+                  "evidence_ids": [
+                    "merchant_3400_availability"
+                  ],
+                  "challenge": "Can the contradicted claim be ruled out for this exact item?"
+                },
+                "children": [
+                  {
+                    "id": "f86d07c24e159cfd",
+                    "kind": "follow_up",
+                    "title": "Can the contradicted claim be ruled out for this exact item?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_3400-availability",
+                      "evidence_ids": [
+                        "merchant_3400_availability"
+                      ],
+                      "purpose": "Find counterevidence or verify the defect before relying on this offer.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-product_3400-declared_condition",
+            "kind": "question",
+            "title": "Does the merchant explicitly declare a product condition?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "product_3400-declared_condition",
+              "importance": 4,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-merchant_3400_condition",
+                "kind": "evidence",
+                "title": "Evidence merchant_3400_condition",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "merchant_3400_condition",
+                  "source_url": "https://www.adafruit.com/product/3400",
+                  "source_type": "listing",
+                  "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+                  "duplicate_url": false,
+                  "publisher_domain": "adafruit.com",
+                  "duplicate_publisher": false,
+                  "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+                  "source_content_sha256": "dbe7427f3ffd6d81204a9ec0d23c9541fad3f501f5559ba3c022906e3806a903",
+                  "retrieved_at": "2026-11-01T19:50:52.373287+00:00",
+                  "extraction_method": "merchant_product_jsonld"
+                },
+                "children": []
+              },
+              {
+                "id": "801b50715b5ae586",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "product_3400-declared_condition",
+                  "evidence_ids": [
+                    "merchant_3400_condition"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "38de04f3b187d69d",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "product_3400-declared_condition",
+                      "evidence_ids": [
+                        "merchant_3400_condition"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decision-final",
+        "kind": "decision",
+        "title": "Purchase decision / next step",
+        "status": "ABSTAIN",
+        "details": {
+          "recommendation": "No purchase recommendation until material gaps and critic objections are reviewed.",
+          "unresolved_by_offer": {
+            "product_1083": [
+              "product_1083-price",
+              "product_1083-condition",
+              "product_1083-seller",
+              "product_1083-returns",
+              "product_1083-alternatives",
+              "product_1083-availability",
+              "product_1083-declared_condition"
+            ],
+            "product_4885": [
+              "product_4885-price",
+              "product_4885-condition",
+              "product_4885-seller",
+              "product_4885-returns",
+              "product_4885-alternatives",
+              "product_4885-availability",
+              "product_4885-declared_condition"
+            ],
+            "product_3400": [
+              "product_3400-price",
+              "product_3400-condition",
+              "product_3400-seller",
+              "product_3400-returns",
+              "product_3400-alternatives",
+              "product_3400-availability",
+              "product_3400-declared_condition"
+            ]
+          },
+          "criterion_count_by_offer": {
+            "product_1083": 7,
+            "product_4885": 7,
+            "product_3400": 7
+          },
+          "reason": "Evidence completeness is insufficient; do not turn source-count into a utility score.",
+          "eligible_for_payment": false,
+          "model_generated_questions": 0
+        },
+        "children": []
+      }
+    ]
+  },
+  "all_questions_preserved": true,
+  "provenance": "Live merchant JSON-LD extracted from permitted product pages; single-publisher claims, not independently verified",
+  "limitations": [
+    "Source snippets are input claims, not independently validated.",
+    "Distinct URLs need not represent independent publishers.",
+    "Critic flags gaps; it does not confirm product defects."
+  ],
+  "source_collection": {
+    "collector": "merchant_jsonld_adafruit_v1",
+    "fetched_pages": 3,
+    "requested_pages": 3,
+    "source_failures": [],
+    "evidence_type": "merchant_assertions_only",
+    "review_sources_collected": 0,
+    "independent_product_tests_collected": 0,
+    "retrieval_policy": "robots-checked, explicit HTTPS allowlist, 2 seconds between products"
+  },
+  "sha256": "47908dc8d3b4e9422b2a1ad48643d29faaeaabe304def82ab0785ed307840837"
+}

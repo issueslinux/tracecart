@@ -107,11 +107,29 @@ def _valid_question(q):
     return qid, statement, importance, sources
 
 
+def _publisher_key(url):
+    """Conservative same-registrant grouping for common country-code suffixes.
+
+    This is NOT a full public-suffix database. If in doubt, the analysis only
+    treats two sources as separate publishers when their registrable-ish
+    domains differ, which still does NOT guarantee editorial independence.
+    """
+    host = urlsplit(url).hostname.lower().strip(".")
+    labels = host.split(".")
+    if len(labels) <= 2:
+        return host
+    if labels[-2:] in (["co", "uk"], ["com", "au"], ["com", "br"],
+                       ["com", "pl"], ["co", "jp"]):
+        return ".".join(labels[-3:])
+    return ".".join(labels[-2:])
+
+
 def _evaluate_evidence(qid, sources, origin_ids):
     children = []
     support = []
     contra = []
     seen = set()
+    publisher_seen = set()
     for entry in sources:
         if not isinstance(entry, dict):
             raise ValueError("Evidence record must be object")
@@ -129,29 +147,46 @@ def _evaluate_evidence(qid, sources, origin_ids):
                                "test", "seller", "document", "unknown"):
             raise ValueError("Unknown source type")
         source_key = href.lower().rstrip("/")
+        publisher = _publisher_key(href)
         duplicates = source_key in seen
+        duplicate_publisher = publisher in publisher_seen
         seen.add(source_key)
-        child = _node("evidence", "Evidence " + eid, stance.upper(), {
+        publisher_seen.add(publisher)
+        details = {
             "source_id": eid, "source_url": href, "source_type": source_type,
             "excerpt": snippet, "duplicate_url": duplicates,
+            "publisher_domain": publisher, "duplicate_publisher": duplicate_publisher,
             "observation": _short(entry.get("observation", "Source excerpt"), 300)
-        }, node_id="source-" + eid)
+        }
+        if "sha256" in entry:
+            if not isinstance(entry["sha256"], str) or not re.fullmatch(
+                    r"[a-f0-9]{64}", entry["sha256"]):
+                raise ValueError("Invalid source content hash")
+            details["source_content_sha256"] = entry["sha256"]
+        if "retrieved_at" in entry:
+            timestamp = _short(entry["retrieved_at"], 45)
+            if not re.fullmatch(r"20\d\d-\d\d-\d\dT[0-9:.+\-]+", timestamp):
+                raise ValueError("Invalid source retrieval timestamp")
+            details["retrieved_at"] = timestamp
+        if "extraction_method" in entry:
+            details["extraction_method"] = _short(entry["extraction_method"], 80)
+        child = _node("evidence", "Evidence " + eid, stance.upper(),
+                      details, node_id="source-" + eid)
         children.append(child)
-        (support if stance == "supports" else contra).append((eid, source_key))
-    positive_urls = set(url for _, url in support)
-    negative_urls = set(url for _, url in contra)
+        (support if stance == "supports" else contra).append((eid, publisher))
+    positive_publishers = set(domain for _, domain in support)
     if support and contra:
         verdict = "CONFLICTED"
         reason = "Evidence supports and contradicts this claim."
     elif contra:
         verdict = "REFUTED"
         reason = "Supplied evidence contradicts this claim."
-    elif len(positive_urls) >= 2:
+    elif len(positive_publishers) >= 2:
         verdict = "CORROBORATED"
-        reason = "Two or more distinct source URLs support the claim; independence still requires review."
+        reason = "At least two different publisher domains support the claim; editorial independence still requires review."
     elif support:
         verdict = "SINGLE_SOURCE"
-        reason = "Only one distinct source URL supports the claim."
+        reason = "Only one publisher domain supports the claim, including possible mirrored URLs."
     else:
         verdict = "UNANSWERED"
         reason = "No source evidence was supplied."
