@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import app
 from core import CheckoutStore, CONSENT_TEXT
 from decision_tree import ReportStore
+import cart_research
 
 class MockPayPal:
     def __init__(self):
@@ -68,6 +69,13 @@ class WebFlowTests(unittest.TestCase):
         server = HTTPServer(("127.0.0.1", 0), app.TraceCartHandler)
         server.store = CheckoutStore(str(Path(self.tmp.name) / "webquotes.sqlite"))
         server.reports = ReportStore(server.store.db)
+        def cart_stub(item):
+            def fetch(url, host, headers=None):
+                return {"products": []} if host == "world.openproductsfacts.org" else {"items": []}
+            with patch.object(cart_research, "generate_local_ai_questions", return_value=[]):
+                return cart_research.research_cart(item, fetch=fetch)
+        server.cart_jobs = cart_research.CartResearchJobs(
+            str(Path(self.tmp.name) / "webquotes.sqlite"), runner=cart_stub)
         server.csrf = secrets.token_urlsafe(24)
         self.server = server
         self.port = server.server_port
@@ -76,6 +84,7 @@ class WebFlowTests(unittest.TestCase):
             server.serve_forever(poll_interval=0.03)
         finally:
             server.server_close()
+            server.cart_jobs.close()
             server.store.db.close()
             self.done.set()
 
@@ -372,6 +381,99 @@ class WebFlowTests(unittest.TestCase):
         import sqlite3
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
+
+    def test_cart_add_triggers_async_research_without_payment(self):
+        import time
+        status, page = self.request("GET", "/cart")
+        self.assertEqual(status, 200)
+        self.assertIn("Add to cart", page)
+        status, response = self.request("POST", "/cart/add", {
+            "csrf": self.csrf,
+            "title": "Persil washing powder 45 loads",
+            "price": "34.90", "currency": "PLN",
+            "barcode": "8712561344494",
+            "merchant_url": "https://example.org/demo/persil",
+        })
+        self.assertEqual(status, 200)
+        # Get opaque job ID from persistence because the job may complete
+        # before the HTTP response has rendered.
+        import sqlite3
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            job_id = db.execute("SELECT id FROM cart_research_jobs").fetchone()[0]
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
+        for _ in range(100):
+            if self.server.cart_jobs.read(job_id)["state"] == "READY":
+                break
+            time.sleep(.02)
+        self.assertEqual(self.server.cart_jobs.read(job_id)["state"], "READY")
+        status, ready = self.request("GET", "/cart/status/" + job_id)
+        self.assertEqual(status, 200)
+        self.assertIn("Other matching product identities found online", ready)
+        self.assertIn("Complete expandable research", ready)
+        self.assertIn("NO", ready)
+        status, raw = self.request("GET", "/cart/status/" + job_id + ".json")
+        self.assertEqual(status, 200)
+        report = json.loads(raw)["report"]
+        self.assertEqual(report["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
+        self.assertFalse(report["root"]["children"][-1]["details"]["payment_authorized"])
+
+    def test_authenticated_server_side_cart_event_returns_202_job(self):
+        import os, time
+        payload = {
+            "title": "Persil powder for laundry",
+            "price": "34.90", "currency": "PLN",
+            "barcode": "8712561344494",
+            "merchant_url": "https://example.org/demo/persil"
+        }
+        from urllib.error import HTTPError
+        req = Request(self.base + "/api/cart/added",
+                      data=json.dumps(payload).encode(),
+                      method="POST",
+                      headers={"Content-Type": "application/json",
+                               "X-TraceCart-Event-Token": "secret-for-test"})
+        with patch.dict(app.os.environ, {"TRACECART_CART_WEBHOOK_TOKEN": "secret-for-test"}):
+            with urlopen(req, timeout=8) as response:
+                self.assertEqual(response.status, 202)
+                accepted = json.loads(response.read())
+        self.assertTrue(accepted["accepted"])
+        self.assertEqual(accepted["state"], "QUEUED")
+        jid = accepted["job_id"]
+        for _ in range(80):
+            if self.server.cart_jobs.read(jid)["state"] == "READY":
+                break
+            time.sleep(.02)
+        self.assertEqual(self.server.cart_jobs.read(jid)["state"], "READY")
+
+    def test_cart_event_token_blocks_unauthorized_posts(self):
+        payload = {
+            "title": "Persil powder for laundry", "price": "34.90",
+            "currency": "PLN", "barcode": "",
+            "merchant_url": "https://example.org/demo/persil"
+        }
+        from urllib.error import HTTPError
+        req = Request(self.base + "/api/cart/added",
+                      data=json.dumps(payload).encode(), method="POST",
+                      headers={"Content-Type": "application/json",
+                               "X-TraceCart-Event-Token": "bad"})
+        with patch.dict(app.os.environ, {"TRACECART_CART_WEBHOOK_TOKEN": "correct"}):
+            with self.assertRaises(HTTPError) as e:
+                urlopen(req, timeout=8)
+            self.assertEqual(e.exception.code, 403)
+        with patch.dict(app.os.environ, {}, clear=True):
+            with self.assertRaises(HTTPError) as e:
+                urlopen(req, timeout=8)
+            self.assertEqual(e.exception.code, 503)
+
+    def test_invalid_cart_input_rejected_before_job_and_checkout(self):
+        status, _ = self.request("POST", "/cart/add", {
+            "csrf": self.csrf, "title": "powder",
+            "price": "-1", "currency": "PLN", "barcode": "",
+            "merchant_url": "http://127.0.0.1:8770/unsafe",
+        })
+        self.assertEqual(status, 400)
+        import sqlite3
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM cart_research_jobs").fetchone()[0], 0)
 
     def test_cross_origin_host_and_csrf_rejected(self):
         status, _ = self.request("GET", "/", headers={"Host": "malicious.example"})
