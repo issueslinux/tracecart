@@ -526,11 +526,24 @@ class CartResearchJobs:
         return job_id
 
     def _work_url(self, job_id, url):
-        from product_intake import extract_product_page
+        from product_intake import (
+            extract_product_page, limited_allegro_identity, SourceAccessDenied)
         with self._db() as db:
             db.execute("UPDATE cart_research_jobs SET state='RUNNING' WHERE id=?", (job_id,))
         try:
-            item, source = extract_product_page(url)
+            try:
+                item, source = extract_product_page(url)
+            except SourceAccessDenied as exc:
+                # Do not bypass the retailer's access controls. Only parse
+                # the user's own URL when the host/path is an Allegro product
+                # link with a valid product UUID.
+                item, source = limited_allegro_identity(
+                    url, "HTTP_" + str(exc.status))
+            except ValueError as exc:
+                if "blocked by robots.txt" not in str(exc):
+                    raise
+                item, source = limited_allegro_identity(
+                    url, "ROBOTS_DISALLOW")
             clean = validate_cart(item)
             with self._db() as db:
                 db.execute("UPDATE cart_research_jobs SET item=? WHERE id=?",
@@ -538,11 +551,14 @@ class CartResearchJobs:
             report = self.runner(clean)
             report["source_intake"] = source
             report["root"]["details"]["source_intake"] = {
-                "url": url, "price_status": source["price_status"],
-                "extraction_method": source["extraction_method"]}
+                "url": clean["merchant_url"], "price_status": source["price_status"],
+                "extraction_method": source["extraction_method"],
+                "intake_status": source.get("intake_status", "PAGE_RETRIEVED")}
+            limited = source.get("intake_status") == "URL_ONLY_UNVERIFIED"
             report["root"]["children"].insert(2, _node(
-                "source_intake", "Actual selected product web page",
-                "SELLER_DECLARATION",
+                "source_intake", ("Product identity inferred ONLY from user URL"
+                                  if limited else "Actual selected product web page"),
+                "URL_ONLY_UNVERIFIED" if limited else "SELLER_DECLARATION",
                 {"extracted_product": clean, "page_metadata": source,
                  "price_is_confirmed_checkout_total": False},
                 node_id="cart-source-intake"))

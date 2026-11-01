@@ -287,9 +287,15 @@ https://www.adafruit.com/product/3400</textarea></label>
             self.wfile.write(data)
             return
         if state != "READY":
-            self.send_page('<section class="error">Research status: {}. '
-                           'You may continue shopping without a false recommendation.'
-                           '</section>'.format(h(state)))
+            problem = result.get("error_type") or "UNKNOWN"
+            self.send_page('''<section class="error"><h2>Source could not be analyzed</h2>
+                <p>Status: <strong>{}</strong> · Failure class: <strong>{}</strong>.</p>
+                <p>TraceCart did not invent source details or bypass the retailer's
+                restrictions. This URL may be unsupported or inaccessible to
+                automated clients. The original product page can still be opened
+                directly in your browser.</p><p><a class="btn" href="/cart">
+                Analyze another product URL</a></p></section>'''.format(
+                h(state), h(problem)))
             return
         report = result["report"]
         intake = report.get("source_intake", {})
@@ -310,20 +316,40 @@ https://www.adafruit.com/product/3400</textarea></label>
                                    for q in questions[:8])
         source_details = ""
         if intake:
-            source_details = ("""<section><h2>Original product page — extracted facts</h2>
+            limited = intake.get("intake_status") == "URL_ONLY_UNVERIFIED"
+            source_details = ("""<section><h2>{}</h2>
                 <p>Page: <a href="{}" target="_blank" rel="noopener noreferrer">{}</a></p>
                 <p>Method: {} · Retrieved: {}</p>
                 <p>Price extraction: <strong>{}</strong>. EAN: <strong>{}</strong>.
                 Seller availability statement: {}.</p>
-                <p>SHA-256 of downloaded page: <code>{}</code></p>
-                <p class="warning">These are claims on the selected seller's page,
-                not independent technical tests or an actual checkout total.</p>
+                <p>Page SHA-256: <code>{}</code></p>
+                <p class="warning">{}</p>
+                {}
                 </section>""".format(
+                    ("Limited URL-based identification — Allegro blocked page access"
+                     if limited else "Original product page — extracted facts"),
                     h(intake["source_url"]), h(intake["source_url"]),
-                    h(intake["extraction_method"]), h(intake["retrieved_at"]),
+                    h(intake["extraction_method"]),
+                    h(intake.get("retrieved_at") or "NOT DOWNLOADED"),
                     h(intake["price_status"]), h(intake["barcode_status"]),
-                    h(intake.get("availability_claim") or "not disclosed"),
-                    h(intake["page_sha256"])))
+                    h(intake.get("availability_claim") or "NOT VERIFIED"),
+                    h(intake.get("page_sha256") or "NOT AVAILABLE"),
+                    ("Allegro did not provide the page content ({}). The name "
+                     "and offer ID below were inferred only from the URL YOU "
+                     "submitted. Price, pack contents, actual availability, "
+                     "EAN and seller details remain unverified. No payment "
+                     "or scraping workaround was attempted.".format(
+                         h(intake.get("access_problem", "SOURCE_BLOCKED")))
+                     if limited else
+                     "These are claims on the seller page, not independently "
+                     "verified tests or the final checkout price."),
+                    ("<p>Allegro offer ID (from your link): <code>{}</code>. "
+                     "Research can continue, but current offer price and stock "
+                     "must be checked directly on Allegro or via an authorized "
+                     "data source.</p>".format(
+                         h(intake.get("allegro_offer_id") or "not supplied"))
+                     if limited else "")))
+
         displayed_price = (str(result["item"]["price"]) + " " +
                            str(result["item"]["currency"])
                            if result["item"]["price"] is not None

@@ -382,6 +382,42 @@ class WebFlowTests(unittest.TestCase):
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
 
+    def test_allegro_403_returns_limited_ready_report_not_failed(self):
+        from product_intake import SourceAccessDenied
+        from test_allegro_fallback import ALLEGRO_URL
+        import sqlite3
+        import time
+        with patch("product_intake.extract_product_page",
+                   side_effect=SourceAccessDenied(403)):
+            status, body = self.request("POST", "/cart/add", {
+                "csrf": self.csrf, "product_url": ALLEGRO_URL})
+            self.assertEqual(status, 200)
+            with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+                jid = db.execute("SELECT id FROM cart_research_jobs").fetchone()[0]
+            for _ in range(100):
+                result = self.server.cart_jobs.read(jid)
+                if result["state"] in ("READY", "FAILED"):
+                    break
+                time.sleep(.02)
+        self.assertEqual(result["state"], "READY")
+        self.assertIsNone(result["item"]["price"])
+        status, body = self.request("GET", "/cart/status/" + jid)
+        self.assertEqual(status, 200)
+        self.assertIn("Limited URL-based identification", body)
+        self.assertIn("HTTP_403", body)
+        self.assertIn("18675491436", body)
+        self.assertIn("NOT DOWNLOADED", body)
+        self.assertIn("not disclosed by the source", body)
+        status, raw = self.request("GET", "/cart/status/" + jid + ".json")
+        self.assertEqual(status, 200)
+        report = json.loads(raw)["report"]
+        self.assertEqual(report["source_intake"]["intake_status"],
+                         "URL_ONLY_UNVERIFIED")
+        self.assertEqual(report["root"]["children"][2]["status"],
+                         "URL_ONLY_UNVERIFIED")
+        self.assertFalse(report["root"]["children"][-1]
+                         ["details"]["payment_authorized"])
+
     def test_url_only_cart_form_extracts_before_research(self):
         import time
         from unittest.mock import patch

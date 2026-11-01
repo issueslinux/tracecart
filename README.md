@@ -5,6 +5,30 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## Allegro product pages: explicit HTTP 403 handling
+
+Allegro may return HTTP **403** when TraceCart tries to retrieve product
+HTML. The application now **continues limited research** for validated
+`allegro.pl/produkt/<slug>-<UUID>` product links using only the title
+words and offer ID **already visible in the user's URL**. It deliberately
+does **not** claim to have downloaded the blocked page, does not attempt
+to evade Allegro's protection, and does **not** invent its price, EAN,
+stock, shipping cost or actual product characteristics.
+
+The report clearly marks `URL_ONLY_UNVERIFIED`, the HTTP_403 cause,
+unknown price, and links to the original offer. The full source/critic
+tree still runs and can be exported. For actual retail price checking,
+an authorized Allegro source or another permitted feed is required.
+
+**Real regression:** the user-provided Persil Color Pulver 4.5 kg /
+75 washes Allegro URL, containing offer ID `18675491436`, now
+finishes as **READY with limited identification** instead of FAILED;
+all other claims remain unverified. The existing FAILED job from
+an old app version must be retried with a new submission.
+
+[Exact Allegro limitations and developer notes](docs/ALLEGRO_URL_FALLBACK.md) ·
+[Archived example research JSON](examples/allegro_403_url_only_2026-11-01.json)
+
 ## URL FIRST — paste a product link, no manual product fields
 
 **Changed intake as requested:** the first step at

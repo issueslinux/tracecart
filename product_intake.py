@@ -14,13 +14,84 @@ import json
 import re
 import socket
 import ssl
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote
 from urllib.robotparser import RobotFileParser
 
 USER_AGENT = "TraceCartResearchBot/0.5 (+https://github.com/issueslinux/tracecart)"
 MAX_URL_LEN = 1200
 MAX_PAGE_BYTES = 1200000
 MAX_ROBOTS_BYTES = 80000
+
+
+class SourceAccessDenied(ValueError):
+    """Public product page refused automated retrieval (never bypass)."""
+    def __init__(self, status):
+        self.status = int(status)
+        super().__init__("Product page access denied, HTTP {}".format(self.status))
+
+
+def limited_allegro_identity(url, access_reason):
+    """Read ONLY text and IDs the user already provided inside an Allegro URL.
+
+    It cannot verify price, stock, brand, GTIN, offer activity or description.
+    Strict host/path/UUID validation avoids inventing identities for arbitrary
+    URLs. Marketing parameters are discarded; offerId is a *listing* ID, not GTIN.
+    """
+    safe = validate_product_url(url)
+    p = urlsplit(safe)
+    if p.hostname not in ("allegro.pl", "www.allegro.pl"):
+        raise ValueError("URL-only recovery supported for Allegro product links")
+    m = re.fullmatch(
+        r"/produkt/([a-z0-9]+(?:-[a-z0-9]+)*)-"
+        r"([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-"
+        r"[a-f0-9]{4}-[a-f0-9]{12})/?", p.path.lower())
+    if not m:
+        raise ValueError("URL does not provide a verified Allegro product slug")
+    slug, product_id = m.groups()
+    query = parse_qs(p.query, keep_blank_values=False)
+    offer_id = query.get("offerId", [])
+    offer_id = offer_id[0] if len(offer_id) == 1 and re.fullmatch(
+        r"[0-9]{5,20}", offer_id[0]) else None
+    # The human-readable label is nothing more than the URL's path tokens.
+    # Convert "4-5 kg" to "4,5 kg" when followed by an explicit unit;
+    # never infer extra labels, marketing claims, EAN or seller price.
+    name = " ".join(slug.split("-"))
+    name = re.sub(r"\b([0-9]{1,3}) ([0-9]) (kg|l|g|ml)\b",
+                  r"\1,\2 \3", name)
+    name = name[:180]
+    if len(name) < 8:
+        raise ValueError("Product URL contains no usable product label")
+    product_url = "https://allegro.pl/produkt/{}-{}".format(slug, product_id)
+    canonical = (product_url + "?offerId=" + offer_id
+                 if offer_id else product_url)
+    item = {
+        "title": name, "price": None, "currency": None, "barcode": "",
+        "merchant_url": canonical,
+    }
+    metadata = {
+        "source_url": canonical,
+        "extraction_method": "Allegro URL slug (NOT downloaded page)",
+        "intake_status": "URL_ONLY_UNVERIFIED",
+        "retrieved_at": None,
+        "attempted_at": datetime.now(timezone.utc).isoformat(),
+        "page_sha256": None,
+        "robots_url": "https://allegro.pl/robots.txt",
+        "source_type": "user_supplied_url_NO_PAGE_CONTENT",
+        "brand": "",
+        "sku": "",
+        "allegro_product_id": product_id,
+        "allegro_offer_id": offer_id,
+        "availability_claim": "",
+        "price_status": "NOT_VERIFIED_PAGE_BLOCKED",
+        "barcode_status": "NOT_VERIFIED_PAGE_BLOCKED",
+        "access_problem": access_reason,
+        "limitations": [
+            "Product title was parsed from link path, NOT confirmed on Allegro.",
+            "Offer ID is not barcode/EAN and may not be active.",
+            "No seller price, availability, delivery cost, GTIN or full product description retrieved.",
+        ],
+    }
+    return item, metadata
 
 
 def validate_product_url(url):
@@ -77,6 +148,8 @@ def _read(url, max_bytes, expected_mimes, timeout=12):
         response = con.getresponse()
         if response.status != 200:
             # Redirects cannot be silently followed to a local or unsafe URL.
+            if response.status in (401, 403, 429):
+                raise SourceAccessDenied(response.status)
             raise ValueError("Product source unavailable or redirects (HTTP {})".format(
                 response.status))
         mime = response.getheader("Content-Type", "").split(";")[0].strip().lower()
