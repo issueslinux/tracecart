@@ -1,0 +1,1893 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T20:22:02.913443+00:00",
+  "root": {
+    "id": "research-root",
+    "kind": "research",
+    "title": "ILLUSTRATIVE example: compare three laptop offers, without forcing a winner",
+    "status": "INVESTIGATED_WITH_OPEN_QUESTIONS",
+    "details": {
+      "category": "used laptop",
+      "scope": "Only provided offers and excerpts, no web retrieval was performed",
+      "method": "rule_based_questions_and_independent_critic",
+      "no_automatic_purchase": true
+    },
+    "children": [
+      {
+        "id": "offer-laptop_a",
+        "kind": "offer",
+        "title": "Laptop A — new, baseline",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "laptop_a",
+          "price": "900.00",
+          "currency": "PLN",
+          "source_url": "https://example.org/tracecart/laptop-a"
+        },
+        "children": [
+          {
+            "id": "question-laptop_a-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_a-price",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "9bf3f1f505e4900b",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-price",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "2d3a39ebccd7ea76",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-price",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_a-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "75a2ca797a738f03",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "28f737082f668161",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_a-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "f18e4b6ac1de2592",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "51b5bc4f935c1dea",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_a-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "25c252a76e6f4be8",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "0a81eb5664a561db",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_a-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "01264862bad56df9",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "163f92f024209318",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-battery",
+            "kind": "question",
+            "title": "Is battery health confirmed for this exact unit?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_a-battery",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "68a601d8d90e9e82",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-battery",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "00fd4ca05deda47d",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-battery",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-thermals",
+            "kind": "question",
+            "title": "Are thermal issues reported for this exact configuration?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_a-thermals",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "a3cde33e4636985f",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-thermals",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "e79b7dc99dbe0b62",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-thermals",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-metric_ram_gb",
+            "kind": "question",
+            "title": "Is the source-declared RAM capacity (GB) reliable for this offer?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_a-metric_ram_gb",
+              "importance": 3,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-spec_laptop_a_ram_gb",
+                "kind": "evidence",
+                "title": "Evidence spec_laptop_a_ram_gb",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "spec_laptop_a_ram_gb",
+                  "source_url": "https://example.org/tracecart/laptop-a",
+                  "source_type": "listing",
+                  "excerpt": "Offer declares RAM capacity: 16 GB",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.org",
+                  "duplicate_publisher": false,
+                  "observation": "Unverified offer specification; not an independent test"
+                },
+                "children": []
+              },
+              {
+                "id": "51c7957271758b3f",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-metric_ram_gb",
+                  "evidence_ids": [
+                    "spec_laptop_a_ram_gb"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "09e4f7f3612c6536",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-metric_ram_gb",
+                      "evidence_ids": [
+                        "spec_laptop_a_ram_gb"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-metric_ssd_gb",
+            "kind": "question",
+            "title": "Is the source-declared SSD capacity (GB) reliable for this offer?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_a-metric_ssd_gb",
+              "importance": 3,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-spec_laptop_a_ssd_gb",
+                "kind": "evidence",
+                "title": "Evidence spec_laptop_a_ssd_gb",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "spec_laptop_a_ssd_gb",
+                  "source_url": "https://example.org/tracecart/laptop-a",
+                  "source_type": "listing",
+                  "excerpt": "Offer declares SSD capacity: 256 GB",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.org",
+                  "duplicate_publisher": false,
+                  "observation": "Unverified offer specification; not an independent test"
+                },
+                "children": []
+              },
+              {
+                "id": "690b6e60848dea37",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-metric_ssd_gb",
+                  "evidence_ids": [
+                    "spec_laptop_a_ssd_gb"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "5a86add80fcfe164",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-metric_ssd_gb",
+                      "evidence_ids": [
+                        "spec_laptop_a_ssd_gb"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_a-listed_price",
+            "kind": "question",
+            "title": "Is the currently advertised price confirmed including delivery and fees?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_a-listed_price",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-price_laptop_a",
+                "kind": "evidence",
+                "title": "Evidence price_laptop_a",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "price_laptop_a",
+                  "source_url": "https://example.org/tracecart/laptop-a",
+                  "source_type": "listing",
+                  "excerpt": "Listing declares 900.00 PLN before unverified shipping/fees.",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.org",
+                  "duplicate_publisher": false,
+                  "observation": "Seller's published price, not final total checkout price"
+                },
+                "children": []
+              },
+              {
+                "id": "a3d92f712ca1f091",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_a-listed_price",
+                  "evidence_ids": [
+                    "price_laptop_a"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "83e44faaac57b08d",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_a-listed_price",
+                      "evidence_ids": [
+                        "price_laptop_a"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "offer-laptop_b",
+        "kind": "offer",
+        "title": "Laptop B — new, higher specs",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "laptop_b",
+          "price": "990.00",
+          "currency": "PLN",
+          "source_url": "https://example.com/tracecart/laptop-b"
+        },
+        "children": [
+          {
+            "id": "question-laptop_b-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_b-price",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "1b2f425770d4f7bd",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-price",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "102ca6746718da85",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-price",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_b-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "a17876754e64e54e",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "afe5d8454b0cd56c",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_b-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "fc65d69ffc563068",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "39b932107765dbe1",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_b-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "f9f0eb76c25aac55",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "def2582d5bcde336",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_b-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "78a1673c4cb63ef9",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "49161f8f38643714",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-battery",
+            "kind": "question",
+            "title": "Is battery health confirmed for this exact unit?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_b-battery",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "37ee5f74542ceba6",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-battery",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "a679fac6de66d2f1",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-battery",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-thermals",
+            "kind": "question",
+            "title": "Are thermal issues reported for this exact configuration?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_b-thermals",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "3007122b3554a824",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-thermals",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "eb2f9b87fb000d7b",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-thermals",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-metric_ram_gb",
+            "kind": "question",
+            "title": "Is the source-declared RAM capacity (GB) reliable for this offer?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_b-metric_ram_gb",
+              "importance": 3,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-spec_laptop_b_ram_gb",
+                "kind": "evidence",
+                "title": "Evidence spec_laptop_b_ram_gb",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "spec_laptop_b_ram_gb",
+                  "source_url": "https://example.com/tracecart/laptop-b",
+                  "source_type": "listing",
+                  "excerpt": "Offer declares RAM capacity: 32 GB",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.com",
+                  "duplicate_publisher": false,
+                  "observation": "Unverified offer specification; not an independent test"
+                },
+                "children": []
+              },
+              {
+                "id": "c3f4727c070e4058",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-metric_ram_gb",
+                  "evidence_ids": [
+                    "spec_laptop_b_ram_gb"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "08cccf588217bdf1",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-metric_ram_gb",
+                      "evidence_ids": [
+                        "spec_laptop_b_ram_gb"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-metric_ssd_gb",
+            "kind": "question",
+            "title": "Is the source-declared SSD capacity (GB) reliable for this offer?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_b-metric_ssd_gb",
+              "importance": 3,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-spec_laptop_b_ssd_gb",
+                "kind": "evidence",
+                "title": "Evidence spec_laptop_b_ssd_gb",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "spec_laptop_b_ssd_gb",
+                  "source_url": "https://example.com/tracecart/laptop-b",
+                  "source_type": "listing",
+                  "excerpt": "Offer declares SSD capacity: 512 GB",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.com",
+                  "duplicate_publisher": false,
+                  "observation": "Unverified offer specification; not an independent test"
+                },
+                "children": []
+              },
+              {
+                "id": "6ce1fa6450571c45",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-metric_ssd_gb",
+                  "evidence_ids": [
+                    "spec_laptop_b_ssd_gb"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "3740869f9f526c29",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-metric_ssd_gb",
+                      "evidence_ids": [
+                        "spec_laptop_b_ssd_gb"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_b-listed_price",
+            "kind": "question",
+            "title": "Is the currently advertised price confirmed including delivery and fees?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_b-listed_price",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-price_laptop_b",
+                "kind": "evidence",
+                "title": "Evidence price_laptop_b",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "price_laptop_b",
+                  "source_url": "https://example.com/tracecart/laptop-b",
+                  "source_type": "listing",
+                  "excerpt": "Listing declares 990.00 PLN before unverified shipping/fees.",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.com",
+                  "duplicate_publisher": false,
+                  "observation": "Seller's published price, not final total checkout price"
+                },
+                "children": []
+              },
+              {
+                "id": "5428058b13890d05",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_b-listed_price",
+                  "evidence_ids": [
+                    "price_laptop_b"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "70c20f83bb2a5630",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_b-listed_price",
+                      "evidence_ids": [
+                        "price_laptop_b"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "offer-laptop_c",
+        "kind": "offer",
+        "title": "Laptop C — used, condition unverified",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "laptop_c",
+          "price": "650.00",
+          "currency": "PLN",
+          "source_url": "https://example.net/tracecart/laptop-c"
+        },
+        "children": [
+          {
+            "id": "question-laptop_c-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_c-price",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "a19e38437633b021",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-price",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "f53158a871528a89",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-price",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_c-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "d8db066e6d2d6770",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "8cecb83abc183243",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_c-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "4a34728685a0d938",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "8dcb5a97721a70f2",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_c-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "62041fce6faa7165",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "7667040e0c0db4b8",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_c-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "a077d60dc10d1916",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "5fb46712695b2a11",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-battery",
+            "kind": "question",
+            "title": "Is battery health confirmed for this exact unit?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_c-battery",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "b51cda6754745ef6",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-battery",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "8494bc521a986899",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-battery",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-thermals",
+            "kind": "question",
+            "title": "Are thermal issues reported for this exact configuration?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "laptop_c-thermals",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "3c6447a8453713d2",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-thermals",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "48df6621fad9d832",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-thermals",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-metric_ram_gb",
+            "kind": "question",
+            "title": "Is the source-declared RAM capacity (GB) reliable for this offer?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_c-metric_ram_gb",
+              "importance": 3,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-spec_laptop_c_ram_gb",
+                "kind": "evidence",
+                "title": "Evidence spec_laptop_c_ram_gb",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "spec_laptop_c_ram_gb",
+                  "source_url": "https://example.net/tracecart/laptop-c",
+                  "source_type": "listing",
+                  "excerpt": "Offer declares RAM capacity: 16 GB",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.net",
+                  "duplicate_publisher": false,
+                  "observation": "Unverified offer specification; not an independent test"
+                },
+                "children": []
+              },
+              {
+                "id": "d6316166dbabefb3",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-metric_ram_gb",
+                  "evidence_ids": [
+                    "spec_laptop_c_ram_gb"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "97d735068e77d0dc",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-metric_ram_gb",
+                      "evidence_ids": [
+                        "spec_laptop_c_ram_gb"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-laptop_c-listed_price",
+            "kind": "question",
+            "title": "Is the currently advertised price confirmed including delivery and fees?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "laptop_c-listed_price",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one publisher domain supports the claim, including possible mirrored URLs.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-price_laptop_c",
+                "kind": "evidence",
+                "title": "Evidence price_laptop_c",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "price_laptop_c",
+                  "source_url": "https://example.net/tracecart/laptop-c",
+                  "source_type": "listing",
+                  "excerpt": "Listing declares 650.00 PLN before unverified shipping/fees.",
+                  "duplicate_url": false,
+                  "publisher_domain": "example.net",
+                  "duplicate_publisher": false,
+                  "observation": "Seller's published price, not final total checkout price"
+                },
+                "children": []
+              },
+              {
+                "id": "d5f2943e377c146b",
+                "kind": "critic",
+                "title": "Critic: Only one publisher domain supports the claim, including possible mirrored URLs.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "laptop_c-listed_price",
+                  "evidence_ids": [
+                    "price_laptop_c"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "9bacd87ccdb4016e",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "laptop_c-listed_price",
+                      "evidence_ids": [
+                        "price_laptop_c"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "seller-question-laptop_c-0",
+            "kind": "follow_up",
+            "title": "What is the battery health or measured capacity for this exact unit (if applicable)?",
+            "status": "OPEN",
+            "details": {
+              "origin": "used_offer_due_diligence",
+              "target": "seller_or_listing_evidence",
+              "offer_id": "laptop_c"
+            },
+            "children": []
+          },
+          {
+            "id": "seller-question-laptop_c-1",
+            "kind": "follow_up",
+            "title": "Has this exact unit been repaired, damaged or had parts replaced?",
+            "status": "OPEN",
+            "details": {
+              "origin": "used_offer_due_diligence",
+              "target": "seller_or_listing_evidence",
+              "offer_id": "laptop_c"
+            },
+            "children": []
+          },
+          {
+            "id": "seller-question-laptop_c-2",
+            "kind": "follow_up",
+            "title": "Can the seller provide photos and a working-condition test of the actual unit?",
+            "status": "OPEN",
+            "details": {
+              "origin": "used_offer_due_diligence",
+              "target": "seller_or_listing_evidence",
+              "offer_id": "laptop_c"
+            },
+            "children": []
+          },
+          {
+            "id": "seller-question-laptop_c-3",
+            "kind": "follow_up",
+            "title": "What return rights and warranty terms apply to this used offer?",
+            "status": "OPEN",
+            "details": {
+              "origin": "used_offer_due_diligence",
+              "target": "seller_or_listing_evidence",
+              "offer_id": "laptop_c"
+            },
+            "children": []
+          },
+          {
+            "id": "seller-question-laptop_c-4",
+            "kind": "follow_up",
+            "title": "Is the original purchase proof or serial/model identification available?",
+            "status": "OPEN",
+            "details": {
+              "origin": "used_offer_due_diligence",
+              "target": "seller_or_listing_evidence",
+              "offer_id": "laptop_c"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "comparison-tradeoffs",
+        "kind": "tradeoffs",
+        "title": "Conditional trade-offs between offers",
+        "status": "INFORMATIONAL",
+        "details": {
+          "comparisons": [
+            {
+              "left_offer": "laptop_a",
+              "right_offer": "laptop_b",
+              "left_price": "900.00",
+              "right_price": "990.00",
+              "right_vs_left_pct": "10.0%",
+              "left_cheaper_vs_right_pct": "9.1%",
+              "price_difference": "90.00",
+              "price_reference": "right relative to LEFT price (right_vs_left_pct); left relative to RIGHT price (left_cheaper_vs_right_pct)",
+              "metric_differences": [
+                {
+                  "metric": "ram_gb",
+                  "label": "RAM capacity",
+                  "unit": "GB",
+                  "left_value": "16",
+                  "right_value": "32",
+                  "right_vs_left": "higher",
+                  "left_vs_right": "lower",
+                  "benefit": "higher",
+                  "status": "LISTING_DECLARED_COMPARISON",
+                  "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+                  "source_urls": [
+                    "https://example.org/tracecart/laptop-a",
+                    "https://example.com/tracecart/laptop-b"
+                  ]
+                },
+                {
+                  "metric": "ssd_gb",
+                  "label": "SSD capacity",
+                  "unit": "GB",
+                  "left_value": "256",
+                  "right_value": "512",
+                  "right_vs_left": "higher",
+                  "left_vs_right": "lower",
+                  "benefit": "higher",
+                  "status": "LISTING_DECLARED_COMPARISON",
+                  "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+                  "source_urls": [
+                    "https://example.org/tracecart/laptop-a",
+                    "https://example.com/tracecart/laptop-b"
+                  ]
+                }
+              ],
+              "interpretation": "These are relative seller-listed prices and specs; a higher specification may offer headroom that will not be used. No universal winner or overall value score is asserted."
+            },
+            {
+              "left_offer": "laptop_a",
+              "right_offer": "laptop_c",
+              "left_price": "900.00",
+              "right_price": "650.00",
+              "right_vs_left_pct": "-27.8%",
+              "left_cheaper_vs_right_pct": "-38.5%",
+              "price_difference": "-250.00",
+              "price_reference": "right relative to LEFT price (right_vs_left_pct); left relative to RIGHT price (left_cheaper_vs_right_pct)",
+              "metric_differences": [
+                {
+                  "metric": "ram_gb",
+                  "label": "RAM capacity",
+                  "unit": "GB",
+                  "left_value": "16",
+                  "right_value": "16",
+                  "right_vs_left": "equal",
+                  "left_vs_right": "equal",
+                  "benefit": "higher",
+                  "status": "LISTING_DECLARED_COMPARISON",
+                  "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+                  "source_urls": [
+                    "https://example.org/tracecart/laptop-a",
+                    "https://example.net/tracecart/laptop-c"
+                  ]
+                },
+                {
+                  "metric": "ssd_gb",
+                  "status": "NOT_COMPARABLE_MISSING_DATA",
+                  "missing_for": "laptop_c"
+                }
+              ],
+              "interpretation": "These are relative seller-listed prices and specs; a higher specification may offer headroom that will not be used. No universal winner or overall value score is asserted."
+            },
+            {
+              "left_offer": "laptop_b",
+              "right_offer": "laptop_c",
+              "left_price": "990.00",
+              "right_price": "650.00",
+              "right_vs_left_pct": "-34.3%",
+              "left_cheaper_vs_right_pct": "-52.3%",
+              "price_difference": "-340.00",
+              "price_reference": "right relative to LEFT price (right_vs_left_pct); left relative to RIGHT price (left_cheaper_vs_right_pct)",
+              "metric_differences": [
+                {
+                  "metric": "ram_gb",
+                  "label": "RAM capacity",
+                  "unit": "GB",
+                  "left_value": "32",
+                  "right_value": "16",
+                  "right_vs_left": "lower",
+                  "left_vs_right": "higher",
+                  "benefit": "higher",
+                  "status": "LISTING_DECLARED_COMPARISON",
+                  "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+                  "source_urls": [
+                    "https://example.com/tracecart/laptop-b",
+                    "https://example.net/tracecart/laptop-c"
+                  ]
+                },
+                {
+                  "metric": "ssd_gb",
+                  "status": "NOT_COMPARABLE_MISSING_DATA",
+                  "missing_for": "laptop_c"
+                }
+              ],
+              "interpretation": "These are relative seller-listed prices and specs; a higher specification may offer headroom that will not be used. No universal winner or overall value score is asserted."
+            }
+          ],
+          "unknowns_by_offer": {
+            "laptop_a": [
+              "Actual total cost including delivery/fees is unverified.",
+              "Independent confirmation of specification claims is missing."
+            ],
+            "laptop_b": [
+              "Actual total cost including delivery/fees is unverified.",
+              "Independent confirmation of specification claims is missing."
+            ],
+            "laptop_c": [
+              "Actual total cost including delivery/fees is unverified.",
+              "Independent confirmation of specification claims is missing.",
+              "Used/refurbished condition and seller assurances are unverified."
+            ]
+          },
+          "seller_questions_by_offer": {
+            "laptop_a": [],
+            "laptop_b": [],
+            "laptop_c": [
+              "What is the battery health or measured capacity for this exact unit (if applicable)?",
+              "Has this exact unit been repaired, damaged or had parts replaced?",
+              "Can the seller provide photos and a working-condition test of the actual unit?",
+              "What return rights and warranty terms apply to this used offer?",
+              "Is the original purchase proof or serial/model identification available?"
+            ]
+          },
+          "no_forced_winner": true
+        },
+        "children": []
+      },
+      {
+        "id": "decision-final",
+        "kind": "decision",
+        "title": "Conditional comparison, not a purchase instruction",
+        "status": "NO_FORCED_WINNER",
+        "details": {
+          "recommendation": "No universal winner. Review prices, specification trade-offs, usage uncertainty and seller questions before choosing.",
+          "unresolved_by_offer": {
+            "laptop_a": [
+              "laptop_a-price",
+              "laptop_a-condition",
+              "laptop_a-seller",
+              "laptop_a-returns",
+              "laptop_a-alternatives",
+              "laptop_a-battery",
+              "laptop_a-thermals",
+              "laptop_a-metric_ram_gb",
+              "laptop_a-metric_ssd_gb",
+              "laptop_a-listed_price"
+            ],
+            "laptop_b": [
+              "laptop_b-price",
+              "laptop_b-condition",
+              "laptop_b-seller",
+              "laptop_b-returns",
+              "laptop_b-alternatives",
+              "laptop_b-battery",
+              "laptop_b-thermals",
+              "laptop_b-metric_ram_gb",
+              "laptop_b-metric_ssd_gb",
+              "laptop_b-listed_price"
+            ],
+            "laptop_c": [
+              "laptop_c-price",
+              "laptop_c-condition",
+              "laptop_c-seller",
+              "laptop_c-returns",
+              "laptop_c-alternatives",
+              "laptop_c-battery",
+              "laptop_c-thermals",
+              "laptop_c-metric_ram_gb",
+              "laptop_c-listed_price"
+            ]
+          },
+          "criterion_count_by_offer": {
+            "laptop_a": 10,
+            "laptop_b": 10,
+            "laptop_c": 9
+          },
+          "reason": "Evidence completeness is insufficient; do not turn source-count into a utility score.",
+          "eligible_for_payment": false,
+          "model_generated_questions": 0
+        },
+        "children": []
+      }
+    ]
+  },
+  "all_questions_preserved": true,
+  "provenance": "Direct numerical comparison of supplied listing claims; source pages were not independently retrieved or verified by this operation.",
+  "limitations": [
+    "Source snippets are input claims, not independently validated.",
+    "Distinct URLs need not represent independent publishers.",
+    "Critic flags gaps; it does not confirm product defects."
+  ],
+  "comparison_summary": {
+    "type": "conditional_multi_option_comparison",
+    "currency": "PLN",
+    "no_forced_winner": true,
+    "prices_are_listing_claims": true,
+    "no_automatic_payment": true,
+    "options": [
+      {
+        "offer_id": "laptop_a",
+        "title": "Laptop A — new, baseline",
+        "price": "900.00",
+        "currency": "PLN",
+        "condition": "new",
+        "advantages": [],
+        "limitations": [],
+        "seller_questions": [],
+        "unknowns": [
+          "Actual total cost including delivery/fees is unverified.",
+          "Independent confirmation of specification claims is missing."
+        ]
+      },
+      {
+        "offer_id": "laptop_b",
+        "title": "Laptop B — new, higher specs",
+        "price": "990.00",
+        "currency": "PLN",
+        "condition": "new",
+        "advantages": [],
+        "limitations": [],
+        "seller_questions": [],
+        "unknowns": [
+          "Actual total cost including delivery/fees is unverified.",
+          "Independent confirmation of specification claims is missing."
+        ]
+      },
+      {
+        "offer_id": "laptop_c",
+        "title": "Laptop C — used, condition unverified",
+        "price": "650.00",
+        "currency": "PLN",
+        "condition": "used",
+        "advantages": [],
+        "limitations": [],
+        "seller_questions": [
+          "What is the battery health or measured capacity for this exact unit (if applicable)?",
+          "Has this exact unit been repaired, damaged or had parts replaced?",
+          "Can the seller provide photos and a working-condition test of the actual unit?",
+          "What return rights and warranty terms apply to this used offer?",
+          "Is the original purchase proof or serial/model identification available?"
+        ],
+        "unknowns": [
+          "Actual total cost including delivery/fees is unverified.",
+          "Independent confirmation of specification claims is missing.",
+          "Used/refurbished condition and seller assurances are unverified."
+        ]
+      }
+    ],
+    "pairwise": [
+      {
+        "left_offer": "laptop_a",
+        "right_offer": "laptop_b",
+        "left_price": "900.00",
+        "right_price": "990.00",
+        "right_vs_left_pct": "10.0%",
+        "left_cheaper_vs_right_pct": "9.1%",
+        "price_difference": "90.00",
+        "price_reference": "right relative to LEFT price (right_vs_left_pct); left relative to RIGHT price (left_cheaper_vs_right_pct)",
+        "metric_differences": [
+          {
+            "metric": "ram_gb",
+            "label": "RAM capacity",
+            "unit": "GB",
+            "left_value": "16",
+            "right_value": "32",
+            "right_vs_left": "higher",
+            "left_vs_right": "lower",
+            "benefit": "higher",
+            "status": "LISTING_DECLARED_COMPARISON",
+            "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+            "source_urls": [
+              "https://example.org/tracecart/laptop-a",
+              "https://example.com/tracecart/laptop-b"
+            ]
+          },
+          {
+            "metric": "ssd_gb",
+            "label": "SSD capacity",
+            "unit": "GB",
+            "left_value": "256",
+            "right_value": "512",
+            "right_vs_left": "higher",
+            "left_vs_right": "lower",
+            "benefit": "higher",
+            "status": "LISTING_DECLARED_COMPARISON",
+            "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+            "source_urls": [
+              "https://example.org/tracecart/laptop-a",
+              "https://example.com/tracecart/laptop-b"
+            ]
+          }
+        ],
+        "interpretation": "These are relative seller-listed prices and specs; a higher specification may offer headroom that will not be used. No universal winner or overall value score is asserted."
+      },
+      {
+        "left_offer": "laptop_a",
+        "right_offer": "laptop_c",
+        "left_price": "900.00",
+        "right_price": "650.00",
+        "right_vs_left_pct": "-27.8%",
+        "left_cheaper_vs_right_pct": "-38.5%",
+        "price_difference": "-250.00",
+        "price_reference": "right relative to LEFT price (right_vs_left_pct); left relative to RIGHT price (left_cheaper_vs_right_pct)",
+        "metric_differences": [
+          {
+            "metric": "ram_gb",
+            "label": "RAM capacity",
+            "unit": "GB",
+            "left_value": "16",
+            "right_value": "16",
+            "right_vs_left": "equal",
+            "left_vs_right": "equal",
+            "benefit": "higher",
+            "status": "LISTING_DECLARED_COMPARISON",
+            "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+            "source_urls": [
+              "https://example.org/tracecart/laptop-a",
+              "https://example.net/tracecart/laptop-c"
+            ]
+          },
+          {
+            "metric": "ssd_gb",
+            "status": "NOT_COMPARABLE_MISSING_DATA",
+            "missing_for": "laptop_c"
+          }
+        ],
+        "interpretation": "These are relative seller-listed prices and specs; a higher specification may offer headroom that will not be used. No universal winner or overall value score is asserted."
+      },
+      {
+        "left_offer": "laptop_b",
+        "right_offer": "laptop_c",
+        "left_price": "990.00",
+        "right_price": "650.00",
+        "right_vs_left_pct": "-34.3%",
+        "left_cheaper_vs_right_pct": "-52.3%",
+        "price_difference": "-340.00",
+        "price_reference": "right relative to LEFT price (right_vs_left_pct); left relative to RIGHT price (left_cheaper_vs_right_pct)",
+        "metric_differences": [
+          {
+            "metric": "ram_gb",
+            "label": "RAM capacity",
+            "unit": "GB",
+            "left_value": "32",
+            "right_value": "16",
+            "right_vs_left": "lower",
+            "left_vs_right": "higher",
+            "benefit": "higher",
+            "status": "LISTING_DECLARED_COMPARISON",
+            "conditional_utility": "The larger value is not automatically more useful; benefit depends on workloads and actual demand.",
+            "source_urls": [
+              "https://example.com/tracecart/laptop-b",
+              "https://example.net/tracecart/laptop-c"
+            ]
+          },
+          {
+            "metric": "ssd_gb",
+            "status": "NOT_COMPARABLE_MISSING_DATA",
+            "missing_for": "laptop_c"
+          }
+        ],
+        "interpretation": "These are relative seller-listed prices and specs; a higher specification may offer headroom that will not be used. No universal winner or overall value score is asserted."
+      }
+    ]
+  },
+  "sha256": "53fce9a06b2196a3ecfc547b3c8a7a2500c8b2f41fc56e2cf8f5990fb498c31c"
+}

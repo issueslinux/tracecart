@@ -5,6 +5,35 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: conditional comparisons instead of a forced purchase verdict
+
+**Product direction:** TraceCart is a comparative purchasing analyst, not a
+machine that insists on choosing a winner. Offer A may be cheaper; B can have
+higher advertised specs whose usefulness is unknown; C may be used and cheaper
+but need seller confirmation about repairs, condition, battery and returns.
+The buyer sees the trade-offs first, then the **complete evidence/critic tree**.
+
+Open **http://127.0.0.1:8765/compare** after starting the local app. It accepts
+structured offers, price, currency, condition, comparable specifications and
+source URLs. It computes price deltas with an explicit denominator and
+identifies missing specs; no spurious overall quality score is produced.
+The comparator's final status is **NO_FORCED_WINNER**, not a forced abstention
+from useful comparative analysis. The full traceable decision tree remains
+available below and as a JSON export. PayPal checkout remains unrelated and
+requires explicit human approval.
+
+View the **FICTIONAL illustrative example**:
+- [Three offers, original hypothetical inputs](examples/comparison_three_laptops_FICTIONAL.json)
+- [Full expandable comparative report](examples/comparison_three_laptops_FICTIONAL.html)
+- [Full comparative JSON audit](examples/comparison_three_laptops_FICTIONAL_report.json)
+- [Chromium screenshot](media/comparison-conditional-real-browser.png)
+- [Permanent product direction / next milestones](docs/DECISION_SUPPORT_VISION.md)
+
+These sample offers use reserved example domains and are not current retailer
+listings, independently measured performance, verified user needs or real
+seller statements. The next step is feeding **actually comparable real offers**
+and their evidence into this presentation, not polishing isolated SHT40 spec checks.
+
 ## Two-publisher product specification cross-check (2026-11-01)
 
 **New evidence source beyond the retailer:** TraceCart now reads the official

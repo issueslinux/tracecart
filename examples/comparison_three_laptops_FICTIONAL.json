@@ -1,0 +1,71 @@
+{
+  "goal": "ILLUSTRATIVE example: compare three laptop offers, without forcing a winner",
+  "category": "used laptop",
+  "offers": [
+    {
+      "id": "laptop_a",
+      "title": "Laptop A — new, baseline",
+      "price": "900.00",
+      "currency": "PLN",
+      "url": "https://example.org/tracecart/laptop-a",
+      "condition": "new",
+      "metrics": {
+        "ram_gb": {
+          "label": "RAM capacity",
+          "value": "16",
+          "unit": "GB",
+          "benefit": "higher",
+          "source_url": "https://example.org/tracecart/laptop-a"
+        },
+        "ssd_gb": {
+          "label": "SSD capacity",
+          "value": "256",
+          "unit": "GB",
+          "benefit": "higher",
+          "source_url": "https://example.org/tracecart/laptop-a"
+        }
+      }
+    },
+    {
+      "id": "laptop_b",
+      "title": "Laptop B — new, higher specs",
+      "price": "990.00",
+      "currency": "PLN",
+      "url": "https://example.com/tracecart/laptop-b",
+      "condition": "new",
+      "metrics": {
+        "ram_gb": {
+          "label": "RAM capacity",
+          "value": "32",
+          "unit": "GB",
+          "benefit": "higher",
+          "source_url": "https://example.com/tracecart/laptop-b"
+        },
+        "ssd_gb": {
+          "label": "SSD capacity",
+          "value": "512",
+          "unit": "GB",
+          "benefit": "higher",
+          "source_url": "https://example.com/tracecart/laptop-b"
+        }
+      }
+    },
+    {
+      "id": "laptop_c",
+      "title": "Laptop C — used, condition unverified",
+      "price": "650.00",
+      "currency": "PLN",
+      "url": "https://example.net/tracecart/laptop-c",
+      "condition": "used",
+      "metrics": {
+        "ram_gb": {
+          "label": "RAM capacity",
+          "value": "16",
+          "unit": "GB",
+          "benefit": "higher",
+          "source_url": "https://example.net/tracecart/laptop-c"
+        }
+      }
+    }
+  ]
+}

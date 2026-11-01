@@ -338,6 +338,41 @@ class WebFlowTests(unittest.TestCase):
             self.assertEqual(db.execute(
                 "SELECT COUNT(*) FROM research_reports").fetchone()[0], 0)
 
+    def test_conditional_comparison_http_export_with_complete_tree(self):
+        from pathlib import Path
+        fixture=(Path(__file__).resolve().parents[1] /
+                 "examples/comparison_three_laptops_FICTIONAL.json").read_text()
+        status, form = self.request("GET", "/compare")
+        self.assertEqual(status, 200)
+        self.assertIn("FICTIONAL", form)
+        status, page = self.request("POST", "/compare/analyze", {
+            "csrf": self.csrf, "comparison_data": fixture
+        })
+        self.assertEqual(status, 200)
+        self.assertIn("COMPARATIVE ANALYSIS", page)
+        self.assertIn("10.0% more expensive", page)
+        self.assertIn("NO_FORCED_WINNER", page)
+        self.assertIn("Questions to seller / listing", page)
+        self.assertIn("Has this exact unit been repaired", page)
+        rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', page).group(1)
+        status, output = self.request("GET", "/research/report/"+rid+".json")
+        self.assertEqual(status, 200)
+        result=json.loads(output)
+        self.assertEqual(result["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
+        self.assertTrue(result["comparison_summary"]["no_forced_winner"])
+        self.assertEqual(len(result["comparison_summary"]["pairwise"]), 3)
+        self.assertFalse(result["root"]["children"][-1]["details"]["eligible_for_payment"])
+        self.assertIn("tradeoffs", [x["kind"] for x in result["root"]["children"]])
+
+    def test_comparison_invalid_payload_cannot_invoke_payment(self):
+        status, _=self.request("POST", "/compare/analyze", {
+            "csrf": self.csrf, "comparison_data": '{"goal":"x"}'
+        })
+        self.assertEqual(status, 400)
+        import sqlite3
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
+
     def test_cross_origin_host_and_csrf_rejected(self):
         status, _ = self.request("GET", "/", headers={"Host": "malicious.example"})
         self.assertEqual(status, 403)
