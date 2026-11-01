@@ -326,7 +326,7 @@ https://www.adafruit.com/product/3400</textarea></label>
                 <p class="warning">{}</p>
                 {}
                 </section>""".format(
-                    ("Limited URL-based identification — Allegro blocked page access"
+                    ("Limited URL-only identification — product page unavailable"
                      if limited else "Original product page — extracted facts"),
                     h(intake["source_url"]), h(intake["source_url"]),
                     h(intake["extraction_method"]),
@@ -334,20 +334,23 @@ https://www.adafruit.com/product/3400</textarea></label>
                     h(intake["price_status"]), h(intake["barcode_status"]),
                     h(intake.get("availability_claim") or "NOT VERIFIED"),
                     h(intake.get("page_sha256") or "NOT AVAILABLE"),
-                    ("Allegro did not provide the page content ({}). The name "
-                     "and offer ID below were inferred only from the URL YOU "
-                     "submitted. Price, pack contents, actual availability, "
-                     "EAN and seller details remain unverified. No payment "
-                     "or scraping workaround was attempted.".format(
+                    ("This retailer did not provide usable product page content "
+                     "({}). The displayed product label was inferred ONLY from "
+                     "the URL you supplied, not verified against the store. "
+                     "Actual product identity, price, pack contents, stock, "
+                     "EAN and seller details remain unverified. No access "
+                     "restrictions were bypassed.".format(
                          h(intake.get("access_problem", "SOURCE_BLOCKED")))
                      if limited else
                      "These are claims on the seller page, not independently "
                      "verified tests or the final checkout price."),
-                    ("<p>Allegro offer ID (from your link): <code>{}</code>. "
-                     "Research can continue, but current offer price and stock "
-                     "must be checked directly on Allegro or via an authorized "
-                     "data source.</p>".format(
-                         h(intake.get("allegro_offer_id") or "not supplied"))
+                    ("<p>Identifiers found in supplied URL: <code>{}</code>. "
+                     "Offer ID, if present: <code>{}</code>. "
+                     "These are NOT EAN codes and do not verify the actual offer. "
+                     "Current prices and stock require an authorized source.</p>".format(
+                        h(", ".join(intake.get("product_url_identifiers", [])) or
+                          intake.get("allegro_product_id") or "not found"),
+                        h(intake.get("allegro_offer_id") or "not supplied"))
                      if limited else "")))
 
         displayed_price = (str(result["item"]["price"]) + " " +

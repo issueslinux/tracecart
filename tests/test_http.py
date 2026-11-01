@@ -403,7 +403,7 @@ class WebFlowTests(unittest.TestCase):
         self.assertIsNone(result["item"]["price"])
         status, body = self.request("GET", "/cart/status/" + jid)
         self.assertEqual(status, 200)
-        self.assertIn("Limited URL-based identification", body)
+        self.assertIn("Limited URL-only identification", body)
         self.assertIn("HTTP_403", body)
         self.assertIn("18675491436", body)
         self.assertIn("NOT DOWNLOADED", body)

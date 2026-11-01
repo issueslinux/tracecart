@@ -106,23 +106,15 @@ class AllegroTests(unittest.TestCase):
             finally:
                 jobs.close()
 
-    def test_403_on_non_allegro_stays_failed_not_fabricated(self):
-        with tempfile.TemporaryDirectory() as root:
-            jobs=CartResearchJobs(Path(root)/"cart.sqlite",
-                                  runner=lambda item: {"not":"called"})
-            try:
-                with patch("product_intake.extract_product_page",
-                           side_effect=SourceAccessDenied(403)):
-                    jid=jobs.submit_url("https://example.org/product/482")
-                    for _ in range(100):
-                        x=jobs.read(jid)
-                        if x["state"] in ("READY","FAILED"):break
-                        time.sleep(.02)
-                self.assertEqual(x["state"],"FAILED")
-                self.assertEqual(x["error_type"],"ValueError")
-                self.assertIsNone(x["report"])
-            finally:
-                jobs.close()
+    def test_403_on_any_shop_still_creates_unverified_identity(self):
+        from product_intake import generic_url_identity
+        item, source = generic_url_identity(
+            "https://example.org/product/482", "HTTP_403")
+        self.assertEqual(source["intake_status"], "URL_ONLY_UNVERIFIED")
+        self.assertIsNone(item["price"])
+        self.assertEqual(item["barcode"], "")
+        self.assertEqual(source["url_title_confidence"],
+                         "INSUFFICIENT_URL_DESCRIPTION")
 
 
 if __name__ == "__main__":

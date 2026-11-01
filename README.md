@@ -5,6 +5,42 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## Store-agnostic product URL intake — real Amazon + fallback validation
+
+**Default process is universal**, not a custom Amazon, Allegro or Adafruit
+scraper. Paste a product URL into `/cart`. TraceCart removes tracking
+parameters, validates a public HTTPS destination, checks robots policy
+and fetches the page with TLS + pinned public DNS. Safe same-host HTTP
+redirects (max two) are supported. When accessible, real Product JSON-LD
+or OpenGraph provides a title, seller price/currency, GTIN and stock claim.
+The category model and evidence research run in the background.
+
+If page access is blocked or metadata cannot be parsed, TraceCart uses
+**a generic, explicitly unverified URL-only identity** for any public
+HTTPS domain with a useful path. All unknown price/stock/GTIN fields
+remain unknown; no fake verified offers or bypasses. The user gets
+a useful partial analysis, or a clear 'identity not established' status
+if the URL has only an opaque code. [Architecture and limitations]
+(docs/STORE_AGNOSTIC_URL_INTAKE.md).
+
+**Actual live Amazon result (2026-11-01):** the original lengthy
+`https://www.amazon.pl/.../dp/B0FNPZQKMF/ref=sr_1_6?... ` link
+first returned HTTP 301. The generic URL sanitizer removed the
+tracking suffix; the product page was then successfully retrieved:
+`Ariel Proszek do prania Color, 5.5kg, 100 prań`, seller-claimed
+**76.99 PLN**, `InStock`; no EAN was published. Its full trace and
+page evidence are saved in
+[the historical Amazon report](examples/live_amazon_ariel_url_only_2026-11-01.json).
+Despite that filename, this actual example used downloaded JSON-LD,
+not URL-only recovery. Eight catalog alternatives were discovered;
+**no competing retailer prices were verified**.
+
+This is a robust, domain-neutral **best-effort** intake, not a promise
+to extract every product on the internet. Authentication, site access
+restrictions, missing metadata or JavaScript-only data can require
+authorized merchant APIs. No checkout authorization is delegated to
+research.
+
 ## Allegro product pages: explicit HTTP 403 handling
 
 Allegro may return HTTP **403** when TraceCart tries to retrieve product
