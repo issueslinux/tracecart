@@ -1,0 +1,204 @@
+{
+  "goal": "2026-11-01 live product claims: compare seller-stated USD price and stock; independent critique",
+  "category": "electronic components",
+  "offers": [
+    {
+      "id": "product_1083",
+      "title": "ADS1015 12-Bit ADC - 4 Channel with Programmable Gain Amplifier",
+      "price": "9.95",
+      "currency": "USD",
+      "url": "https://www.adafruit.com/product/1083",
+      "questions": [
+        {
+          "id": "price",
+          "text": "Is the advertised total price independently verifiable?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_1083_price",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/1083",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.price=9.95 USD (excludes shipping/tax).",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:48.379460+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "d1bc41bac7b7bfdc57f1ec1b9ac1126f64974c8e39eb23444d08702c0a812b05",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "availability",
+          "text": "Does the merchant claim this product is presently in stock?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_1083_availability",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/1083",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.availability=InStock.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:48.379460+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "d1bc41bac7b7bfdc57f1ec1b9ac1126f64974c8e39eb23444d08702c0a812b05",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "declared_condition",
+          "text": "Does the merchant explicitly declare a product condition?",
+          "importance": 4,
+          "evidence": [
+            {
+              "id": "merchant_1083_condition",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/1083",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:48.379460+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "d1bc41bac7b7bfdc57f1ec1b9ac1126f64974c8e39eb23444d08702c0a812b05",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "product_4885",
+      "title": "Adafruit Sensirion SHT40 Temperature & Humidity Sensor",
+      "price": "5.95",
+      "currency": "USD",
+      "url": "https://www.adafruit.com/product/4885",
+      "questions": [
+        {
+          "id": "price",
+          "text": "Is the advertised total price independently verifiable?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_4885_price",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.price=5.95 USD (excludes shipping/tax).",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:50.417382+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "1548a98548d1a45f7f1e542d350fbd2b7fa31207f293e14189a8a26c65e6efd6",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "availability",
+          "text": "Does the merchant claim this product is presently in stock?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_4885_availability",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.availability=InStock.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:50.417382+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "1548a98548d1a45f7f1e542d350fbd2b7fa31207f293e14189a8a26c65e6efd6",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "declared_condition",
+          "text": "Does the merchant explicitly declare a product condition?",
+          "importance": 4,
+          "evidence": [
+            {
+              "id": "merchant_4885_condition",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:50.417382+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "1548a98548d1a45f7f1e542d350fbd2b7fa31207f293e14189a8a26c65e6efd6",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "product_3400",
+      "title": "Raspberry Pi Zero W",
+      "price": "15.00",
+      "currency": "USD",
+      "url": "https://www.adafruit.com/product/3400",
+      "questions": [
+        {
+          "id": "price",
+          "text": "Is the advertised total price independently verifiable?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_3400_price",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/3400",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.price=15.00 USD (excludes shipping/tax).",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:52.373287+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "dbe7427f3ffd6d81204a9ec0d23c9541fad3f501f5559ba3c022906e3806a903",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "availability",
+          "text": "Does the merchant claim this product is presently in stock?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_3400_availability",
+              "stance": "contradicts",
+              "url": "https://www.adafruit.com/product/3400",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.availability=OutOfStock.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:52.373287+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "dbe7427f3ffd6d81204a9ec0d23c9541fad3f501f5559ba3c022906e3806a903",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "declared_condition",
+          "text": "Does the merchant explicitly declare a product condition?",
+          "importance": 4,
+          "evidence": [
+            {
+              "id": "merchant_3400_condition",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/3400",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T19:50:52.373287+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "dbe7427f3ffd6d81204a9ec0d23c9541fad3f501f5559ba3c022906e3806a903",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

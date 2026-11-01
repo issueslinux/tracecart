@@ -17,6 +17,7 @@ from core import (CATALOG, CONSENT_TEXT, CheckoutStore, SandboxPayPal,
                   ollama_suggestion)
 from decision_tree import (ReportStore, analyze, generate_question_proposals,
                            to_html_tree, MAX_DOC_BYTES)
+from source_collector import collect_and_analyze, attach_collection_provenance
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -145,7 +146,25 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 <button>Build the complete decision tree</button></form>
                 <p class="muted">Everything remains local; generated reports are stored
                 on this machine. Payment is disabled from research reports.</p>
-                </section>""".format(self.hidden(), sample))
+                </section><section><h2>LIVE merchant source collection</h2>
+                <p>Paste up to 5 actual product URLs, one per line, from the explicitly
+                supported merchant <b>Adafruit</b>. The collector checks robots.txt,
+                rate-limits requests and extracts Product/Offer JSON-LD with provenance.
+                Only <strong>merchant assertions</strong> are available through this
+                connector. It does NOT independently verify prices, collect outside
+                reviews or search for other merchants yet.</p>
+                <form action="/research/collect" method="post">{}
+                <label>Supported live product URLs<textarea name="product_urls" rows="4"
+                maxlength="1900" required>https://www.adafruit.com/product/1083
+https://www.adafruit.com/product/4885
+https://www.adafruit.com/product/3400</textarea></label>
+                <label><input type="checkbox" name="ask_ai" value="yes">
+                Ask separate local Qwen RESEARCHER and CRITIC roles to propose
+                further source questions (no invented evidence; may take some time)</label>
+                <button>Collect live source claims &amp; inspect critic tree</button>
+                </form><p class="warning">Retail price and stock may change.
+                Collector records retrieval date; sources are not independently validated.</p>
+                </section>""".format(self.hidden(), sample, self.hidden()))
         elif path.startswith("/research/report/"):
             tail = path[len("/research/report/"):]
             is_json = tail.endswith(".json")
@@ -183,6 +202,24 @@ class TraceCartHandler(BaseHTTPRequestHandler):
     def research_report_page(self, rid, report):
         summary = report["root"]
         branch_count = len(summary["children"])
+        collection = report.get("source_collection")
+        if collection:
+            collection_html = ("""<section><h2>Live source collection provenance</h2>
+                <p>Successfully retrieved merchant product pages: <strong>{}</strong>
+                of {} requested. External customer reviews: <strong>{}</strong>.
+                Independent product tests: <strong>{}</strong>.</p>
+                <p class="warning">All collected price, stock and condition facts
+                come from the merchant. They are not independently corroborated.</p>
+                <p>Retrieval policy: {}</p></section>""".format(
+                    h(collection["fetched_pages"]), h(collection["requested_pages"]),
+                    h(collection["review_sources_collected"]),
+                    h(collection["independent_product_tests_collected"]),
+                    h(collection["retrieval_policy"])))
+            if collection["source_failures"]:
+                collection_html += '<section class="warning"><b>Failed sources:</b> {}</section>'.format(
+                    h(json.dumps(collection["source_failures"], ensure_ascii=False)))
+        else:
+            collection_html = ""
         body = """<section><div class="tag">IMMUTABLE RESEARCH SNAPSHOT</div>
             <h2>Complete evidence and decision tree</h2>
             <p>Each branch is expandable. No sources, objections or open questions
@@ -198,6 +235,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             {} </section>""".format(
             h(report["sha256"]), branch_count, h(summary["children"][-1]["status"]),
             h(report["generated_at"]), h(rid), to_html_tree(report))
+        body = collection_html + body
         # Native <details> is interactive without JavaScript and works with CSP.
         self.send_page(body)
 
@@ -269,6 +307,28 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 row = self.server.store.reconcile_sandbox_order(
                     form.get("quote_id", ""), form.get("order_id", ""), paypal)
                 self.quote_page(row)
+            elif self.path == "/research/collect":
+                urls = [x.strip() for x in form.get("product_urls", "").splitlines()
+                        if x.strip()]
+                if len(urls) > 5:
+                    raise ValueError("Maximum five product URLs per collection")
+                report, collected = collect_and_analyze(urls,
+                    category="electronic components",
+                    goal="Analyze current sourced merchant product claims and independent critique")
+                if form.get("ask_ai") == "yes":
+                    proposals, failures = [], []
+                    for role in ("researcher", "critic"):
+                        try:
+                            proposals.extend(generate_question_proposals(report, role))
+                        except (ValueError, KeyError, TypeError, OSError, RuntimeError,
+                                json.JSONDecodeError) as exc:
+                            failures.append({"role": role, "error_type": type(exc).__name__})
+                    input_data = {k: collected[k] for k in ("goal", "category", "offers")}
+                    input_data["generated_questions"] = proposals
+                    input_data["model_failures"] = failures
+                    report = attach_collection_provenance(analyze(input_data), collected)
+                rid = self.server.reports.save(report)
+                self.research_report_page(rid, report)
             elif self.path == "/research/analyze":
                 raw = form.get("research_data", "")
                 if len(raw) > 60000:
