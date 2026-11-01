@@ -1,0 +1,596 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T21:19:11.684619+00:00",
+  "root": {
+    "id": "cart-root",
+    "kind": "cart_research",
+    "title": "Before checkout: persil color pulver proszek do prania kolor 4,5 kg 75 pran niemcy",
+    "status": "PARTIAL_COMPARISON",
+    "details": {
+      "selected_cart_item": {
+        "title": "persil color pulver proszek do prania kolor 4,5 kg 75 pran niemcy",
+        "price": null,
+        "currency": null,
+        "barcode": "",
+        "merchant_url": "https://allegro.pl/produkt/persil-color-pulver-proszek-do-prania-kolor-4-5-kg-75-pran-niemcy-c57e870f-64f0-49db-91de-502a3f216264?offerId=18675491436"
+      },
+      "category": "laundry_detergent",
+      "research_scope": "Automatic research after cart item, no buyer questionnaire",
+      "local_ai_question_generation": "OK",
+      "not_a_checkout_action": true,
+      "price_claim": "cart input, not independently verified",
+      "source_intake": {
+        "url": "https://allegro.pl/produkt/persil-color-pulver-proszek-do-prania-kolor-4-5-kg-75-pran-niemcy-c57e870f-64f0-49db-91de-502a3f216264?offerId=18675491436",
+        "price_status": "NOT_VERIFIED_PAGE_BLOCKED",
+        "extraction_method": "Allegro URL slug (NOT downloaded page)",
+        "intake_status": "URL_ONLY_UNVERIFIED"
+      }
+    },
+    "children": [
+      {
+        "id": "cart-selected",
+        "kind": "selected_product",
+        "title": "Item in cart: persil color pulver proszek do prania kolor 4,5 kg 75 pran niemcy",
+        "status": "CART_CLAIM",
+        "details": {
+          "price": null,
+          "currency": null,
+          "barcode": "",
+          "merchant_url": "https://allegro.pl/produkt/persil-color-pulver-proszek-do-prania-kolor-4-5-kg-75-pran-niemcy-c57e870f-64f0-49db-91de-502a3f216264?offerId=18675491436"
+        },
+        "children": []
+      },
+      {
+        "id": "cart-questions",
+        "kind": "category_model",
+        "title": "Adaptive questions for laundry_detergent",
+        "status": "RESEARCH_QUESTIONS",
+        "details": {
+          "question_count": 17,
+          "questions_about": "sources_offers_reviews_not_user"
+        },
+        "children": [
+          {
+            "id": "cart-q-0",
+            "kind": "question",
+            "title": "Is the final delivered price verified against comparable alternatives?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-1",
+            "kind": "question",
+            "title": "Are the compared items genuinely equivalent in package and intended use?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-2",
+            "kind": "question",
+            "title": "What do credible independent tests and reviews say about effectiveness?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-3",
+            "kind": "question",
+            "title": "Which important product claims lack primary evidence?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-4",
+            "kind": "question",
+            "title": "What is the actual cost per wash at the stated dose, not per package?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-5",
+            "kind": "question",
+            "title": "How does stain removal differ at 20°C, 30°C and 40°C?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-6",
+            "kind": "question",
+            "title": "Does hard water change the required dose and relative cost?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-7",
+            "kind": "question",
+            "title": "Are powder, liquid and capsules being compared on equivalent wash counts?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-8",
+            "kind": "question",
+            "title": "Are the claimed enzymes and ingredients documented for this formula?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-9",
+            "kind": "question",
+            "title": "Are fragrances or other potential irritants disclosed?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-10",
+            "kind": "question",
+            "title": "Does the product suit colours, whites and delicate fabrics?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-11",
+            "kind": "question",
+            "title": "Are reviews about the current formulation rather than an older recipe?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-12",
+            "kind": "question",
+            "title": "Which current retailer prices can be VERIFIED rather than guessed from snippets?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-13",
+            "kind": "question",
+            "title": "What is the difference in effectiveness between the 4,5 kg and 85 dose options for the Persil Color Pulver Proseque?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-14",
+            "kind": "question",
+            "title": "Is there a noticeable difference in the color retention of the 4,5 kg and 85 dose options for the Persil Color Pulver Proseque?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-15",
+            "kind": "question",
+            "title": "What is the shelf life of the 4,5 kg and 85 dose options for the Persil Color Pulver Proseque?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-16",
+            "kind": "question",
+            "title": "How does the packaging of the 4,5 kg and 85 dose options for the Persil Color Pulver Proseque compare in terms of durability and protection?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "cart-source-intake",
+        "kind": "source_intake",
+        "title": "Product identity inferred ONLY from user URL",
+        "status": "URL_ONLY_UNVERIFIED",
+        "details": {
+          "extracted_product": {
+            "title": "persil color pulver proszek do prania kolor 4,5 kg 75 pran niemcy",
+            "price": null,
+            "currency": null,
+            "barcode": "",
+            "merchant_url": "https://allegro.pl/produkt/persil-color-pulver-proszek-do-prania-kolor-4-5-kg-75-pran-niemcy-c57e870f-64f0-49db-91de-502a3f216264?offerId=18675491436"
+          },
+          "page_metadata": {
+            "source_url": "https://allegro.pl/produkt/persil-color-pulver-proszek-do-prania-kolor-4-5-kg-75-pran-niemcy-c57e870f-64f0-49db-91de-502a3f216264?offerId=18675491436",
+            "extraction_method": "Allegro URL slug (NOT downloaded page)",
+            "intake_status": "URL_ONLY_UNVERIFIED",
+            "retrieved_at": null,
+            "attempted_at": "2026-11-01T21:18:56.159720+00:00",
+            "page_sha256": null,
+            "robots_url": "https://allegro.pl/robots.txt",
+            "source_type": "user_supplied_url_NO_PAGE_CONTENT",
+            "brand": "",
+            "sku": "",
+            "allegro_product_id": "c57e870f-64f0-49db-91de-502a3f216264",
+            "allegro_offer_id": "18675491436",
+            "availability_claim": "",
+            "price_status": "NOT_VERIFIED_PAGE_BLOCKED",
+            "barcode_status": "NOT_VERIFIED_PAGE_BLOCKED",
+            "access_problem": "HTTP_403",
+            "limitations": [
+              "Product title was parsed from link path, NOT confirmed on Allegro.",
+              "Offer ID is not barcode/EAN and may not be active.",
+              "No seller price, availability, delivery cost, GTIN or full product description retrieved."
+            ]
+          },
+          "price_is_confirmed_checkout_total": false
+        },
+        "children": []
+      },
+      {
+        "id": "cart-catalog",
+        "kind": "catalog_discovery",
+        "title": "Other product identities (NOT store offers)",
+        "status": "CATALOG_ONLY",
+        "details": {
+          "count": 8,
+          "verified_retail_offers": 0
+        },
+        "children": [
+          {
+            "id": "catalog-0",
+            "kind": "candidate_product",
+            "title": "Persil Lessive Poudre Bouquet de Provence 45 Doses",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561344494",
+              "name": "Persil Lessive Poudre Bouquet de Provence 45 Doses",
+              "brand": "Persil",
+              "quantity": "3150 g",
+              "url": "https://world.openproductsfacts.org/product/8712561344494",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-1",
+            "kind": "candidate_product",
+            "title": "Persil Lessive Poudre Bouquet de Provence 7 Doses",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561335119",
+              "name": "Persil Lessive Poudre Bouquet de Provence 7 Doses",
+              "brand": "Persil",
+              "quantity": "490 g",
+              "url": "https://world.openproductsfacts.org/product/8712561335119",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-2",
+            "kind": "candidate_product",
+            "title": "Persil Bouquet de provence lessive en poudre 66 mesures + 50% gratuit",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561330640",
+              "name": "Persil Bouquet de provence lessive en poudre 66 mesures + 50% gratuit",
+              "brand": "Persil",
+              "quantity": "7000 g",
+              "url": "https://world.openproductsfacts.org/product/8712561330640",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-3",
+            "kind": "candidate_product",
+            "title": "Persil Lessive Poudre Bouquet de Provence 85 Doses",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561478434",
+              "name": "Persil Lessive Poudre Bouquet de Provence 85 Doses",
+              "brand": "Persil",
+              "quantity": "5950 g",
+              "url": "https://world.openproductsfacts.org/product/8712561478434",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-4",
+            "kind": "candidate_product",
+            "title": "Persil Lessive Poudre Bouquet de Provence 85 Doses Pack vintage",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8710908584961",
+              "name": "Persil Lessive Poudre Bouquet de Provence 85 Doses Pack vintage",
+              "brand": "Persil",
+              "quantity": "5950 g",
+              "url": "https://world.openproductsfacts.org/product/8710908584961",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-5",
+            "kind": "candidate_product",
+            "title": "Lessive poudre lavande",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "3596710521333",
+              "name": "Lessive poudre lavande",
+              "brand": "Auchan",
+              "quantity": "3 kg",
+              "url": "https://world.openproductsfacts.org/product/3596710521333",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-6",
+            "kind": "candidate_product",
+            "title": "Auchan Fraicheur de printemps Lessive poudre pour le lavage du linge",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "3596710521319",
+              "name": "Auchan Fraicheur de printemps Lessive poudre pour le lavage du linge",
+              "brand": "Auchan",
+              "quantity": "2 kg",
+              "url": "https://world.openproductsfacts.org/product/3596710521319",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-7",
+            "kind": "candidate_product",
+            "title": "Omo Lessive Poudre Jasmin & Fleur de Coton 50 Doses",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561352826",
+              "name": "Omo Lessive Poudre Jasmin & Fleur de Coton 50 Doses",
+              "brand": "Omo",
+              "quantity": "3500 g",
+              "url": "https://world.openproductsfacts.org/product/8712561352826",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "cart-critic",
+        "kind": "critic",
+        "title": "Counterarguments and incomplete evidence",
+        "status": "OPEN",
+        "details": {
+          "core_challenges": [
+            "The catalog identifies products, not offers available in a particular store.",
+            "No current verified competitor shop prices; do not claim A is cheaper.",
+            "Unverified product label and manufacturer claims cannot establish washing performance.",
+            "Do not compare powder, liquids and capsules without normalized doses."
+          ],
+          "independent_reviews_collected": 0,
+          "independent_tests_collected": 0
+        },
+        "children": []
+      },
+      {
+        "id": "cart-attempts",
+        "kind": "research_attempts",
+        "title": "What was searched and what failed",
+        "status": "AUDIT",
+        "details": {
+          "attempts": [
+            {
+              "source": "Open Products Facts",
+              "status": "OK",
+              "product_candidates": 5,
+              "raw_results_inspected": 18,
+              "filter": "strict powder vs capsule/liquid matching",
+              "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Persil&search_simple=1&action=process&json=1&page_size=18&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+            },
+            {
+              "source": "Open Products Facts cross-brand",
+              "status": "OK",
+              "raw_results_inspected": 12,
+              "product_candidates_total": 8,
+              "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Lessive+Poudre&search_simple=1&action=process&json=1&page_size=12&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+            },
+            {
+              "source": "Open Prices",
+              "status": "SKIPPED_NO_EAN"
+            },
+            {
+              "source": "Brave Web Search",
+              "status": "SKIPPED_NO_API_KEY",
+              "note": "Cross-store search requires configured search API; no fake offers."
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "id": "cart-summary",
+        "kind": "conditional_summary",
+        "title": "Useful pre-checkout information — no forced winner",
+        "status": "NO_FORCED_WINNER",
+        "details": {
+          "catalog_alternatives_found": 8,
+          "current_competitor_offers_verified": 0,
+          "cart_price": null,
+          "currency": null,
+          "comparison_status": "UNPRICED_ALTERNATIVES",
+          "result": "Other catalog products found; retailer offers and price differences remain unverified. Show questions and alternatives before checkout, without blocking it.",
+          "payment_authorized": false
+        },
+        "children": []
+      }
+    ]
+  },
+  "source_discovery": {
+    "catalog": [
+      {
+        "code": "8712561344494",
+        "name": "Persil Lessive Poudre Bouquet de Provence 45 Doses",
+        "brand": "Persil",
+        "quantity": "3150 g",
+        "url": "https://world.openproductsfacts.org/product/8712561344494",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561335119",
+        "name": "Persil Lessive Poudre Bouquet de Provence 7 Doses",
+        "brand": "Persil",
+        "quantity": "490 g",
+        "url": "https://world.openproductsfacts.org/product/8712561335119",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561330640",
+        "name": "Persil Bouquet de provence lessive en poudre 66 mesures + 50% gratuit",
+        "brand": "Persil",
+        "quantity": "7000 g",
+        "url": "https://world.openproductsfacts.org/product/8712561330640",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561478434",
+        "name": "Persil Lessive Poudre Bouquet de Provence 85 Doses",
+        "brand": "Persil",
+        "quantity": "5950 g",
+        "url": "https://world.openproductsfacts.org/product/8712561478434",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8710908584961",
+        "name": "Persil Lessive Poudre Bouquet de Provence 85 Doses Pack vintage",
+        "brand": "Persil",
+        "quantity": "5950 g",
+        "url": "https://world.openproductsfacts.org/product/8710908584961",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "3596710521333",
+        "name": "Lessive poudre lavande",
+        "brand": "Auchan",
+        "quantity": "3 kg",
+        "url": "https://world.openproductsfacts.org/product/3596710521333",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "3596710521319",
+        "name": "Auchan Fraicheur de printemps Lessive poudre pour le lavage du linge",
+        "brand": "Auchan",
+        "quantity": "2 kg",
+        "url": "https://world.openproductsfacts.org/product/3596710521319",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561352826",
+        "name": "Omo Lessive Poudre Jasmin & Fleur de Coton 50 Doses",
+        "brand": "Omo",
+        "quantity": "3500 g",
+        "url": "https://world.openproductsfacts.org/product/8712561352826",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      }
+    ],
+    "prices": [],
+    "web_hits": [],
+    "verified_prices": [],
+    "attempts": [
+      {
+        "source": "Open Products Facts",
+        "status": "OK",
+        "product_candidates": 5,
+        "raw_results_inspected": 18,
+        "filter": "strict powder vs capsule/liquid matching",
+        "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Persil&search_simple=1&action=process&json=1&page_size=18&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+      },
+      {
+        "source": "Open Products Facts cross-brand",
+        "status": "OK",
+        "raw_results_inspected": 12,
+        "product_candidates_total": 8,
+        "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Lessive+Poudre&search_simple=1&action=process&json=1&page_size=12&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+      },
+      {
+        "source": "Open Prices",
+        "status": "SKIPPED_NO_EAN"
+      },
+      {
+        "source": "Brave Web Search",
+        "status": "SKIPPED_NO_API_KEY",
+        "note": "Cross-store search requires configured search API; no fake offers."
+      }
+    ]
+  },
+  "all_questions_preserved": true,
+  "provenance": "External OPF and Open Prices APIs; optional Brave search; cart price is user-supplied and NOT validated against checkout.",
+  "limitations": [
+    "Catalog records are not buyable store offers.",
+    "Search snippets do not prove stock or price.",
+    "No independent testing collected.",
+    "No automatic purchase, payment capture or buyer authorization."
+  ],
+  "source_intake": {
+    "source_url": "https://allegro.pl/produkt/persil-color-pulver-proszek-do-prania-kolor-4-5-kg-75-pran-niemcy-c57e870f-64f0-49db-91de-502a3f216264?offerId=18675491436",
+    "extraction_method": "Allegro URL slug (NOT downloaded page)",
+    "intake_status": "URL_ONLY_UNVERIFIED",
+    "retrieved_at": null,
+    "attempted_at": "2026-11-01T21:18:56.159720+00:00",
+    "page_sha256": null,
+    "robots_url": "https://allegro.pl/robots.txt",
+    "source_type": "user_supplied_url_NO_PAGE_CONTENT",
+    "brand": "",
+    "sku": "",
+    "allegro_product_id": "c57e870f-64f0-49db-91de-502a3f216264",
+    "allegro_offer_id": "18675491436",
+    "availability_claim": "",
+    "price_status": "NOT_VERIFIED_PAGE_BLOCKED",
+    "barcode_status": "NOT_VERIFIED_PAGE_BLOCKED",
+    "access_problem": "HTTP_403",
+    "limitations": [
+      "Product title was parsed from link path, NOT confirmed on Allegro.",
+      "Offer ID is not barcode/EAN and may not be active.",
+      "No seller price, availability, delivery cost, GTIN or full product description retrieved."
+    ]
+  },
+  "sha256": "964b5b749845121a5a6e3ac41352101e6f7729b2f2037469d103c49f1b02a1b4"
+}
