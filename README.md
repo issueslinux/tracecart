@@ -5,6 +5,48 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## New workflow: automatic research after the item enters the cart
+
+The shopper has **already chosen a product**. When the merchant records
+"Add to Cart", TraceCart can accept its details in a local background job and
+prepare an evidence-based comparison before checkout. Its job is to show
+alternatives, differences, missing evidence and critic questions, not force
+a buyer into a different product or trigger a payment.
+
+**Run the demo:** `python3 app.py --port 8770`, then open
+[http://127.0.0.1:8770/cart](http://127.0.0.1:8770/cart).
+The sample cart input is ILLUSTRATIVE. The research job, by contrast,
+actually searches **Open Products Facts** for similar and cross-brand
+products and tries **Open Prices** historical prices for a selected EAN;
+both outcomes are preserved. The local Qwen model (when available) proposes
+additional questions about sources. Public product catalog entries are NOT
+shop offers. Without verified competing store prices, the UI states that
+zero competing offers were price-verified and never claims imaginary savings.
+
+**Store integration interface:** authorized server-side
+`POST /api/cart/added` with `X-TraceCart-Event-Token`, configured using
+`TRACECART_CART_WEBHOOK_TOKEN`; responds immediately with HTTP 202 and a
+job/status ID. Product data only; no buyer details or payment instructions.
+Results persist in SQLite and export as a complete evidence/critic JSON tree.
+The sample server remains loopback-only and **is not yet wired to WooCommerce
+or any real remote checkout**. See
+[full cart-hook integration and data limitations](docs/CART_TRIGGERED_RESEARCH.md).
+
+If `BRAVE_API_KEY` is configured, a bounded public web-search request
+attempts discovery of competitor-store links. Search links/snippets remain
+UNVERIFIED until actual merchant offers, prices and stock can be confirmed.
+Brave requires an authorized API key; without one the step is reported
+`SKIPPED_NO_API_KEY`, not silently presented as success.
+
+**Source attribution:** Open Products Facts / Open Prices are external
+community databases. Original application code is MIT-licensed;
+[external data attribution and licensing](examples/DATA_SOURCES.md)
+are separate. The captured snapshot below is historical, not live prices.
+
+![Real browser: automatic detergent cart research](media/cart-triggered-powder-research-browser.png)
+
+[Observed source-linked cart report (historical snapshot)](examples/live_cart_persil_2026-11-01.json)
+
 ## NEW: conditional comparisons instead of a forced purchase verdict
 
 **Product direction:** TraceCart is a comparative purchasing analyst, not a

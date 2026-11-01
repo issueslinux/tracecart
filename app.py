@@ -6,6 +6,7 @@ This UI does not capture funds and never talks to production PayPal.
 from argparse import ArgumentParser
 from html import escape
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import hmac
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,7 @@ from decision_tree import (ReportStore, analyze, generate_question_proposals,
 from source_collector import collect_and_analyze, attach_collection_provenance
 from source_crosscheck import collect_spec_crosscheck
 from comparison import compare
+from cart_research import CartResearchJobs
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -48,8 +50,9 @@ table{border-collapse:collapse;width:100%;margin-top:12px}
 td,th{border:1px solid #42556c;text-align:left;padding:10px;vertical-align:top}
 td{overflow-wrap:anywhere}
 </style></head><body><header><div class="tag">PAYPAL SANDBOX ONLY · HUMAN-IN-THE-LOOP</div>
-<h1>TraceCart</h1><p>Ask an AI to pick a product. <strong>Only the fixed catalog sets the price.</strong>
-Only you can approve a PayPal sandbox order. No funds are captured.</p></header>
+<h1>TraceCart</h1><p>Analyze the product already in the cart before checkout.
+<strong>Research never changes merchant prices or authorizes purchases.</strong>
+PayPal remains consent-gated, sandbox only; no funds are captured.</p></header>
 {{body}}<footer>AI may suggest SKUs, never prices or authorizations.
 All approvals and sandbox-order actions are logged in the local audit trail. No real-money mode.</footer>
 </body></html>"""
@@ -132,9 +135,53 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 </section><section><h2>Evidence-based decision research</h2>
                 <p>Research offers and third-party reviews, run an independent critic,
                 and export the full expandable decision tree with unanswered questions.</p>
-                <p><a class="btn" href="/research">Open decision research lab</a>
-                <a class="btn" href="/compare">Compare offers &amp; trade-offs</a></p>
+                <p><a class="btn" href="/cart">Try cart-triggered analysis</a>
+                <a class="btn" href="/research">Research lab</a>
+                <a class="btn" href="/compare">Compare offers</a></p>
                 </section>""".format(self.hidden(), menu))
+        elif path == "/cart":
+            self.send_page("""<section><div class="tag">BEFORE CHECKOUT · BACKGROUND RESEARCH</div>
+                <h2>Item already selected — simulate Add to Cart</h2>
+                <p>The merchant already knows the chosen item, its cart price
+                and (when available) its barcode. Clicking starts an independent
+                background research job. No AI buyer questionnaire or payment.</p>
+                <p class="warning">The prefilled selected item and cart price are
+                ILLUSTRATIVE, not verified store stock. Alternative product
+                names and sources will be fetched live from public APIs.</p>
+                <form method="post" action="/cart/add">{}
+                <label>Selected product in cart<input type="text" name="title"
+                value="Persil Lessive Poudre Bouquet de Provence 45 Doses 3150 g"
+                maxlength="180" required></label>
+                <label>Actual checkout-line price (seller supplied)<input type="text"
+                name="price" value="34.90" required></label>
+                <label>Currency<input type="text" name="currency" value="PLN" required></label>
+                <label>EAN/barcode (when known)<input type="text" name="barcode"
+                value="8712561344494"></label>
+                <label>Chosen merchant product URL<input type="text"
+                name="merchant_url" value="https://example.org/demo/persil"
+                maxlength="500" required></label>
+                <button>Add to cart &amp; start asynchronous research</button></form>
+                </section>""".format(self.hidden()))
+        elif path.startswith("/cart/status/"):
+            path_id = path[len("/cart/status/"):]
+            raw = path_id.endswith(".json")
+            job_id = path_id[:-5] if raw else path_id
+            try:
+                result = self.server.cart_jobs.read(job_id)
+            except ValueError as exc:
+                self.send_page('<section class="error">{}</section>'.format(h(exc)), 404)
+                return
+            if raw:
+                output = json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Content-Length", str(len(output)))
+                self.end_headers()
+                self.wfile.write(output)
+            else:
+                self.cart_status_page(job_id, result)
         elif path == "/compare":
             sample = (Path(__file__).resolve().parent / "examples" /
                       "comparison_three_laptops_FICTIONAL.json").read_text(encoding="utf-8")
@@ -152,7 +199,6 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 <button>Compare options with full evidence trail</button></form>
                 </section>""".format(self.hidden(), h(sample)))
         elif path == "/research":
-            import json
             fixture = (Path(__file__).resolve().parent / "examples" /
                        "sample_research_fixture.json").read_text(encoding="utf-8")
             sample = h(fixture)
@@ -218,6 +264,79 @@ https://www.adafruit.com/product/3400</textarea></label>
                 self.send_page('<section class="error">{}</section>'.format(h(exc)), 404)
         else:
             self.send_page("<section class='error'>Not found</section>", 404)
+
+    def cart_status_page(self, job_id, result):
+        state = result["state"]
+        title = result["item"]["title"]
+        if state in ("QUEUED", "RUNNING"):
+            # No active browser scripting required. Refresh only an in-progress job.
+            body = ("""<section><div class="tag">CART ANALYSIS RUNNING</div>
+                <h2>{}</h2><p>Research status: <b>{}</b></p>
+                <p>The selected cart item is retained. TraceCart is now checking
+                product catalog entries, historical crowd-sourced price records
+                and (if configured) web search results. No payment is attempted.</p>
+                <p><a class="btn" href="/cart/status/{}">Refresh status</a></p>
+                </section>""".format(h(title), h(state), h(job_id)))
+            html = PAGE.replace("{{body}}", body)
+            html = html.replace("<head>", '<head><meta http-equiv="refresh" content="3">', 1)
+            data = html.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Security-Policy",
+                             "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if state != "READY":
+            self.send_page('<section class="error">Research status: {}. '
+                           'You may continue shopping without a false recommendation.'
+                           '</section>'.format(h(state)))
+            return
+        report = result["report"]
+        context = report["root"]["details"]
+        sources = report["source_discovery"]
+        candidates = sources["catalog"]
+        lines = "".join(
+            '<tr><td>{}</td><td>{}</td><td><a href="{}" rel="noopener noreferrer" '
+            'target="_blank">Catalog record</a></td><td>NO VERIFIED STORE PRICE</td></tr>'.format(
+                h(c["name"]), h(c.get("quantity", "not stated")),
+                h(c["url"])) for c in candidates)
+        if not lines:
+            lines = "<tr><td colspan=4>No sufficiently comparable product identity found</td></tr>"
+        attempt_html = "".join("<li>{}: <b>{}</b></li>".format(
+            h(x["source"]), h(x["status"])) for x in sources["attempts"])
+        questions = report["root"]["children"][1]["children"]
+        question_summary = "".join("<li>{}</li>".format(h(q["title"]))
+                                   for q in questions[:8])
+        body = """<section><div class="tag">PRE-CHECKOUT INSIGHT · NOT A PAYMENT ACTION</div>
+            <h2>Automatic analysis of selected cart item</h2>
+            <p><strong>{}</strong> · cart price {} {} (not independently verified)</p>
+            <p>Product category: <b>{}</b>. Model/source questions: <b>{}</b>.
+            AI enrichment: <b>{}</b>.</p>
+            <p class="warning">No current competing retailer prices were verified.
+            A catalog product is NOT a store offer. TraceCart will not invent
+            "10% cheaper" or imply these catalog entries are immediately available.</p>
+            <p><a class="btn" href="/cart/status/{}.json">Export complete audit JSON</a>
+            <a class="btn" href="/cart">Analyze another cart item</a></p></section>
+            <section><h2>Other matching product identities found online</h2>
+            <table><thead><tr><th>Product</th><th>Pack/quantity</th>
+            <th>Source</th><th>Verified retail price</th></tr></thead>
+            <tbody>{}</tbody></table>
+            <p>These are searchable alternatives, not competing checkout offers.</p></section>
+            <section><h2>Relevant questions for listings, reviews and tests</h2>
+            <ul>{}</ul></section>
+            <section><h2>Search outcomes and limitations</h2><ul>{}</ul>
+            <p>Review evidence: 0 independent tests confirmed. Payment remains
+            a separate, buyer-authorized step.</p></section>
+            <section><h2>Complete expandable research &amp; critic tree</h2>{}</section>""".format(
+            h(title), h(result["item"]["price"]),
+            h(result["item"]["currency"]), h(context["category"]),
+            h(len(questions)), h(context["local_ai_question_generation"]),
+            h(job_id), lines, question_summary, attempt_html, to_html_tree(report))
+        self.send_page(body)
 
     def send_json_report(self, report, rid):
         content = json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
@@ -389,12 +508,52 @@ https://www.adafruit.com/product/3400</textarea></label>
         body += '</section><p><a class="btn" href="/">Start another request</a></p>'
         self.send_page(body)
 
+    def cart_event_api(self):
+        # Server-to-server integration for an authorized checkout application.
+        # This local demo does not automatically install a WooCommerce webhook.
+        configured = os.environ.get("TRACECART_CART_WEBHOOK_TOKEN", "")
+        token = self.headers.get("X-TraceCart-Event-Token", "")
+        if not configured:
+            self.send_page('<section class="error">Cart API disabled</section>', 503)
+            return
+        if not token or not hmac.compare_digest(configured, token):
+            self.send_page('<section class="error">Unauthorized cart event</section>', 403)
+            return
+        try:
+            size = int(self.headers.get("Content-Length", "0"))
+            if not 1 <= size <= 4096:
+                raise ValueError("Invalid cart event size")
+            if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
+                raise ValueError("Cart API accepts JSON only")
+            payload = json.loads(self.rfile.read(size).decode("utf-8"))
+            job_id = self.server.cart_jobs.submit(payload)
+            body = json.dumps({
+                "accepted": True, "job_id": job_id, "state": "QUEUED",
+                "status_path": "/cart/status/" + job_id,
+            }).encode("utf-8")
+            self.send_response(202)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (ValueError, TypeError, UnicodeError):
+            self.send_page('<section class="error">Invalid cart event</section>', 400)
+
     def do_POST(self):
         if not self.trusted_host():
             return
+        if self.path == "/api/cart/added":
+            return self.cart_event_api()
         try:
             form = self.form()
-            if self.path == "/propose":
+            if self.path == "/cart/add":
+                item = {k: form.get(k, "") for k in (
+                    "title", "price", "currency", "barcode", "merchant_url")}
+                job_id = self.server.cart_jobs.submit(item)
+                self.cart_status_page(job_id, self.server.cart_jobs.read(job_id))
+            elif self.path == "/propose":
                 sku, quantity, _ = ollama_suggestion(form.get("description", ""))
                 row = self.server.store.quote(sku, quantity)
                 self.quote_page(row)
@@ -492,6 +651,7 @@ def run():
     server.csrf = secrets.token_urlsafe(32)
     server.store = CheckoutStore(str(args.db))
     server.reports = ReportStore(server.store.db)
+    server.cart_jobs = CartResearchJobs(args.db)
     print("TraceCart local demo: http://127.0.0.1:{}".format(args.port))
     print("PayPal mode: sandbox only; no capture code; user approval mandatory")
     try:
@@ -500,6 +660,7 @@ def run():
         pass
     finally:
         server.server_close()
+        server.cart_jobs.close()
         server.store.db.close()
 
 
