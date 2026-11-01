@@ -483,12 +483,17 @@ class WebFlowTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("Other matching product identities found online", ready)
         self.assertIn("Complete expandable research", ready)
+        self.assertIn("Selected product: cost per wash", ready)
+        self.assertIn("0.7756 PLN / wash", ready)
         self.assertIn("NO", ready)
         status, raw = self.request("GET", "/cart/status/" + job_id + ".json")
         self.assertEqual(status, 200)
         report = json.loads(raw)["report"]
         self.assertEqual(report["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
         self.assertFalse(report["root"]["children"][-1]["details"]["payment_authorized"])
+        self.assertEqual(report["unit_economics"]["status"],
+                         "CALCULATED_FROM_SELLER_CLAIMS")
+        self.assertEqual(report["unit_economics"]["washes_declared_in_title"], 45)
 
     def test_backend_event_accepts_only_product_url(self):
         import time

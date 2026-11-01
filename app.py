@@ -311,7 +311,30 @@ https://www.adafruit.com/product/3400</textarea></label>
             lines = "<tr><td colspan=4>No sufficiently comparable product identity found</td></tr>"
         attempt_html = "".join("<li>{}: <b>{}</b></li>".format(
             h(x["source"]), h(x["status"])) for x in sources["attempts"])
-        questions = report["root"]["children"][1]["children"]
+        question_nodes = next(
+            (node for node in report["root"]["children"]
+             if node["kind"] == "category_model"), None)
+        questions = question_nodes["children"] if question_nodes else []
+        economics = report.get("unit_economics", {})
+        if economics.get("status") == "CALCULATED_FROM_SELLER_CLAIMS":
+            econ_html = ("""<section><h2>Selected product: cost per wash</h2>
+                <p><strong>{} {} / wash</strong>, using seller-listed price
+                {} {} and {} washes declared in the product name.</p>
+                <p class="warning">This is an arithmetic conversion of the
+                selected seller's claims, not a verified checkout price or
+                independently tested optimal dosage. Delivery and discounts
+                are excluded. Other products cannot be compared without
+                their own verified cost and pack information.</p>
+                </section>""".format(
+                    h(economics["cost_per_wash"]), h(economics["currency"]),
+                    h(economics["seller_listed_price"]), h(economics["currency"]),
+                    h(economics["washes_declared_in_title"])))
+        else:
+            econ_html = ("""<section><h2>Selected product: cost per wash</h2>
+                <p>Cannot calculate from existing evidence ({}).
+                Need a numeric seller price and one unambiguous declared
+                number of washes. Do not guess from package weight alone.</p>
+                </section>""".format(h(economics.get("status", "NOT_AVAILABLE"))))
         question_summary = "".join("<li>{}</li>".format(h(q["title"]))
                                    for q in questions[:8])
         source_details = ""
@@ -381,7 +404,7 @@ https://www.adafruit.com/product/3400</textarea></label>
             h(title), h(displayed_price), h(context["category"]),
             h(len(questions)), h(context["local_ai_question_generation"]),
             h(job_id), lines, question_summary, attempt_html, to_html_tree(report))
-        self.send_page(source_details + body)
+        self.send_page(source_details + econ_html + body)
 
     def send_json_report(self, report, rid):
         content = json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
