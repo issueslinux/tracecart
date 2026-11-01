@@ -5,6 +5,50 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## URL FIRST — paste a product link, no manual product fields
+
+**Changed intake as requested:** the first step at
+[http://127.0.0.1:8771/cart](http://127.0.0.1:8771/cart) is now only
+**the URL of the selected product**. TraceCart visits that page using
+public-IP-pinned HTTPS, verifies the page's robots.txt before fetching,
+refuses redirects, and extracts its actual Product JSON-LD (or limited
+OpenGraph/HTML fallback): title, seller-declared price/currency, EAN if
+present, and availability/brand when disclosed. Original seller claims
+are identified with the page URL, retrieval date and SHA-256. No invented
+price or barcode when a website does not publish them.
+
+The URL immediately creates a **background research job** that first
+extracts the product and then selects appropriate evidence questions,
+searches online sources and builds the complete comparative/critic tree.
+The source card appears at the top of the pre-checkout report.
+**A product link is not a purchase instruction and never approves payment.**
+
+The server-side endpoint also accepts an authenticated JSON event
+`{"product_url":"https://www.adafruit.com/product/1083"}` on
+`POST /api/cart/added` (requires
+`TRACECART_CART_WEBHOOK_TOKEN` configured on the trusted backend).
+Older backend events that already contain validated title/price/EAN
+remain supported. This interface is still a standalone localhost demo,
+not an installed WooCommerce integration.
+
+**Actual live demonstration 2026-11-01:** submitted
+https://www.adafruit.com/product/1083 as the *only* form value.
+The page yielded product name "ADS1015 12-Bit ADC - 4 Channel with
+Programmable Gain Amplifier", source-listed USD 9.95, InStock claim;
+barcode was not published. The form returned in 0.01s and the job
+completed with 13 source/model questions and a saved trace. No verified
+other-shop price comparison was possible. Price and availability are
+retailer statements, not an actual purchased transaction.
+[Archived complete report](examples/live_url_adafruit_2026-11-01.json) ·
+[Real Chromium screenshot](media/url-first-adafruit-live-browser.png).
+
+**Security and limits:** public HTTPS domain + pinned public DNS
+addresses, robots.txt preflight, hard response-size caps, HTTPS certificate
+verification, no cross-domain redirects, no private IP targets, no cookies,
+credentials or JavaScript execution. Works only on accessible pages with
+enough extractable metadata; blocked/JS-only stores need an authorized
+commerce API or connector. Missing price is `null`, not 0.00.
+
 ## New workflow: automatic research after the item enters the cart
 
 The shopper has **already chosen a product**. When the merchant records

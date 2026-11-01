@@ -382,11 +382,48 @@ class WebFlowTests(unittest.TestCase):
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
 
+    def test_url_only_cart_form_extracts_before_research(self):
+        import time
+        from unittest.mock import patch
+        from product_intake import extract_from_html
+        html = ('<script type="application/ld+json">'
+                '{"@type":"Product","name":"Persil powder 45 washes",'
+                '"gtin13":"8712561344494","offers":'
+                '{"price":"34.90","priceCurrency":"PLN"}}'
+                '</script>').encode()
+        item, meta = extract_from_html("https://www.adafruit.com/product/1083",html)
+        meta.update({"source_url":"https://www.adafruit.com/product/1083",
+                     "page_sha256":"e"*64,
+                     "retrieved_at":"2026-11-01T00:00:00+00:00"})
+        with patch("product_intake.extract_product_page",return_value=(item,meta)):
+            status, page = self.request("POST", "/cart/add", {
+                "csrf": self.csrf,
+                "product_url": "https://www.adafruit.com/product/1083"})
+            self.assertEqual(status, 200)
+            import sqlite3
+            with sqlite3.connect(str(Path(self.tmp.name)/"webquotes.sqlite")) as db:
+                jid=db.execute("SELECT id FROM cart_research_jobs").fetchone()[0]
+            for _ in range(100):
+                if self.server.cart_jobs.read(jid)["state"] in ("READY","FAILED"):
+                    break
+                time.sleep(.02)
+        self.assertEqual(self.server.cart_jobs.read(jid)["state"],"READY")
+        status, page = self.request("GET","/cart/status/"+jid)
+        self.assertEqual(status,200)
+        self.assertIn("Original product page",page)
+        self.assertIn("34.90 PLN",page)
+        self.assertIn("page",page)
+        status, payload = self.request("GET","/cart/status/"+jid+".json")
+        self.assertEqual(status,200)
+        report=json.loads(payload)["report"]
+        self.assertEqual(report["source_intake"]["page_sha256"],"e"*64)
+        self.assertEqual(report["root"]["children"][2]["kind"],"source_intake")
+
     def test_cart_add_triggers_async_research_without_payment(self):
         import time
         status, page = self.request("GET", "/cart")
         self.assertEqual(status, 200)
-        self.assertIn("Add to cart", page)
+        self.assertIn("Product URL", page)
         status, response = self.request("POST", "/cart/add", {
             "csrf": self.csrf,
             "title": "Persil washing powder 45 loads",
@@ -416,6 +453,42 @@ class WebFlowTests(unittest.TestCase):
         report = json.loads(raw)["report"]
         self.assertEqual(report["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
         self.assertFalse(report["root"]["children"][-1]["details"]["payment_authorized"])
+
+    def test_backend_event_accepts_only_product_url(self):
+        import time
+        from urllib.error import HTTPError
+        from unittest.mock import patch
+        item = {"title": "Sample washing powder 40 loads",
+                "price": None, "currency": None, "barcode": "",
+                "merchant_url": "https://www.adafruit.com/product/4885"}
+        source = {"source_url": item["merchant_url"],
+                  "price_status": "NOT_FOUND",
+                  "extraction_method": "Product JSON-LD",
+                  "barcode_status": "NOT_FOUND",
+                  "page_sha256": "b"*64,
+                  "retrieved_at": "2026-11-01T00:00:00+00:00"}
+        req = Request(
+            self.base + "/api/cart/added",
+            data=json.dumps({"product_url": item["merchant_url"]}).encode(),
+            method="POST",
+            headers={"Content-Type": "application/json",
+                     "X-TraceCart-Event-Token": "backend-secret"})
+        with patch.dict(app.os.environ, {"TRACECART_CART_WEBHOOK_TOKEN": "backend-secret"}):
+            with patch("product_intake.extract_product_page",
+                       return_value=(item, source)):
+                with urlopen(req,timeout=8) as response:
+                    self.assertEqual(response.status,202)
+                    ack=json.loads(response.read())
+                job_id=ack["job_id"]
+                for _ in range(100):
+                    result=self.server.cart_jobs.read(job_id)
+                    if result["state"] in ("READY","FAILED"):break
+                    time.sleep(.02)
+        self.assertEqual(result["state"],"READY")
+        self.assertIsNone(result["item"]["price"])
+        self.assertEqual(result["report"]["source_intake"]["price_status"],"NOT_FOUND")
+        self.assertFalse(result["report"]["root"]["children"][-1]
+                         ["details"]["payment_authorized"])
 
     def test_authenticated_server_side_cart_event_returns_202_job(self):
         import os, time

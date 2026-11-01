@@ -6,10 +6,34 @@ job **after Add to Cart**, independently of the payment flow. The result is
 intended to be shown **before final checkout**, while leaving the customer's
 original cart unchanged.
 
+## URL-only entry point (current default)
+
+The initial customer-facing form at **/cart** asks for **only the
+original product link**. `POST /cart/add` starts an async extraction +
+research job with `product_url`. The product page is fetched only
+after a strict HTTPS DNS/IP validation and robots.txt preflight.
+Product JSON-LD / OpenGraph yields item title, price and currency,
+EAN when present, stock/brand/source and a page SHA-256. If price/EAN
+is missing, analysis still runs with null price / empty EAN; no
+fictitious price is substituted.
+
+The protected backend `POST /api/cart/added` supports
+`{"product_url":"https://www.adafruit.com/product/1083"}`, or
+the previous full product-information event for platforms with trusted
+backend cart records. The endpoint uses a backend-only
+`TRACECART_CART_WEBHOOK_TOKEN` and returns a job ID immediately.
+
+**Only public HTTPS pages are accessed**, with per-request resolved-IP
+pinning (protection against DNS rebinding), TLS verification, no
+redirects, robots.txt policy, and a bounded HTML response. Product
+websites without parsable metadata or that block bots yield an
+explicit FAILED state; never bypass authentication/robots policy.
+
 ## Workflow
 
-1. Checkout backend supplies selected item `title`, line `price`,
-   `currency`, optional `barcode` (EAN), and original `merchant_url`.
+1. The user supplies a product URL. TraceCart retrieves original
+   seller metadata for title, price, EAN and availability. A merchant
+   backend may alternatively supply trusted cart details directly.
 2. **Immediately** respond with a job ID; run research asynchronously in a
    local thread pool (max 2), persisted in SQLite.
 3. Detect broad product category; instantiate decision questions appropriate

@@ -39,14 +39,17 @@ def validate_cart(obj):
         raise ValueError("Cart item must have title, price, currency, barcode, merchant_url")
     title = _short(obj["title"], 180)
     currency = obj["currency"]
-    if currency not in ("PLN", "EUR", "USD"):
-        raise ValueError("Unsupported cart currency")
-    try:
-        price = Decimal(obj["price"])
-    except (TypeError, ValueError, ArithmeticError):
-        raise ValueError("Invalid cart price")
-    if not price.is_finite() or price < 0 or price > 100000 or price.as_tuple().exponent < -2:
-        raise ValueError("Invalid cart price")
+    if obj["price"] is None and currency is None:
+        price = None  # Source omission is not a free/zero-priced product.
+    else:
+        if currency not in ("PLN", "EUR", "USD"):
+            raise ValueError("Unsupported cart currency")
+        try:
+            price = Decimal(obj["price"])
+        except (TypeError, ValueError, ArithmeticError):
+            raise ValueError("Invalid cart price")
+        if not price.is_finite() or price < 0 or price > 100000 or price.as_tuple().exponent < -2:
+            raise ValueError("Invalid cart price")
     barcode = obj["barcode"]
     if type(barcode) is not str or (barcode and not re.fullmatch(r"[0-9]{8,14}", barcode)):
         raise ValueError("Barcode must be empty or 8–14 decimal digits")
@@ -56,7 +59,8 @@ def validate_cart(obj):
     p = urlsplit(merchant_url)
     if len(merchant_url) > 500 or p.scheme != "https" or not p.hostname or p.username or p.password:
         raise ValueError("Retailer URL must be a safe HTTPS web page")
-    return {"title": title, "price": str(price.quantize(Decimal("0.01"))),
+    return {"title": title,
+            "price": str(price.quantize(Decimal("0.01"))) if price is not None else None,
             "currency": currency, "barcode": barcode, "merchant_url": merchant_url}
 
 
@@ -508,6 +512,49 @@ class CartResearchJobs:
                         datetime.now(timezone.utc).isoformat()))
         self.pool.submit(self._work, job_id, clean)
         return job_id
+
+    def submit_url(self, product_url):
+        from product_intake import validate_product_url
+        url = validate_product_url(product_url)
+        job_id = secrets.token_urlsafe(18)
+        with self._db() as db:
+            db.execute("INSERT INTO cart_research_jobs(id,item,state,created) VALUES (?,?,?,?)",
+                       (job_id, json.dumps({"merchant_url": url,
+                                             "intake": "URL_EXTRACTION_PENDING"}),
+                        "QUEUED", datetime.now(timezone.utc).isoformat()))
+        self.pool.submit(self._work_url, job_id, url)
+        return job_id
+
+    def _work_url(self, job_id, url):
+        from product_intake import extract_product_page
+        with self._db() as db:
+            db.execute("UPDATE cart_research_jobs SET state='RUNNING' WHERE id=?", (job_id,))
+        try:
+            item, source = extract_product_page(url)
+            clean = validate_cart(item)
+            with self._db() as db:
+                db.execute("UPDATE cart_research_jobs SET item=? WHERE id=?",
+                           (json.dumps(clean), job_id))
+            report = self.runner(clean)
+            report["source_intake"] = source
+            report["root"]["details"]["source_intake"] = {
+                "url": url, "price_status": source["price_status"],
+                "extraction_method": source["extraction_method"]}
+            report["root"]["children"].insert(2, _node(
+                "source_intake", "Actual selected product web page",
+                "SELLER_DECLARATION",
+                {"extracted_product": clean, "page_metadata": source,
+                 "price_is_confirmed_checkout_total": False},
+                node_id="cart-source-intake"))
+            report.pop("sha256", None)
+            report["sha256"] = sha256(json.dumps(
+                report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            state, result, error = "READY", json.dumps(report, ensure_ascii=False), None
+        except Exception as exc:
+            state, result, error = "FAILED", None, type(exc).__name__
+        with self._db() as db:
+            db.execute("UPDATE cart_research_jobs SET state=?,result=?,error_type=? WHERE id=?",
+                       (state, result, error, job_id))
 
     def _work(self, job_id, item):
         with self._db() as db:

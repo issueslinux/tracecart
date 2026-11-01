@@ -140,27 +140,23 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 <a class="btn" href="/compare">Compare offers</a></p>
                 </section>""".format(self.hidden(), menu))
         elif path == "/cart":
-            self.send_page("""<section><div class="tag">BEFORE CHECKOUT · BACKGROUND RESEARCH</div>
-                <h2>Item already selected — simulate Add to Cart</h2>
-                <p>The merchant already knows the chosen item, its cart price
-                and (when available) its barcode. Clicking starts an independent
-                background research job. No AI buyer questionnaire or payment.</p>
-                <p class="warning">The prefilled selected item and cart price are
-                ILLUSTRATIVE, not verified store stock. Alternative product
-                names and sources will be fetched live from public APIs.</p>
+            self.send_page("""<section><div class="tag">URL FIRST · BEFORE CHECKOUT</div>
+                <h2>Paste the link to the product you have chosen</h2>
+                <p>Only the product URL is needed. TraceCart first retrieves
+                the original page (respecting robots.txt and public-HTTPS-only
+                network rules), extracts name, price, currency, barcode and stock
+                wherever these are actually available, then starts product-specific
+                research and searches for alternatives in the background.</p>
                 <form method="post" action="/cart/add">{}
-                <label>Selected product in cart<input type="text" name="title"
-                value="Persil Lessive Poudre Bouquet de Provence 45 Doses 3150 g"
-                maxlength="180" required></label>
-                <label>Actual checkout-line price (seller supplied)<input type="text"
-                name="price" value="34.90" required></label>
-                <label>Currency<input type="text" name="currency" value="PLN" required></label>
-                <label>EAN/barcode (when known)<input type="text" name="barcode"
-                value="8712561344494"></label>
-                <label>Chosen merchant product URL<input type="text"
-                name="merchant_url" value="https://example.org/demo/persil"
-                maxlength="500" required></label>
-                <button>Add to cart &amp; start asynchronous research</button></form>
+                <label>Product URL<input type="text" name="product_url"
+                value="https://www.adafruit.com/product/1083"
+                maxlength="1200" required></label>
+                <button>Analyze this product before checkout</button></form>
+                <p class="muted">Example: a real Adafruit product page. Other public
+                HTTPS product pages may work where robots.txt and structured
+                metadata permit access. A blocked page, missing product name,
+                or ambiguous multi-product listing fails safely. Missing prices
+                remain unknown: they are never replaced with 0.</p>
                 </section>""".format(self.hidden()))
         elif path.startswith("/cart/status/"):
             path_id = path[len("/cart/status/"):]
@@ -267,7 +263,7 @@ https://www.adafruit.com/product/3400</textarea></label>
 
     def cart_status_page(self, job_id, result):
         state = result["state"]
-        title = result["item"]["title"]
+        title = result["item"].get("title", "Reading the selected product page")
         if state in ("QUEUED", "RUNNING"):
             # No active browser scripting required. Refresh only an in-progress job.
             body = ("""<section><div class="tag">CART ANALYSIS RUNNING</div>
@@ -296,6 +292,7 @@ https://www.adafruit.com/product/3400</textarea></label>
                            '</section>'.format(h(state)))
             return
         report = result["report"]
+        intake = report.get("source_intake", {})
         context = report["root"]["details"]
         sources = report["source_discovery"]
         candidates = sources["catalog"]
@@ -311,9 +308,29 @@ https://www.adafruit.com/product/3400</textarea></label>
         questions = report["root"]["children"][1]["children"]
         question_summary = "".join("<li>{}</li>".format(h(q["title"]))
                                    for q in questions[:8])
+        source_details = ""
+        if intake:
+            source_details = ("""<section><h2>Original product page — extracted facts</h2>
+                <p>Page: <a href="{}" target="_blank" rel="noopener noreferrer">{}</a></p>
+                <p>Method: {} · Retrieved: {}</p>
+                <p>Price extraction: <strong>{}</strong>. EAN: <strong>{}</strong>.
+                Seller availability statement: {}.</p>
+                <p>SHA-256 of downloaded page: <code>{}</code></p>
+                <p class="warning">These are claims on the selected seller's page,
+                not independent technical tests or an actual checkout total.</p>
+                </section>""".format(
+                    h(intake["source_url"]), h(intake["source_url"]),
+                    h(intake["extraction_method"]), h(intake["retrieved_at"]),
+                    h(intake["price_status"]), h(intake["barcode_status"]),
+                    h(intake.get("availability_claim") or "not disclosed"),
+                    h(intake["page_sha256"])))
+        displayed_price = (str(result["item"]["price"]) + " " +
+                           str(result["item"]["currency"])
+                           if result["item"]["price"] is not None
+                           else "not disclosed by the source")
         body = """<section><div class="tag">PRE-CHECKOUT INSIGHT · NOT A PAYMENT ACTION</div>
             <h2>Automatic analysis of selected cart item</h2>
-            <p><strong>{}</strong> · cart price {} {} (not independently verified)</p>
+            <p><strong>{}</strong> · source-listed price {} (not independently verified)</p>
             <p>Product category: <b>{}</b>. Model/source questions: <b>{}</b>.
             AI enrichment: <b>{}</b>.</p>
             <p class="warning">No current competing retailer prices were verified.
@@ -332,11 +349,10 @@ https://www.adafruit.com/product/3400</textarea></label>
             <p>Review evidence: 0 independent tests confirmed. Payment remains
             a separate, buyer-authorized step.</p></section>
             <section><h2>Complete expandable research &amp; critic tree</h2>{}</section>""".format(
-            h(title), h(result["item"]["price"]),
-            h(result["item"]["currency"]), h(context["category"]),
+            h(title), h(displayed_price), h(context["category"]),
             h(len(questions)), h(context["local_ai_question_generation"]),
             h(job_id), lines, question_summary, attempt_html, to_html_tree(report))
-        self.send_page(body)
+        self.send_page(source_details + body)
 
     def send_json_report(self, report, rid):
         content = json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
@@ -526,7 +542,10 @@ https://www.adafruit.com/product/3400</textarea></label>
             if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
                 raise ValueError("Cart API accepts JSON only")
             payload = json.loads(self.rfile.read(size).decode("utf-8"))
-            job_id = self.server.cart_jobs.submit(payload)
+            if type(payload) is dict and set(payload) == {"product_url"}:
+                job_id = self.server.cart_jobs.submit_url(payload["product_url"])
+            else:
+                job_id = self.server.cart_jobs.submit(payload)
             body = json.dumps({
                 "accepted": True, "job_id": job_id, "state": "QUEUED",
                 "status_path": "/cart/status/" + job_id,
@@ -549,9 +568,14 @@ https://www.adafruit.com/product/3400</textarea></label>
         try:
             form = self.form()
             if self.path == "/cart/add":
-                item = {k: form.get(k, "") for k in (
-                    "title", "price", "currency", "barcode", "merchant_url")}
-                job_id = self.server.cart_jobs.submit(item)
+                if form.get("product_url"):
+                    job_id = self.server.cart_jobs.submit_url(
+                        form["product_url"])
+                else:
+                    # Historical JSON demo path kept for existing integration tests.
+                    item = {k: form.get(k, "") for k in (
+                        "title", "price", "currency", "barcode", "merchant_url")}
+                    job_id = self.server.cart_jobs.submit(item)
                 self.cart_status_page(job_id, self.server.cart_jobs.read(job_id))
             elif self.path == "/propose":
                 sku, quantity, _ = ollama_suggestion(form.get("description", ""))

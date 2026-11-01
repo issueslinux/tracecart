@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T21:04:03.995068+00:00",
+  "root": {
+    "id": "cart-root",
+    "kind": "cart_research",
+    "title": "Before checkout: ADS1015 12-Bit ADC - 4 Channel with Programmable Gain Amplifier",
+    "status": "PARTIAL_COMPARISON",
+    "details": {
+      "selected_cart_item": {
+        "title": "ADS1015 12-Bit ADC - 4 Channel with Programmable Gain Amplifier",
+        "price": "9.95",
+        "currency": "USD",
+        "barcode": "",
+        "merchant_url": "https://www.adafruit.com/product/1083"
+      },
+      "category": "general",
+      "research_scope": "Automatic research after cart item, no buyer questionnaire",
+      "local_ai_question_generation": "OK",
+      "not_a_checkout_action": true,
+      "price_claim": "cart input, not independently verified",
+      "source_intake": {
+        "url": "https://www.adafruit.com/product/1083",
+        "price_status": "SELLER_DECLARED",
+        "extraction_method": "Product JSON-LD"
+      }
+    },
+    "children": [
+      {
+        "id": "cart-selected",
+        "kind": "selected_product",
+        "title": "Item in cart: ADS1015 12-Bit ADC - 4 Channel with Programmable Gain Amplifier",
+        "status": "CART_CLAIM",
+        "details": {
+          "price": "9.95",
+          "currency": "USD",
+          "barcode": "",
+          "merchant_url": "https://www.adafruit.com/product/1083"
+        },
+        "children": []
+      },
+      {
+        "id": "cart-questions",
+        "kind": "category_model",
+        "title": "Adaptive questions for general",
+        "status": "RESEARCH_QUESTIONS",
+        "details": {
+          "question_count": 13,
+          "questions_about": "sources_offers_reviews_not_user"
+        },
+        "children": [
+          {
+            "id": "cart-q-0",
+            "kind": "question",
+            "title": "Is the final delivered price verified against comparable alternatives?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-1",
+            "kind": "question",
+            "title": "Are the compared items genuinely equivalent in package and intended use?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-2",
+            "kind": "question",
+            "title": "What do credible independent tests and reviews say about effectiveness?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-3",
+            "kind": "question",
+            "title": "Which important product claims lack primary evidence?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-4",
+            "kind": "question",
+            "title": "Which specifications materially affect the intended use?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-5",
+            "kind": "question",
+            "title": "What do independent reliability data and warranty terms show?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-6",
+            "kind": "question",
+            "title": "Which claims and conditions should be verified with the seller?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-7",
+            "kind": "question",
+            "title": "Which alternative products can be documented from other sources?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-8",
+            "kind": "question",
+            "title": "Which current retailer prices can be VERIFIED rather than guessed from snippets?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-9",
+            "kind": "question",
+            "title": "What is the maximum input voltage range for the ADS1015 12-Bit ADC with Programmable Gain Amplifier?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-10",
+            "kind": "question",
+            "title": "How does the programmable gain amplifier feature of the ADS1015 12-Bit ADC with Programmable Gain Amplifier enhance its performance in applications requiring precise voltage measurements?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-11",
+            "kind": "question",
+            "title": "What is the accuracy of the ADC output when using the programmable gain amplifier feature of the ADS1015 12-Bit ADC with Programmable Gain Amplifier?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-12",
+            "kind": "question",
+            "title": "What is the power consumption of the ADS1015 12-Bit ADC with Programmable Gain Amplifier in both active and inactive states, and how does it compare to other similar ADCs?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "cart-source-intake",
+        "kind": "source_intake",
+        "title": "Actual selected product web page",
+        "status": "SELLER_DECLARATION",
+        "details": {
+          "extracted_product": {
+            "title": "ADS1015 12-Bit ADC - 4 Channel with Programmable Gain Amplifier",
+            "price": "9.95",
+            "currency": "USD",
+            "barcode": "",
+            "merchant_url": "https://www.adafruit.com/product/1083"
+          },
+          "page_metadata": {
+            "source_url": "https://www.adafruit.com/product/1083",
+            "extraction_method": "Product JSON-LD",
+            "brand": "",
+            "sku": "",
+            "availability_claim": "http://schema.org/InStock",
+            "price_status": "SELLER_DECLARED",
+            "barcode_status": "NOT_FOUND",
+            "retrieved_at": "2026-11-01T21:03:51.328748+00:00",
+            "page_sha256": "ce9096b1a90da7fc504807f59c8642b9518672050bc23e3c5a290d5c31c90058",
+            "robots_url": "https://www.adafruit.com/robots.txt",
+            "source_type": "seller_page_NOT_independent_test"
+          },
+          "price_is_confirmed_checkout_total": false
+        },
+        "children": []
+      },
+      {
+        "id": "cart-catalog",
+        "kind": "catalog_discovery",
+        "title": "Other product identities (NOT store offers)",
+        "status": "CATALOG_ONLY",
+        "details": {
+          "count": 0,
+          "verified_retail_offers": 0
+        },
+        "children": []
+      },
+      {
+        "id": "cart-critic",
+        "kind": "critic",
+        "title": "Counterarguments and incomplete evidence",
+        "status": "OPEN",
+        "details": {
+          "core_challenges": [
+            "The catalog identifies products, not offers available in a particular store.",
+            "No current verified competitor shop prices; do not claim A is cheaper.",
+            "Unverified product label and manufacturer claims cannot establish washing performance.",
+            "Equivalent product identity, compatibility and actual needs remain uncertain."
+          ],
+          "independent_reviews_collected": 0,
+          "independent_tests_collected": 0
+        },
+        "children": []
+      },
+      {
+        "id": "cart-attempts",
+        "kind": "research_attempts",
+        "title": "What was searched and what failed",
+        "status": "AUDIT",
+        "details": {
+          "attempts": [
+            {
+              "source": "Open Products Facts",
+              "status": "OK",
+              "product_candidates": 0,
+              "raw_results_inspected": 0,
+              "filter": "product identity",
+              "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=ADS1015+12-Bit+ADC+-&search_simple=1&action=process&json=1&page_size=18&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+            },
+            {
+              "source": "Open Prices",
+              "status": "SKIPPED_NO_EAN"
+            },
+            {
+              "source": "Brave Web Search",
+              "status": "SKIPPED_NO_API_KEY",
+              "note": "Cross-store search requires configured search API; no fake offers."
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "id": "cart-summary",
+        "kind": "conditional_summary",
+        "title": "Useful pre-checkout information — no forced winner",
+        "status": "NO_FORCED_WINNER",
+        "details": {
+          "catalog_alternatives_found": 0,
+          "current_competitor_offers_verified": 0,
+          "cart_price": "9.95",
+          "currency": "USD",
+          "comparison_status": "UNPRICED_ALTERNATIVES",
+          "result": "Other catalog products found; retailer offers and price differences remain unverified. Show questions and alternatives before checkout, without blocking it.",
+          "payment_authorized": false
+        },
+        "children": []
+      }
+    ]
+  },
+  "source_discovery": {
+    "catalog": [],
+    "prices": [],
+    "web_hits": [],
+    "verified_prices": [],
+    "attempts": [
+      {
+        "source": "Open Products Facts",
+        "status": "OK",
+        "product_candidates": 0,
+        "raw_results_inspected": 0,
+        "filter": "product identity",
+        "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=ADS1015+12-Bit+ADC+-&search_simple=1&action=process&json=1&page_size=18&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+      },
+      {
+        "source": "Open Prices",
+        "status": "SKIPPED_NO_EAN"
+      },
+      {
+        "source": "Brave Web Search",
+        "status": "SKIPPED_NO_API_KEY",
+        "note": "Cross-store search requires configured search API; no fake offers."
+      }
+    ]
+  },
+  "all_questions_preserved": true,
+  "provenance": "External OPF and Open Prices APIs; optional Brave search; cart price is user-supplied and NOT validated against checkout.",
+  "limitations": [
+    "Catalog records are not buyable store offers.",
+    "Search snippets do not prove stock or price.",
+    "No independent testing collected.",
+    "No automatic purchase, payment capture or buyer authorization."
+  ],
+  "source_intake": {
+    "source_url": "https://www.adafruit.com/product/1083",
+    "extraction_method": "Product JSON-LD",
+    "brand": "",
+    "sku": "",
+    "availability_claim": "http://schema.org/InStock",
+    "price_status": "SELLER_DECLARED",
+    "barcode_status": "NOT_FOUND",
+    "retrieved_at": "2026-11-01T21:03:51.328748+00:00",
+    "page_sha256": "ce9096b1a90da7fc504807f59c8642b9518672050bc23e3c5a290d5c31c90058",
+    "robots_url": "https://www.adafruit.com/robots.txt",
+    "source_type": "seller_page_NOT_independent_test"
+  },
+  "sha256": "375ce4bcdc481448ccff9ad6be6c16e58c334d7c38b1c3e9db604d22f3c3fc60"
+}
