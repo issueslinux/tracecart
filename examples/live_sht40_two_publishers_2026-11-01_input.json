@@ -1,0 +1,142 @@
+{
+  "goal": "Compare Adafruit SHT40 board listing against OEM chip specifications",
+  "category": "electronics humidity sensor",
+  "offers": [
+    {
+      "id": "product_4885",
+      "title": "Adafruit Sensirion SHT40 Temperature & Humidity Sensor",
+      "price": "5.95",
+      "currency": "USD",
+      "url": "https://www.adafruit.com/product/4885",
+      "questions": [
+        {
+          "id": "price",
+          "text": "Is the advertised total price independently verifiable?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_4885_price",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.price=5.95 USD (excludes shipping/tax).",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T20:03:04.655411+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "availability",
+          "text": "Does the merchant claim this product is presently in stock?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "merchant_4885_availability",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD offers.availability=InStock.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T20:03:04.655411+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "declared_condition",
+          "text": "Does the merchant explicitly declare a product condition?",
+          "importance": 4,
+          "evidence": [
+            {
+              "id": "merchant_4885_condition",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant JSON-LD itemCondition=NewCondition; does NOT independently verify physical condition.",
+              "observation": "Merchant JSON-LD field (unverified, NOT independent research)",
+              "retrieved_at": "2026-11-01T20:03:04.655411+00:00",
+              "publisher": "adafruit.com",
+              "sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+              "extraction_method": "merchant_product_jsonld"
+            }
+          ]
+        },
+        {
+          "id": "typical_humidity_accuracy",
+          "text": "Do merchant and manufacturer documents agree on SHT40 typical relative humidity accuracy (%RH)?",
+          "importance": 4,
+          "evidence": [
+            {
+              "id": "sht40_typical_humidity_accuracy_merchant",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant documented: Relative humidity accuracy: up to ±1.8 %RH",
+              "observation": "Published nominal spec; not independent measurement",
+              "retrieved_at": "2026-11-01T20:03:03.974434+00:00",
+              "sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+              "extraction_method": "visible_text_exact_label_merchant"
+            },
+            {
+              "id": "sht40_typical_humidity_accuracy_oem",
+              "stance": "supports",
+              "url": "https://sensirion.com/products/catalog/SHT40",
+              "source_type": "manufacturer",
+              "excerpt": "Component manufacturer documented: 1.8 %RH",
+              "observation": "Published nominal spec; not independent measurement",
+              "retrieved_at": "2026-11-01T20:03:04.595918+00:00",
+              "sha256": "ad5e3bfc57c54a948ac1fe76eb02762d196fca1a4e46c00cb5bad39a0cf3b64b",
+              "extraction_method": "visible_text_exact_label_oem"
+            }
+          ]
+        },
+        {
+          "id": "typical_temperature_accuracy",
+          "text": "Do merchant and manufacturer documents agree on SHT40 typical temperature accuracy (°C)?",
+          "importance": 4,
+          "evidence": [
+            {
+              "id": "sht40_typical_temperature_accuracy_merchant",
+              "stance": "supports",
+              "url": "https://www.adafruit.com/product/4885",
+              "source_type": "listing",
+              "excerpt": "Merchant documented: Temperature accuracy: up to ±0.2 °C",
+              "observation": "Published nominal spec; not independent measurement",
+              "retrieved_at": "2026-11-01T20:03:03.974434+00:00",
+              "sha256": "4a81cc9bda2e3d8b6e39c0408ccb77bf75d87d8e194c8cf0c6cc6889e780c998",
+              "extraction_method": "visible_text_exact_label_merchant"
+            },
+            {
+              "id": "sht40_typical_temperature_accuracy_oem",
+              "stance": "supports",
+              "url": "https://sensirion.com/products/catalog/SHT40",
+              "source_type": "manufacturer",
+              "excerpt": "Component manufacturer documented: 0.2 °C",
+              "observation": "Published nominal spec; not independent measurement",
+              "retrieved_at": "2026-11-01T20:03:04.595918+00:00",
+              "sha256": "ad5e3bfc57c54a948ac1fe76eb02762d196fca1a4e46c00cb5bad39a0cf3b64b",
+              "extraction_method": "visible_text_exact_label_oem"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "generated_questions": [
+    {
+      "trigger_question_id": "product_4885-typical_humidity_accuracy",
+      "text": "Has an independent laboratory measured the assembled board's accuracy?",
+      "origin": "external_question_proposal"
+    },
+    {
+      "trigger_question_id": "product_4885-typical_temperature_accuracy",
+      "text": "Is the assembled breakout board accuracy affected by self-heating?",
+      "origin": "external_question_proposal"
+    }
+  ]
+}

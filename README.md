@@ -5,6 +5,42 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## Two-publisher product specification cross-check (2026-11-01)
+
+**New evidence source beyond the retailer:** TraceCart now reads the official
+[Sensirion SHT40 chip specification](https://sensirion.com/products/catalog/SHT40)
+and compares it with the actual
+[Adafruit SHT40 breakout listing](https://www.adafruit.com/product/4885).
+The cross-check is invoked via **/research → Cross-check SHT40 against Sensirion**.
+Two separate URLs have fixed HTTPS domains, robots.txt checks, no redirects, size
+and timeout limits, and page SHA-256 + retrieval timestamp provenance. The
+merchant Product/Offer JSON-LD determines **current** price/stock; Sensirion is
+technical documentation, **not a seller offering the same breakout board**.
+
+Verified actual values on 2026-11-01:
+- Typical SHT40 chip relative-humidity accuracy: retailer **1.8 %RH**, OEM **1.8 %RH**.
+- Typical SHT40 chip temperature accuracy: retailer **0.2 °C**, OEM **0.2 °C**.
+- The merchant listed the assembled breakout for **USD 5.95** at capture time.
+
+Both sources are distinct **publishers of nominal component specifications**,
+NOT independent lab tests or reviews. Their numerical agreement corroborates
+the documentation values only; it does not measure this specific board, verify
+power/regulator behavior or certify a unit. The critic explicitly opens follow-up
+questions about the finished board and its measurements and the decision remains
+**ABSTAIN** until important unknowns are resolved. If the two documents
+disagree, the criterion becomes **CONFLICTED** and the critic objects.
+
+Reproducible source-linked example:
+- [Complete actual two-publisher decision tree (offline HTML)](examples/live_sht40_two_publishers_2026-11-01.html)
+- [Full signed-by-hash analysis JSON](examples/live_sht40_two_publishers_2026-11-01.json)
+- [Real source input snapshot](examples/live_sht40_two_publishers_2026-11-01_input.json)
+- [Screenshot from actual browser](media/live-sht40-oem-crosscheck-browser.png)
+
+Scope remains deliberately limited: this is **not** yet broad autonomous review
+search, an independent comparative product test, measured reliability or a
+validated decision-rank model. Real PayPal Sandbox credentials and a Devpost
+submission are also still pending.
+
 ## LIVE offer source collector — first verified merchant integration (2026-11-01)
 
 The /research interface now offers two paths: import previously collected
