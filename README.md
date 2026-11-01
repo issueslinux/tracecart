@@ -1,6 +1,8 @@
 # TraceCart — AI suggestions behind a PayPal consent firewall
 
-**Development status: local, testable MVP; NOT A CONTEST SUBMISSION.**
+**Development status: public MIT-licensed, testable MVP; NOT A CONTEST SUBMISSION.**
+
+**Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
 ## The problem
@@ -23,7 +25,8 @@ AI-assisted checkout is dangerous when a natural-language model can hallucinate 
 Prerequisite: Python 3.8+; no dependencies beyond the standard library. Local Ollama at `http://127.0.0.1:11435` (alternatively `11434`) with model `qwen2.5:1.5b-instruct`. `core.py` supports local model parsing, while `app.py` binds to **127.0.0.1 only**.
 
 ```bash
-cd tracecart  # after cloning the standalone public repository
+git clone https://github.com/issueslinux/tracecart.git
+cd tracecart
 python3 -m unittest discover -s tests -v
 python3 app.py --port 8765
 # On that same machine: http://127.0.0.1:8765
@@ -46,12 +49,12 @@ The application has **no live PayPal switch**. Credentials must be for a sandbox
 - Adversarial prompt asking for a cent-priced charge without confirmation: model returned an invalid selection, **fail-closed** as a `ValueError`; no quote, approval or payment.
 - `python3 -m py_compile core.py app.py` passes; `GET /` on the local web UI returned HTTP **200**.
 - End-to-end real-browser **Chromium + local Qwen → consent review** PASS: natural-language request for two pendants generated a server-priced quote of **58.00 USD**, shown with the real `QUOTED` state; screenshot below. A same-origin POST issue in the initial UI was found and corrected by using `Referrer-Policy: same-origin` while retaining strict `Origin` and CSRF checks. No approval or sandbox order was placed by the browser run.
-- **Not yet verified:** *real* PayPal Sandbox OAuth/order creation, buyer approval, deployed judge-accessible instance, external model quality metrics, public repository, <3-minute video with professional narrator, YouTube upload or Devpost submission.
+- **Not yet verified:** *real* PayPal Sandbox OAuth/order creation, buyer approval, deployed judge-accessible instance, external model quality metrics, <3-minute video with professional narrator, YouTube upload or Devpost submission.
 
 ## References and constraints
 
 - [PayPal Checkout Standard back-end integration](https://developer.paypal.com/platforms/checkout/standard/integrate): server creates an order, payer approves it, server optionally captures later. TraceCart deliberately stops before capture.
-- [Official hackathon rules](https://paypalaihackathon.devpost.com/rules): PayPal sandbox + AI must both be central; source must be publicly available under an OSS license, demo actually runnable, and the competition requires a **public YouTube** demonstration video under three minutes. Code in the private `issueslinux/hunter` repo does **not** meet that requirement until separately published.
+- [Official hackathon rules](https://paypalaihackathon.devpost.com/rules): PayPal sandbox + AI must both be central; source must be publicly available under an OSS license, demo actually runnable, and the competition requires a **public YouTube** demonstration video under three minutes. This public repository fulfills the source-availability step; it does **not** substitute for an authenticated PayPal Sandbox transaction, video or Devpost submission.
 - All files in this standalone TraceCart project are provided under the [MIT license](LICENSE). No owner credentials are included.
 - The three catalog items and user prompts are test examples, not market demand data. Validation under real inputs and additional differentiating capabilities are necessary before calling TraceCart an innovative contest entry.
 
@@ -61,6 +64,6 @@ The application has **no live PayPal switch**. Credentials must be for a sandbox
 
 ## Next concrete milestone
 
-Provision an authorized PayPal sandbox REST app, execute OAuth → create order → buyer approval in a test account, build a logged and repeatable UI journey, test timeout/duplicate and amount integrity, then publish a separate **public Apache/MIT-licensed repository** with an English README and a narrated real-browser YouTube demonstration. Only the owner may approve account registration, personal terms, account creation and final Devpost submission.
+Provision an authorized PayPal sandbox REST app, execute OAuth → create order → buyer approval in a test account, build a logged and repeatable UI journey, test timeout/duplicate and amount integrity, then produce a professionally narrated real-browser YouTube demonstration under three minutes, with only verified functionality, and complete the owner-approved Devpost entry. Only the owner may approve account registration, personal terms, account creation and final Devpost submission.
 
 **Never use live payments or create unauthorized transactions.**
