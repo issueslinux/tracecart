@@ -1,0 +1,774 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T23:04:59.085702+00:00",
+  "root": {
+    "id": "cart-root",
+    "kind": "cart_research",
+    "title": "Before checkout: Ariel Proszek do prania Color, 5.5kg, 100 prań | Szybkie rozpuszczanie, usuwanie plam i zapachów w 30°C : Amazon.pl: Zdrowie i gospodarstwo domowe",
+    "status": "PARTIAL_COMPARISON",
+    "details": {
+      "selected_cart_item": {
+        "title": "Ariel Proszek do prania Color, 5.5kg, 100 prań | Szybkie rozpuszczanie, usuwanie plam i zapachów w 30°C : Amazon.pl: Zdrowie i gospodarstwo domowe",
+        "price": "76.99",
+        "currency": "PLN",
+        "barcode": "",
+        "merchant_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF"
+      },
+      "category": "laundry_detergent",
+      "research_scope": "Automatic research after cart item, no buyer questionnaire",
+      "local_ai_question_generation": "OK",
+      "not_a_checkout_action": true,
+      "price_claim": "cart input, not independently verified",
+      "source_intake": {
+        "url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF",
+        "price_status": "SELLER_DECLARED",
+        "extraction_method": "Product JSON-LD",
+        "intake_status": "PAGE_RETRIEVED"
+      }
+    },
+    "children": [
+      {
+        "id": "cart-selected",
+        "kind": "selected_product",
+        "title": "Item in cart: Ariel Proszek do prania Color, 5.5kg, 100 prań | Szybkie rozpuszczanie, usuwanie plam i zapachów w 30°C : Amazon.pl: Zdrowie i gospodarstwo domowe",
+        "status": "CART_CLAIM",
+        "details": {
+          "price": "76.99",
+          "currency": "PLN",
+          "barcode": "",
+          "merchant_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF"
+        },
+        "children": []
+      },
+      {
+        "id": "cart-questions",
+        "kind": "category_model",
+        "title": "Adaptive questions for laundry_detergent",
+        "status": "RESEARCH_QUESTIONS",
+        "details": {
+          "question_count": 17,
+          "questions_about": "sources_offers_reviews_not_user"
+        },
+        "children": [
+          {
+            "id": "cart-q-0",
+            "kind": "question",
+            "title": "Is the final delivered price verified against comparable alternatives?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-1",
+            "kind": "question",
+            "title": "Are the compared items genuinely equivalent in package and intended use?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-2",
+            "kind": "question",
+            "title": "What do credible independent tests and reviews say about effectiveness?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-3",
+            "kind": "question",
+            "title": "Which important product claims lack primary evidence?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-4",
+            "kind": "question",
+            "title": "What is the actual cost per wash at the stated dose, not per package?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-5",
+            "kind": "question",
+            "title": "How does stain removal differ at 20°C, 30°C and 40°C?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-6",
+            "kind": "question",
+            "title": "Does hard water change the required dose and relative cost?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-7",
+            "kind": "question",
+            "title": "Are powder, liquid and capsules being compared on equivalent wash counts?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-8",
+            "kind": "question",
+            "title": "Are the claimed enzymes and ingredients documented for this formula?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-9",
+            "kind": "question",
+            "title": "Are fragrances or other potential irritants disclosed?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-10",
+            "kind": "question",
+            "title": "Does the product suit colours, whites and delicate fabrics?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-11",
+            "kind": "question",
+            "title": "Are reviews about the current formulation rather than an older recipe?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-12",
+            "kind": "question",
+            "title": "Which current retailer prices can be VERIFIED rather than guessed from snippets?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-13",
+            "kind": "question",
+            "title": "What are the key benefits of using Ariel Proszek do prania Color 5.5kg in comparison to other laundry detergent options?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-14",
+            "kind": "question",
+            "title": "How does Ariel Proszek do prania Color 5.5kg differ from other laundry detergents in terms of its effectiveness in removing stains and leaving clothes smelling fresh?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-15",
+            "kind": "question",
+            "title": "What is the shelf life of Ariel Proszek do prania Color 5.5kg, and how does it compare to other laundry detergents?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          },
+          {
+            "id": "cart-q-16",
+            "kind": "question",
+            "title": "What is the recommended washing temperature for Ariel Proszek do prania Color 5.5kg, and how does it compare to other laundry detergents?",
+            "status": "OPEN",
+            "details": {
+              "answer": "Not established by retrieved sources; needs product evidence"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "cart-source-intake",
+        "kind": "source_intake",
+        "title": "Actual selected product web page",
+        "status": "SELLER_DECLARATION",
+        "details": {
+          "extracted_product": {
+            "title": "Ariel Proszek do prania Color, 5.5kg, 100 prań | Szybkie rozpuszczanie, usuwanie plam i zapachów w 30°C : Amazon.pl: Zdrowie i gospodarstwo domowe",
+            "price": "76.99",
+            "currency": "PLN",
+            "barcode": "",
+            "merchant_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF"
+          },
+          "page_metadata": {
+            "source_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF",
+            "extraction_method": "Product JSON-LD",
+            "brand": "",
+            "sku": "",
+            "availability_claim": "https://schema.org/InStock",
+            "price_status": "SELLER_DECLARED",
+            "barcode_status": "NOT_FOUND",
+            "retrieved_at": "2026-11-01T21:37:18.195555+00:00",
+            "page_sha256": "502661fe19bb2c019ea2de9ee977c09c28ab4e840bfc4760b3792947486ba240",
+            "robots_url": "https://www.amazon.pl/robots.txt",
+            "source_type": "seller_page_NOT_independent_test"
+          },
+          "price_is_confirmed_checkout_total": false
+        },
+        "children": []
+      },
+      {
+        "id": "cart-catalog",
+        "kind": "catalog_discovery",
+        "title": "Other product identities (NOT store offers)",
+        "status": "CATALOG_ONLY",
+        "details": {
+          "count": 8,
+          "verified_retail_offers": 0
+        },
+        "children": [
+          {
+            "id": "catalog-0",
+            "kind": "candidate_product",
+            "title": "Persil Lessive Poudre Bouquet de Provence 45 Doses",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561344494",
+              "name": "Persil Lessive Poudre Bouquet de Provence 45 Doses",
+              "brand": "Persil",
+              "quantity": "3150 g",
+              "url": "https://world.openproductsfacts.org/product/8712561344494",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-1",
+            "kind": "candidate_product",
+            "title": "Lessive poudre lavande",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "3596710521333",
+              "name": "Lessive poudre lavande",
+              "brand": "Auchan",
+              "quantity": "3 kg",
+              "url": "https://world.openproductsfacts.org/product/3596710521333",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-2",
+            "kind": "candidate_product",
+            "title": "Auchan Fraicheur de printemps Lessive poudre pour le lavage du linge",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "3596710521319",
+              "name": "Auchan Fraicheur de printemps Lessive poudre pour le lavage du linge",
+              "brand": "Auchan",
+              "quantity": "2 kg",
+              "url": "https://world.openproductsfacts.org/product/3596710521319",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-3",
+            "kind": "candidate_product",
+            "title": "Omo Lessive Poudre Jasmin & Fleur de Coton 50 Doses",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561352826",
+              "name": "Omo Lessive Poudre Jasmin & Fleur de Coton 50 Doses",
+              "brand": "Omo",
+              "quantity": "3500 g",
+              "url": "https://world.openproductsfacts.org/product/8712561352826",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-4",
+            "kind": "candidate_product",
+            "title": "Skip Lessive en Poudre Active Clean 39 Lavages",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561345033",
+              "name": "Skip Lessive en Poudre Active Clean 39 Lavages",
+              "brand": "Skip",
+              "quantity": "2730 g",
+              "url": "https://world.openproductsfacts.org/product/8712561345033",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-5",
+            "kind": "candidate_product",
+            "title": "Persil Lessive Poudre Bouquet de Provence 7 Doses",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561335119",
+              "name": "Persil Lessive Poudre Bouquet de Provence 7 Doses",
+              "brand": "Persil",
+              "quantity": "490 g",
+              "url": "https://world.openproductsfacts.org/product/8712561335119",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-6",
+            "kind": "candidate_product",
+            "title": "Skip Lessive en Poudre Active Clean 27 Lavages",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561336277",
+              "name": "Skip Lessive en Poudre Active Clean 27 Lavages",
+              "brand": "Skip",
+              "quantity": "1890 g",
+              "url": "https://world.openproductsfacts.org/product/8712561336277",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          },
+          {
+            "id": "catalog-7",
+            "kind": "candidate_product",
+            "title": "Persil Bouquet de provence lessive en poudre 66 mesures + 50% gratuit",
+            "status": "UNPRICED_CATALOG_IDENTITY",
+            "details": {
+              "code": "8712561330640",
+              "name": "Persil Bouquet de provence lessive en poudre 66 mesures + 50% gratuit",
+              "brand": "Persil",
+              "quantity": "7000 g",
+              "url": "https://world.openproductsfacts.org/product/8712561330640",
+              "source_kind": "product_catalog_NOT_a_retail_offer"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "cart-critic",
+        "kind": "critic",
+        "title": "Counterarguments and incomplete evidence",
+        "status": "OPEN",
+        "details": {
+          "core_challenges": [
+            "The catalog identifies products, not offers available in a particular store.",
+            "No current verified competitor shop prices; do not claim A is cheaper.",
+            "Unverified product label and manufacturer claims cannot establish washing performance.",
+            "Do not compare powder, liquids and capsules without normalized doses."
+          ],
+          "independent_reviews_collected": 0,
+          "independent_tests_collected": 0
+        },
+        "children": []
+      },
+      {
+        "id": "cart-attempts",
+        "kind": "research_attempts",
+        "title": "What was searched and what failed",
+        "status": "AUDIT",
+        "details": {
+          "attempts": [
+            {
+              "source": "Open Products Facts",
+              "status": "OK",
+              "product_candidates": 0,
+              "raw_results_inspected": 18,
+              "filter": "strict powder vs capsule/liquid matching",
+              "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Ariel&search_simple=1&action=process&json=1&page_size=18&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+            },
+            {
+              "source": "Open Products Facts cross-brand",
+              "status": "OK",
+              "raw_results_inspected": 12,
+              "product_candidates_total": 8,
+              "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Lessive+Poudre&search_simple=1&action=process&json=1&page_size=12&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+            },
+            {
+              "source": "Open Prices",
+              "status": "SKIPPED_NO_EAN"
+            },
+            {
+              "source": "Brave Web Search",
+              "status": "SKIPPED_NO_API_KEY",
+              "note": "Cross-store search requires configured search API; no fake offers."
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "id": "cart-live-competitor",
+        "kind": "live_competitor",
+        "title": "Second real merchant URL — provenance and equivalence",
+        "status": "GTIN_IDENTITY_NOT_ESTABLISHED",
+        "details": {
+          "status": "GTIN_IDENTITY_NOT_ESTABLISHED",
+          "selected": {
+            "title": "Ariel Proszek do prania Color, 5.5kg, 100 prań | Szybkie rozpuszczanie, usuwanie plam i zapachów w 30°C : Amazon.pl: Zdrowie i gospodarstwo domowe",
+            "price": "76.99",
+            "currency": "PLN",
+            "barcode": "",
+            "merchant_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF"
+          },
+          "selected_source": {
+            "source_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF",
+            "extraction_method": "Product JSON-LD",
+            "brand": "",
+            "sku": "",
+            "availability_claim": "https://schema.org/InStock",
+            "price_status": "SELLER_DECLARED",
+            "barcode_status": "NOT_FOUND",
+            "retrieved_at": "2026-11-01T21:37:18.195555+00:00",
+            "page_sha256": "502661fe19bb2c019ea2de9ee977c09c28ab4e840bfc4760b3792947486ba240",
+            "robots_url": "https://www.amazon.pl/robots.txt",
+            "source_type": "seller_page_NOT_independent_test"
+          },
+          "alternative": {
+            "title": "Ariel Professional Proszek do prania Kolor 100 prań 5,5 kg",
+            "price": "87.99",
+            "currency": "PLN",
+            "barcode": "8700216908856",
+            "merchant_url": "https://granes.pl/pl/products/ariel-professional-proszek-do-prania-kolor-100-pran-5-5-kg-248.html"
+          },
+          "alternative_source": {
+            "source_url": "https://granes.pl/pl/products/ariel-professional-proszek-do-prania-kolor-100-pran-5-5-kg-248.html",
+            "extraction_method": "Product JSON-LD",
+            "brand": "Ariel",
+            "sku": "",
+            "availability_claim": "https://schema.org/InStock",
+            "price_status": "SELLER_DECLARED",
+            "barcode_status": "FOUND",
+            "retrieved_at": "2026-11-01T23:04:59.083632+00:00",
+            "page_sha256": "1e55b5fa36dc49c5dded09ad5bf139016cf4203d25e422eed984308d50d4a954",
+            "robots_url": "https://granes.pl/robots.txt",
+            "source_type": "seller_page_NOT_independent_test"
+          },
+          "alternative_requested_url": "https://granes.pl/pl/products/ariel-professional-proszek-do-prania-kolor-100-pran-5-5-kg-248.html",
+          "alternative_retrieved": true,
+          "different_store": true,
+          "same_gtin_claimed": false,
+          "different_gtin_claimed": false,
+          "wash_count_conflict": false,
+          "second_offer_availability_claim": "https://schema.org/InStock",
+          "second_offer_not_available": false,
+          "selected_cost_per_wash": {
+            "status": "CALCULATED_FROM_SELLER_CLAIMS",
+            "washes_declared_in_title": 100,
+            "currency": "PLN",
+            "seller_listed_price": "76.99",
+            "cost_per_wash": "0.7699",
+            "does_not_include": [
+              "delivery",
+              "discount eligibility",
+              "actual dose",
+              "stain-removal performance",
+              "water hardness"
+            ],
+            "price_evidence": "current selected offer input, NOT confirmed checkout amount",
+            "dose_evidence": "product title claim, NOT independently verified"
+          },
+          "alternative_cost_per_wash": {
+            "status": "CALCULATED_FROM_SELLER_CLAIMS",
+            "washes_declared_in_title": 100,
+            "currency": "PLN",
+            "seller_listed_price": "87.99",
+            "cost_per_wash": "0.8799",
+            "does_not_include": [
+              "delivery",
+              "discount eligibility",
+              "actual dose",
+              "stain-removal performance",
+              "water hardness"
+            ],
+            "price_evidence": "current selected offer input, NOT confirmed checkout amount",
+            "dose_evidence": "product title claim, NOT independently verified"
+          },
+          "seller_listed_price_delta_pct_vs_selected": null,
+          "delta_is_not_delivered_price": true,
+          "independent_lab_tests": 0,
+          "final_checkout_price_verified": false,
+          "payment_authorized": false,
+          "limitations": [
+            "Retailer pages contain seller claims, not independently verified checkout totals.",
+            "GTIN equality is a seller-declared identity match, not proof of equivalent performance.",
+            "Delivery, discounts, pack formulation, stock and dosing may change total value.",
+            "No price ranking without matching GTIN, source pages, currency and usable prices."
+          ]
+        },
+        "children": []
+      },
+      {
+        "id": "cart-summary",
+        "kind": "conditional_summary",
+        "title": "Useful pre-checkout information — no forced winner",
+        "status": "NO_FORCED_WINNER",
+        "details": {
+          "catalog_alternatives_found": 8,
+          "current_competitor_offers_verified": 0,
+          "cart_price": "76.99",
+          "currency": "PLN",
+          "comparison_status": "GTIN_IDENTITY_NOT_ESTABLISHED",
+          "result": "Second-offer evidence is incomplete or identity differs; no cheaper equivalent product is asserted.",
+          "payment_authorized": false,
+          "live_second_offer_status": "GTIN_IDENTITY_NOT_ESTABLISHED",
+          "second_retailer_listed_price_observed": true
+        },
+        "children": []
+      }
+    ]
+  },
+  "source_discovery": {
+    "catalog": [
+      {
+        "code": "8712561344494",
+        "name": "Persil Lessive Poudre Bouquet de Provence 45 Doses",
+        "brand": "Persil",
+        "quantity": "3150 g",
+        "url": "https://world.openproductsfacts.org/product/8712561344494",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "3596710521333",
+        "name": "Lessive poudre lavande",
+        "brand": "Auchan",
+        "quantity": "3 kg",
+        "url": "https://world.openproductsfacts.org/product/3596710521333",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "3596710521319",
+        "name": "Auchan Fraicheur de printemps Lessive poudre pour le lavage du linge",
+        "brand": "Auchan",
+        "quantity": "2 kg",
+        "url": "https://world.openproductsfacts.org/product/3596710521319",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561352826",
+        "name": "Omo Lessive Poudre Jasmin & Fleur de Coton 50 Doses",
+        "brand": "Omo",
+        "quantity": "3500 g",
+        "url": "https://world.openproductsfacts.org/product/8712561352826",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561345033",
+        "name": "Skip Lessive en Poudre Active Clean 39 Lavages",
+        "brand": "Skip",
+        "quantity": "2730 g",
+        "url": "https://world.openproductsfacts.org/product/8712561345033",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561335119",
+        "name": "Persil Lessive Poudre Bouquet de Provence 7 Doses",
+        "brand": "Persil",
+        "quantity": "490 g",
+        "url": "https://world.openproductsfacts.org/product/8712561335119",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561336277",
+        "name": "Skip Lessive en Poudre Active Clean 27 Lavages",
+        "brand": "Skip",
+        "quantity": "1890 g",
+        "url": "https://world.openproductsfacts.org/product/8712561336277",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      },
+      {
+        "code": "8712561330640",
+        "name": "Persil Bouquet de provence lessive en poudre 66 mesures + 50% gratuit",
+        "brand": "Persil",
+        "quantity": "7000 g",
+        "url": "https://world.openproductsfacts.org/product/8712561330640",
+        "source_kind": "product_catalog_NOT_a_retail_offer"
+      }
+    ],
+    "prices": [],
+    "web_hits": [],
+    "verified_prices": [],
+    "attempts": [
+      {
+        "source": "Open Products Facts",
+        "status": "OK",
+        "product_candidates": 0,
+        "raw_results_inspected": 18,
+        "filter": "strict powder vs capsule/liquid matching",
+        "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Ariel&search_simple=1&action=process&json=1&page_size=18&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+      },
+      {
+        "source": "Open Products Facts cross-brand",
+        "status": "OK",
+        "raw_results_inspected": 12,
+        "product_candidates_total": 8,
+        "url": "https://world.openproductsfacts.org/cgi/search.pl?search_terms=Lessive+Poudre&search_simple=1&action=process&json=1&page_size=12&fields=code%2Cproduct_name%2Cbrands%2Cquantity%2Cproduct_quantity"
+      },
+      {
+        "source": "Open Prices",
+        "status": "SKIPPED_NO_EAN"
+      },
+      {
+        "source": "Brave Web Search",
+        "status": "SKIPPED_NO_API_KEY",
+        "note": "Cross-store search requires configured search API; no fake offers."
+      }
+    ]
+  },
+  "all_questions_preserved": true,
+  "provenance": "External OPF and Open Prices APIs; optional Brave search; cart price is user-supplied and NOT validated against checkout.",
+  "limitations": [
+    "Catalog records are not buyable store offers.",
+    "Search snippets do not prove stock or price.",
+    "No independent testing collected.",
+    "No automatic purchase, payment capture or buyer authorization.",
+    "Second-merchant comparison does not authorize a payment or verify checkout totals."
+  ],
+  "source_intake": {
+    "source_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF",
+    "extraction_method": "Product JSON-LD",
+    "brand": "",
+    "sku": "",
+    "availability_claim": "https://schema.org/InStock",
+    "price_status": "SELLER_DECLARED",
+    "barcode_status": "NOT_FOUND",
+    "retrieved_at": "2026-11-01T21:37:18.195555+00:00",
+    "page_sha256": "502661fe19bb2c019ea2de9ee977c09c28ab4e840bfc4760b3792947486ba240",
+    "robots_url": "https://www.amazon.pl/robots.txt",
+    "source_type": "seller_page_NOT_independent_test"
+  },
+  "live_competitor_comparison": {
+    "status": "GTIN_IDENTITY_NOT_ESTABLISHED",
+    "selected": {
+      "title": "Ariel Proszek do prania Color, 5.5kg, 100 prań | Szybkie rozpuszczanie, usuwanie plam i zapachów w 30°C : Amazon.pl: Zdrowie i gospodarstwo domowe",
+      "price": "76.99",
+      "currency": "PLN",
+      "barcode": "",
+      "merchant_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF"
+    },
+    "selected_source": {
+      "source_url": "https://www.amazon.pl/Ariel-Proszek-rozpuszczanie-usuwanie-zapach%C3%B3w/dp/B0FNPZQKMF",
+      "extraction_method": "Product JSON-LD",
+      "brand": "",
+      "sku": "",
+      "availability_claim": "https://schema.org/InStock",
+      "price_status": "SELLER_DECLARED",
+      "barcode_status": "NOT_FOUND",
+      "retrieved_at": "2026-11-01T21:37:18.195555+00:00",
+      "page_sha256": "502661fe19bb2c019ea2de9ee977c09c28ab4e840bfc4760b3792947486ba240",
+      "robots_url": "https://www.amazon.pl/robots.txt",
+      "source_type": "seller_page_NOT_independent_test"
+    },
+    "alternative": {
+      "title": "Ariel Professional Proszek do prania Kolor 100 prań 5,5 kg",
+      "price": "87.99",
+      "currency": "PLN",
+      "barcode": "8700216908856",
+      "merchant_url": "https://granes.pl/pl/products/ariel-professional-proszek-do-prania-kolor-100-pran-5-5-kg-248.html"
+    },
+    "alternative_source": {
+      "source_url": "https://granes.pl/pl/products/ariel-professional-proszek-do-prania-kolor-100-pran-5-5-kg-248.html",
+      "extraction_method": "Product JSON-LD",
+      "brand": "Ariel",
+      "sku": "",
+      "availability_claim": "https://schema.org/InStock",
+      "price_status": "SELLER_DECLARED",
+      "barcode_status": "FOUND",
+      "retrieved_at": "2026-11-01T23:04:59.083632+00:00",
+      "page_sha256": "1e55b5fa36dc49c5dded09ad5bf139016cf4203d25e422eed984308d50d4a954",
+      "robots_url": "https://granes.pl/robots.txt",
+      "source_type": "seller_page_NOT_independent_test"
+    },
+    "alternative_requested_url": "https://granes.pl/pl/products/ariel-professional-proszek-do-prania-kolor-100-pran-5-5-kg-248.html",
+    "alternative_retrieved": true,
+    "different_store": true,
+    "same_gtin_claimed": false,
+    "different_gtin_claimed": false,
+    "wash_count_conflict": false,
+    "second_offer_availability_claim": "https://schema.org/InStock",
+    "second_offer_not_available": false,
+    "selected_cost_per_wash": {
+      "status": "CALCULATED_FROM_SELLER_CLAIMS",
+      "washes_declared_in_title": 100,
+      "currency": "PLN",
+      "seller_listed_price": "76.99",
+      "cost_per_wash": "0.7699",
+      "does_not_include": [
+        "delivery",
+        "discount eligibility",
+        "actual dose",
+        "stain-removal performance",
+        "water hardness"
+      ],
+      "price_evidence": "current selected offer input, NOT confirmed checkout amount",
+      "dose_evidence": "product title claim, NOT independently verified"
+    },
+    "alternative_cost_per_wash": {
+      "status": "CALCULATED_FROM_SELLER_CLAIMS",
+      "washes_declared_in_title": 100,
+      "currency": "PLN",
+      "seller_listed_price": "87.99",
+      "cost_per_wash": "0.8799",
+      "does_not_include": [
+        "delivery",
+        "discount eligibility",
+        "actual dose",
+        "stain-removal performance",
+        "water hardness"
+      ],
+      "price_evidence": "current selected offer input, NOT confirmed checkout amount",
+      "dose_evidence": "product title claim, NOT independently verified"
+    },
+    "seller_listed_price_delta_pct_vs_selected": null,
+    "delta_is_not_delivered_price": true,
+    "independent_lab_tests": 0,
+    "final_checkout_price_verified": false,
+    "payment_authorized": false,
+    "limitations": [
+      "Retailer pages contain seller claims, not independently verified checkout totals.",
+      "GTIN equality is a seller-declared identity match, not proof of equivalent performance.",
+      "Delivery, discounts, pack formulation, stock and dosing may change total value.",
+      "No price ranking without matching GTIN, source pages, currency and usable prices."
+    ]
+  },
+  "sha256": "a9353683c4f857857262602530e69c7383b8a54d2ea19c0289d48e58c5415176"
+}
