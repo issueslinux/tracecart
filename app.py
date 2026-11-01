@@ -15,6 +15,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from core import (CATALOG, CONSENT_TEXT, CheckoutStore, SandboxPayPal,
                   ollama_suggestion)
+from decision_tree import (ReportStore, analyze, generate_question_proposals,
+                           to_html_tree, MAX_DOC_BYTES)
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -32,6 +34,13 @@ padding:12px 17px;font-weight:750;margin-top:12px}
 .warning{color:#ffce8c}.error{background:#402530;border:1px solid #ac6676;border-radius:8px;padding:16px}
 .total{font-size:32px;font-weight:800;color:#6df3c5}code{color:#a7d8ff;overflow-wrap:anywhere}
 footer{margin-top:28px;color:#9eb1cb}label{display:block;margin-top:16px}
+input[type=checkbox]{width:auto}details.branch{margin:8px 0;padding:10px 12px;
+border:1px solid #3e5169;border-radius:8px;background:#15202f}
+details.branch details.branch{margin-left:14px}details.branch .body{margin:8px 0 0 12px;
+font-size:14px;overflow-wrap:anywhere;color:#cfdef2}
+details.branch summary{cursor:pointer}details.branch summary em{color:#f3d09e;
+font-style:normal;font-size:12px}details.branch .badge{font-size:11px;color:#61e6be}
+details.branch a{color:#9ed6ff}
 </style></head><body><header><div class="tag">PAYPAL SANDBOX ONLY · HUMAN-IN-THE-LOOP</div>
 <h1>TraceCart</h1><p>Ask an AI to pick a product. <strong>Only the fixed catalog sets the price.</strong>
 Only you can approve a PayPal sandbox order. No funds are captured.</p></header>
@@ -78,7 +87,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
 
     def form(self):
         size = int(self.headers.get("Content-Length", "0"))
-        if size < 1 or size > 8000:
+        max_size = MAX_DOC_BYTES if self.path == "/research/analyze" else 8000
+        if size < 1 or size > max_size:
             raise ValueError("Form too large or empty")
         if self.headers.get("Content-Type", "").split(";")[0].strip() != (
                 "application/x-www-form-urlencoded"):
@@ -112,7 +122,43 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 <section><h2>Payment safeguards</h2>
                 <p>Explicit amount confirmation · Expiring quote · One order attempt
                 · No automatic retries after timeouts · Sandbox links only · No capture endpoint.</p>
+                </section><section><h2>Evidence-based decision research</h2>
+                <p>Research offers and third-party reviews, run an independent critic,
+                and export the full expandable decision tree with unanswered questions.</p>
+                <p><a class="btn" href="/research">Open decision research lab</a></p>
                 </section>""".format(self.hidden(), menu))
+        elif path == "/research":
+            import json
+            fixture = (Path(__file__).resolve().parent / "examples" /
+                       "sample_research_fixture.json").read_text(encoding="utf-8")
+            sample = h(fixture)
+            self.send_page("""<section><h2>Independent Evidence & Critic Lab</h2>
+                <p>Import your collected offers, reviews, test excerpts and source URLs
+                as JSON. This first version does <b>not</b> search the web or verify URLs
+                automatically. The included input is FICTIONAL and for demonstration only.</p>
+                <form action="/research/analyze" method="post">{}
+                <label>Collected source data (JSON)<textarea rows="20" name="research_data"
+                maxlength="60000" required>{}</textarea></label>
+                <label><input type="checkbox" name="ask_ai" value="yes">
+                Ask two independent local Qwen roles — RESEARCHER and CRITIC —
+                for unanswered follow-up questions (no facts or answers created)</label>
+                <button>Build the complete decision tree</button></form>
+                <p class="muted">Everything remains local; generated reports are stored
+                on this machine. Payment is disabled from research reports.</p>
+                </section>""".format(self.hidden(), sample))
+        elif path.startswith("/research/report/"):
+            tail = path[len("/research/report/"):]
+            is_json = tail.endswith(".json")
+            rid = tail[:-5] if is_json else tail
+            try:
+                report = self.server.reports.load(rid)
+            except ValueError as exc:
+                self.send_page('<section class="error">{}</section>'.format(h(exc)), 404)
+                return
+            if is_json:
+                self.send_json_report(report, rid)
+            else:
+                self.research_report_page(rid, report)
         elif path.startswith("/quote/"):
             qid = path[len("/quote/"):]
             try:
@@ -122,6 +168,38 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 self.send_page('<section class="error">{}</section>'.format(h(exc)), 404)
         else:
             self.send_page("<section class='error'>Not found</section>", 404)
+
+    def send_json_report(self, report, rid):
+        content = json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Disposition", 'attachment; filename="tracecart-{}.json"'.format(rid))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def research_report_page(self, rid, report):
+        summary = report["root"]
+        branch_count = len(summary["children"])
+        body = """<section><div class="tag">IMMUTABLE RESEARCH SNAPSHOT</div>
+            <h2>Complete evidence and decision tree</h2>
+            <p>Each branch is expandable. No sources, objections or open questions
+            have been removed to shorten the summary.</p>
+            <p><b>SHA-256:</b> <code>{}</code></p>
+            <p><b>Research branches:</b> {} · <b>Last decision:</b> {}
+            · <b>Generated:</b> {}</p>
+            <p><a class="btn" href="/research/report/{}.json">Export complete JSON</a>
+            <a class="btn" href="/research">Start another investigation</a></p>
+            <p class="warning">Source excerpts are unverified input data.
+            This is NOT authorization to make a purchase.</p></section>
+            <section><h2>Every decision, objection, source and question</h2>
+            {} </section>""".format(
+            h(report["sha256"]), branch_count, h(summary["children"][-1]["status"]),
+            h(report["generated_at"]), h(rid), to_html_tree(report))
+        # Native <details> is interactive without JavaScript and works with CSP.
+        self.send_page(body)
 
     def quote_page(self, row, error=""):
         qid = h(row["id"])
@@ -191,6 +269,27 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 row = self.server.store.reconcile_sandbox_order(
                     form.get("quote_id", ""), form.get("order_id", ""), paypal)
                 self.quote_page(row)
+            elif self.path == "/research/analyze":
+                raw = form.get("research_data", "")
+                if len(raw) > 60000:
+                    raise ValueError("Research input too large")
+                payload = json.loads(raw)
+                # First run deterministic critic and *preserve* all facts as supplied.
+                baseline = analyze(payload)
+                if form.get("ask_ai") == "yes":
+                    proposals, failures = [], []
+                    for role in ("researcher", "critic"):
+                        try:
+                            proposals += generate_question_proposals(baseline, role)
+                        except (ValueError, KeyError, TypeError, OSError, RuntimeError,
+                                json.JSONDecodeError) as exc:
+                            # A failed model must not prevent a complete deterministic report.
+                            failures.append({"role": role, "error_type": type(exc).__name__})
+                    payload["generated_questions"] = proposals
+                    payload["model_failures"] = failures
+                result = analyze(payload)
+                rid = self.server.reports.save(result)
+                self.research_report_page(rid, result)
             else:
                 self.send_page("<section class='error'>Not found</section>", 404)
         except (ValueError, RuntimeError, OSError, KeyError, TypeError) as exc:
@@ -216,6 +315,7 @@ def run():
     server = HTTPServer(("127.0.0.1", args.port), TraceCartHandler)
     server.csrf = secrets.token_urlsafe(32)
     server.store = CheckoutStore(str(args.db))
+    server.reports = ReportStore(server.store.db)
     print("TraceCart local demo: http://127.0.0.1:{}".format(args.port))
     print("PayPal mode: sandbox only; no capture code; user approval mandatory")
     try:
