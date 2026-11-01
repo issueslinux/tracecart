@@ -1,0 +1,80 @@
+{
+  "goal": "Compare two hypothetical used laptops under $400 (DEMO FIXTURE, NOT LIVE SEARCH)",
+  "category": "used laptop",
+  "offers": [
+    {
+      "id": "offer_a",
+      "title": "Demo laptop A (fictional offer)",
+      "price": "329.00",
+      "currency": "USD",
+      "url": "https://example.org/demo/laptop-a",
+      "questions": [
+        {
+          "id": "battery",
+          "text": "Is the battery health confirmed for this exact unit?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "a1",
+              "stance": "supports",
+              "url": "https://example.org/demo/review-a",
+              "source_type": "review",
+              "excerpt": "EXAMPLE ONLY: a review claims battery health above 85% for this model, not necessarily this unit."
+            },
+            {
+              "id": "a2",
+              "stance": "contradicts",
+              "url": "https://example.com/demo/report-a",
+              "source_type": "forum",
+              "excerpt": "EXAMPLE ONLY: another mock report disputes that battery measurement for this specific unit."
+            }
+          ]
+        },
+        {
+          "id": "condition",
+          "text": "Does the listing disclose condition and defects?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "a3",
+              "stance": "supports",
+              "url": "https://example.org/demo/laptop-a",
+              "source_type": "listing",
+              "excerpt": "EXAMPLE ONLY: mock listing mentions a scratched lid."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "offer_b",
+      "title": "Demo laptop B (fictional offer)",
+      "price": "359.00",
+      "currency": "USD",
+      "url": "https://example.net/demo/laptop-b",
+      "questions": [
+        {
+          "id": "battery",
+          "text": "Is the battery health confirmed for this exact unit?",
+          "importance": 5,
+          "evidence": [
+            {
+              "id": "b1",
+              "stance": "supports",
+              "url": "https://example.net/demo/inspection-b",
+              "source_type": "test",
+              "excerpt": "EXAMPLE ONLY: mock inspection reports 90% of design capacity."
+            },
+            {
+              "id": "b2",
+              "stance": "supports",
+              "url": "https://example.com/demo/report-b",
+              "source_type": "document",
+              "excerpt": "EXAMPLE ONLY: mock battery report documents a similar reading."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

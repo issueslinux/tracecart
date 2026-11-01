@@ -1,0 +1,737 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T19:30:26.353221+00:00",
+  "root": {
+    "id": "research-root",
+    "kind": "research",
+    "title": "Compare two hypothetical used laptops under $400 (DEMO FIXTURE, NOT LIVE SEARCH)",
+    "status": "INVESTIGATED_WITH_OPEN_QUESTIONS",
+    "details": {
+      "category": "used laptop",
+      "scope": "Only provided offers and excerpts, no web retrieval was performed",
+      "method": "rule_based_questions_and_independent_critic",
+      "no_automatic_purchase": true
+    },
+    "children": [
+      {
+        "id": "offer-offer_a",
+        "kind": "offer",
+        "title": "Demo laptop A (fictional offer)",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "offer_a",
+          "price": "329.00",
+          "currency": "USD",
+          "source_url": "https://example.org/demo/laptop-a"
+        },
+        "children": [
+          {
+            "id": "question-offer_a-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_a-price",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "fb739e52ea932cb4",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_a-price",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "455433a61ade14b1",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_a-price",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_a-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "SINGLE_SOURCE",
+            "details": {
+              "question_id": "offer_a-condition",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 0,
+              "reason": "Only one distinct source URL supports the claim.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-a3",
+                "kind": "evidence",
+                "title": "Evidence a3",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "a3",
+                  "source_url": "https://example.org/demo/laptop-a",
+                  "source_type": "listing",
+                  "excerpt": "EXAMPLE ONLY: mock listing mentions a scratched lid.",
+                  "duplicate_url": false,
+                  "observation": "Source excerpt"
+                },
+                "children": []
+              },
+              {
+                "id": "1b8255aeb8e7936d",
+                "kind": "critic",
+                "title": "Critic: Only one distinct source URL supports the claim.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_a-condition",
+                  "evidence_ids": [
+                    "a3"
+                  ],
+                  "challenge": "Can an independent source verify the same claim?"
+                },
+                "children": [
+                  {
+                    "id": "d537c8968e34d1a7",
+                    "kind": "follow_up",
+                    "title": "Can an independent source verify the same claim?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_a-condition",
+                      "evidence_ids": [
+                        "a3"
+                      ],
+                      "purpose": "Seek a genuinely independent, attributable source.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_a-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_a-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "ea33f8a1eb0f309e",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_a-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "e071df9e06e549b8",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_a-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_a-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_a-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "b51063f368457834",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_a-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "4fd442addfeefe6c",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_a-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_a-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_a-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "e608682086265c36",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_a-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "d2324158d2204074",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_a-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_a-battery",
+            "kind": "question",
+            "title": "Is the battery health confirmed for this exact unit?",
+            "status": "CONFLICTED",
+            "details": {
+              "question_id": "offer_a-battery",
+              "importance": 5,
+              "support_count": 1,
+              "contradiction_count": 1,
+              "reason": "Evidence supports and contradicts this claim.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-a1",
+                "kind": "evidence",
+                "title": "Evidence a1",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "a1",
+                  "source_url": "https://example.org/demo/review-a",
+                  "source_type": "review",
+                  "excerpt": "EXAMPLE ONLY: a review claims battery health above 85% for this model, not necessarily this unit.",
+                  "duplicate_url": false,
+                  "observation": "Source excerpt"
+                },
+                "children": []
+              },
+              {
+                "id": "source-a2",
+                "kind": "evidence",
+                "title": "Evidence a2",
+                "status": "CONTRADICTS",
+                "details": {
+                  "source_id": "a2",
+                  "source_url": "https://example.com/demo/report-a",
+                  "source_type": "forum",
+                  "excerpt": "EXAMPLE ONLY: another mock report disputes that battery measurement for this specific unit.",
+                  "duplicate_url": false,
+                  "observation": "Source excerpt"
+                },
+                "children": []
+              },
+              {
+                "id": "eb8af24641c570d5",
+                "kind": "critic",
+                "title": "Critic: Evidence supports and contradicts this claim.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_a-battery",
+                  "evidence_ids": [
+                    "a1",
+                    "a2"
+                  ],
+                  "challenge": "Why do sources disagree and which applies to this exact item?"
+                },
+                "children": [
+                  {
+                    "id": "faa0a3e3d15fef86",
+                    "kind": "follow_up",
+                    "title": "Why do sources disagree and which applies to this exact item?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_a-battery",
+                      "evidence_ids": [
+                        "a1",
+                        "a2"
+                      ],
+                      "purpose": "Find primary documentation or a directly comparable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_a-thermals",
+            "kind": "question",
+            "title": "Are thermal issues reported for this exact configuration?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_a-thermals",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "72c624fbb1683cdc",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_a-thermals",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "240461139acc2e6a",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_a-thermals",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "offer-offer_b",
+        "kind": "offer",
+        "title": "Demo laptop B (fictional offer)",
+        "status": "RESEARCHED",
+        "details": {
+          "offer_id": "offer_b",
+          "price": "359.00",
+          "currency": "USD",
+          "source_url": "https://example.net/demo/laptop-b"
+        },
+        "children": [
+          {
+            "id": "question-offer_b-price",
+            "kind": "question",
+            "title": "Is the advertised total price independently verifiable?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_b-price",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "644a42982588c2ff",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_b-price",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "ca967c7eba469522",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_b-price",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_b-condition",
+            "kind": "question",
+            "title": "Does the listing disclose condition and defects?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_b-condition",
+              "importance": 5,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "68cba3f4bf157179",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_b-condition",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "ed1a7a60c69ea0e8",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_b-condition",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_b-seller",
+            "kind": "question",
+            "title": "Are there reliable, independent signals about the seller?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_b-seller",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "8c5eea2b1de89301",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_b-seller",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "bb10980c96283712",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_b-seller",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_b-returns",
+            "kind": "question",
+            "title": "Are return and dispute conditions documented?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_b-returns",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "71c856b7122733dc",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_b-returns",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "dd61b473796d5a3e",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_b-returns",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_b-alternatives",
+            "kind": "question",
+            "title": "Are there comparable, better-value listings?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_b-alternatives",
+              "importance": 3,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "22636c08f8b870c7",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_b-alternatives",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "ee9b97e0e4ebd400",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_b-alternatives",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "question-offer_b-battery",
+            "kind": "question",
+            "title": "Is the battery health confirmed for this exact unit?",
+            "status": "CORROBORATED",
+            "details": {
+              "question_id": "offer_b-battery",
+              "importance": 5,
+              "support_count": 2,
+              "contradiction_count": 0,
+              "reason": "Two or more distinct source URLs support the claim; independence still requires review.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "source-b1",
+                "kind": "evidence",
+                "title": "Evidence b1",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "b1",
+                  "source_url": "https://example.net/demo/inspection-b",
+                  "source_type": "test",
+                  "excerpt": "EXAMPLE ONLY: mock inspection reports 90% of design capacity.",
+                  "duplicate_url": false,
+                  "observation": "Source excerpt"
+                },
+                "children": []
+              },
+              {
+                "id": "source-b2",
+                "kind": "evidence",
+                "title": "Evidence b2",
+                "status": "SUPPORTS",
+                "details": {
+                  "source_id": "b2",
+                  "source_url": "https://example.com/demo/report-b",
+                  "source_type": "document",
+                  "excerpt": "EXAMPLE ONLY: mock battery report documents a similar reading.",
+                  "duplicate_url": false,
+                  "observation": "Source excerpt"
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "question-offer_b-thermals",
+            "kind": "question",
+            "title": "Are thermal issues reported for this exact configuration?",
+            "status": "UNANSWERED",
+            "details": {
+              "question_id": "offer_b-thermals",
+              "importance": 4,
+              "support_count": 0,
+              "contradiction_count": 0,
+              "reason": "No source evidence was supplied.",
+              "derived_from": "category_rules_or_supplied_question"
+            },
+            "children": [
+              {
+                "id": "d5eb94ff1b200906",
+                "kind": "critic",
+                "title": "Critic: No source evidence was supplied.",
+                "status": "UNRESOLVED",
+                "details": {
+                  "target_question_id": "offer_b-thermals",
+                  "evidence_ids": [],
+                  "challenge": "What external evidence is needed to answer this question?"
+                },
+                "children": [
+                  {
+                    "id": "85dd1b2d704fea93",
+                    "kind": "follow_up",
+                    "title": "What external evidence is needed to answer this question?",
+                    "status": "OPEN",
+                    "details": {
+                      "trigger_question_id": "offer_b-thermals",
+                      "evidence_ids": [],
+                      "purpose": "Retrieve a primary source or reliable independent test.",
+                      "origin": "rule_based_critic"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decision-final",
+        "kind": "decision",
+        "title": "Purchase decision / next step",
+        "status": "ABSTAIN",
+        "details": {
+          "recommendation": "No purchase recommendation until material gaps and critic objections are reviewed.",
+          "unresolved_by_offer": {
+            "offer_a": [
+              "offer_a-price",
+              "offer_a-condition",
+              "offer_a-seller",
+              "offer_a-returns",
+              "offer_a-alternatives",
+              "offer_a-battery",
+              "offer_a-thermals"
+            ],
+            "offer_b": [
+              "offer_b-price",
+              "offer_b-condition",
+              "offer_b-seller",
+              "offer_b-returns",
+              "offer_b-alternatives",
+              "offer_b-thermals"
+            ]
+          },
+          "criterion_count_by_offer": {
+            "offer_a": 7,
+            "offer_b": 7
+          },
+          "reason": "Evidence completeness is insufficient; do not turn source-count into a utility score.",
+          "eligible_for_payment": false,
+          "model_generated_questions": 0
+        },
+        "children": []
+      }
+    ]
+  },
+  "all_questions_preserved": true,
+  "provenance": "External excerpts supplied by the analyst; NOT independently fetched",
+  "limitations": [
+    "Source snippets are input claims, not independently validated.",
+    "Distinct URLs need not represent independent publishers.",
+    "Critic flags gaps; it does not confirm product defects."
+  ],
+  "sha256": "fdd6fd522bd0b0fb6b4aa34b32e5fc1861ee959258f7ae8ff481f765a6d302c9"
+}

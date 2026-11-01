@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import app
 from core import CheckoutStore, CONSENT_TEXT
+from decision_tree import ReportStore
 
 class MockPayPal:
     def __init__(self):
@@ -66,6 +67,7 @@ class WebFlowTests(unittest.TestCase):
         from http.server import HTTPServer
         server = HTTPServer(("127.0.0.1", 0), app.TraceCartHandler)
         server.store = CheckoutStore(str(Path(self.tmp.name) / "webquotes.sqlite"))
+        server.reports = ReportStore(server.store.db)
         server.csrf = secrets.token_urlsafe(24)
         self.server = server
         self.port = server.server_port
@@ -173,6 +175,44 @@ class WebFlowTests(unittest.TestCase):
             self.assertIn("PAYER_ACTION_REQUIRED", recovered)
             self.assertEqual(paypal.created, 1)
             self.assertEqual(paypal.reads, 1)
+
+    def test_complete_tree_http_and_json_download(self):
+        from pathlib import Path
+        data = (Path(__file__).resolve().parents[1] /
+                "examples" / "sample_research_fixture.json").read_text()
+        status, form = self.request("GET", "/research")
+        self.assertEqual(status, 200)
+        self.assertIn("FICTIONAL", form)
+        status, html = self.request("POST", "/research/analyze", {
+            "csrf": self.csrf, "research_data": data,
+        })
+        self.assertEqual(status, 200)
+        self.assertIn("Complete evidence and decision tree", html)
+        self.assertIn("Critic:", html)
+        self.assertIn("Export complete JSON", html)
+        import html as hlib
+        rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', html).group(1)
+        status, exported = self.request("GET", "/research/report/" + rid + ".json")
+        self.assertEqual(status, 200)
+        payload = json.loads(exported)
+        self.assertEqual(payload["root"]["children"][-1]["status"], "ABSTAIN")
+        self.assertTrue(payload["all_questions_preserved"])
+        status, page = self.request("GET", "/research/report/" + rid)
+        self.assertEqual(status, 200)
+        self.assertIn("Every decision, objection, source and question", page)
+
+    def test_research_cannot_generate_payment_authorization(self):
+        from pathlib import Path
+        data = (Path(__file__).resolve().parents[1] /
+                "examples" / "sample_research_fixture.json").read_text()
+        status, page = self.request("POST", "/research/analyze", {
+            "csrf": self.csrf, "research_data": data
+        })
+        self.assertEqual(status, 200)
+        self.assertNotIn("Create sandbox order", page)
+        import sqlite3
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
 
     def test_cross_origin_host_and_csrf_rejected(self):
         status, _ = self.request("GET", "/", headers={"Host": "malicious.example"})

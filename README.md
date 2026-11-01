@@ -5,6 +5,47 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## Evidence Critic and Complete Decision Tree (experimental)
+
+TraceCart now builds a transparent, expandable decision tree from supplied
+search results, product listings, reviews and test excerpts. Users are not asked
+dozens of questions: the analysis questions target the OFFERS and EVIDENCE.
+
+The researcher proposes new investigations. The independent critic challenges
+unsupported or contradictory interpretations. A deterministic critic always
+flags missing sources, single-source assertions, contradictory excerpts and
+remaining evidence gaps. Local Qwen can optionally generate further questions
+in two separate researcher/critic passes. AI proposals are OPEN QUESTIONS,
+never trusted answers. Duplicate and over-budget proposals are documented in
+the tree audit. The engine does not use source counts as an automatic quality
+score and abstains when material evidence remains uncertain.
+
+After analysis, the user can inspect EVERY tree branch, including each offer,
+question, evidence URL and excerpt, critic objection, proposed follow-up and
+final decision. Reports persist locally across restarts and export as complete
+JSON snapshots with a SHA-256 digest.
+
+Run the local app (python3 app.py --port 8765) and open
+http://127.0.0.1:8765/research . Paste source data as JSON or start from the
+clearly FICTIONAL demo fixture. Enable optional AI-generated follow-ups if
+Ollama is running. Review the expandable results; click Export complete JSON.
+
+Artifacts:
+- [Fictional example input](examples/sample_research_fixture.json)
+- [Full example decision-tree JSON](examples/sample_decision_tree.json)
+- [Standalone offline expandable HTML](examples/sample_decision_tree.html)
+- [Real-browser view of the tree](media/tracecart-critic-tree-browser.png)
+
+![Expandable evidence/critic tree](media/tracecart-critic-tree-browser.png)
+
+CURRENT LIMITATION: This module does NOT autonomously search the Internet.
+The sample offers and reviews use reserved example domains and are not real
+product evidence. Automated source collection, publisher deduplication,
+independent source verification and calibrated multi-criteria rankings remain
+future milestones. The decision report is informational and cannot authorize
+or trigger a PayPal order.
+
+
 ## The problem
 
 AI-assisted checkout is dangerous when a natural-language model can hallucinate prices, quantities or buyer consent. TraceCart separates those powers: a small local Qwen model can only suggest a catalog SKU and a bounded quantity, while trusted Python code derives the exact payable amount from a server-controlled catalog and requires an explicit, short-lived human approval before calling the **PayPal Sandbox Orders v2 API**. It never captures payments. Network uncertainty is reconciled manually instead of retrying blindly.
