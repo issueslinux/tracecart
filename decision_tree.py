@@ -293,8 +293,8 @@ def analyze(payload):
         all_ids.add(oid)
         price = _dec(offer.get("price"))
         currency = offer.get("currency")
-        if currency != "USD":
-            raise ValueError("This prototype compares only USD offers")
+        if currency not in ("USD", "PLN", "EUR"):
+            raise ValueError("Supported research currencies: USD, PLN, EUR")
         url = _safe_url(offer.get("url"))
         title = _short(offer.get("title"), 180)
         offer_node = _node("offer", title, "RESEARCHED", {

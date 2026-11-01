@@ -19,6 +19,7 @@ from decision_tree import (ReportStore, analyze, generate_question_proposals,
                            to_html_tree, MAX_DOC_BYTES)
 from source_collector import collect_and_analyze, attach_collection_provenance
 from source_crosscheck import collect_spec_crosscheck
+from comparison import compare
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -43,6 +44,9 @@ font-size:14px;overflow-wrap:anywhere;color:#cfdef2}
 details.branch summary{cursor:pointer}details.branch summary em{color:#f3d09e;
 font-style:normal;font-size:12px}details.branch .badge{font-size:11px;color:#61e6be}
 details.branch a{color:#9ed6ff}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #42556c;text-align:left;padding:10px;vertical-align:top}
+td{overflow-wrap:anywhere}
 </style></head><body><header><div class="tag">PAYPAL SANDBOX ONLY · HUMAN-IN-THE-LOOP</div>
 <h1>TraceCart</h1><p>Ask an AI to pick a product. <strong>Only the fixed catalog sets the price.</strong>
 Only you can approve a PayPal sandbox order. No funds are captured.</p></header>
@@ -89,7 +93,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
 
     def form(self):
         size = int(self.headers.get("Content-Length", "0"))
-        max_size = MAX_DOC_BYTES if self.path == "/research/analyze" else 8000
+        max_size = MAX_DOC_BYTES if self.path in (
+            "/research/analyze", "/compare/analyze") else 8000
         if size < 1 or size > max_size:
             raise ValueError("Form too large or empty")
         if self.headers.get("Content-Type", "").split(";")[0].strip() != (
@@ -127,8 +132,25 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 </section><section><h2>Evidence-based decision research</h2>
                 <p>Research offers and third-party reviews, run an independent critic,
                 and export the full expandable decision tree with unanswered questions.</p>
-                <p><a class="btn" href="/research">Open decision research lab</a></p>
+                <p><a class="btn" href="/research">Open decision research lab</a>
+                <a class="btn" href="/compare">Compare offers &amp; trade-offs</a></p>
                 </section>""".format(self.hidden(), menu))
+        elif path == "/compare":
+            sample = (Path(__file__).resolve().parent / "examples" /
+                      "comparison_three_laptops_FICTIONAL.json").read_text(encoding="utf-8")
+            self.send_page("""<section><h2>Conditional comparison · no forced winner</h2>
+                <p>Compare supplied offers, model what is cheaper or offers greater
+                source-declared capacity, and list unknowns and questions to the
+                SELLER for used products. No questionnaire to the buyer and no
+                automatic 'best buy' verdict. Full evidence tree stays available.</p>
+                <p class="warning">The prefilled example is FICTIONAL, with
+                example.org/com/net sources. No listings or reviews have been fetched.</p>
+                <form method="post" action="/compare/analyze">{}
+                <label>Offers and source-declared specifications (JSON)
+                <textarea name="comparison_data" rows="21" maxlength="60000"
+                required>{}</textarea></label>
+                <button>Compare options with full evidence trail</button></form>
+                </section>""".format(self.hidden(), h(sample)))
         elif path == "/research":
             import json
             fixture = (Path(__file__).resolve().parent / "examples" /
@@ -240,7 +262,7 @@ https://www.adafruit.com/product/3400</textarea></label>
             <p>Each branch is expandable. No sources, objections or open questions
             have been removed to shorten the summary.</p>
             <p><b>SHA-256:</b> <code>{}</code></p>
-            <p><b>Research branches:</b> {} · <b>Last decision:</b> {}
+            <p><b>Research branches:</b> {} · <b>Research state:</b> {}
             · <b>Generated:</b> {}</p>
             <p><a class="btn" href="/research/report/{}.json">Export complete JSON</a>
             <a class="btn" href="/research">Start another investigation</a></p>
@@ -266,6 +288,58 @@ https://www.adafruit.com/product/3400</textarea></label>
                <th>Component manufacturer</th><th>Documents</th></tr></thead>
                <tbody>{}</tbody></table></section>""".format(stats))
             body = table + body
+        comparison = report.get("comparison_summary")
+        if comparison:
+            rows = []
+            for opt in comparison["options"]:
+                questions = ("<br>".join("• " + h(q) for q in opt["seller_questions"])
+                             if opt["seller_questions"] else "None automatically required")
+                rows.append("<tr><td>{}</td><td><strong>{} {}</strong></td>"
+                            "<td>{}</td><td>{}</td></tr>".format(
+                                h(opt["title"]), h(opt["price"]), h(opt["currency"]),
+                                h(opt["condition"]), questions))
+            pairs = []
+            for pair in comparison["pairwise"]:
+                change = pair["right_vs_left_pct"]
+                if change is None:
+                    description = "Percentage unavailable (zero baseline price)."
+                elif change.startswith("-"):
+                    description = ("{} is {} cheaper than {}, using {} as baseline."
+                                   .format(h(pair["right_offer"]), h(change[1:]),
+                                           h(pair["left_offer"]), h(pair["left_offer"])))
+                elif change.startswith("0"):
+                    description = "Both offers display the same listed price."
+                else:
+                    description = ("{} is {} more expensive than {}, using {} as baseline."
+                                   .format(h(pair["right_offer"]), h(change),
+                                           h(pair["left_offer"]), h(pair["left_offer"])))
+                metrics = []
+                for m in pair["metric_differences"]:
+                    if m["status"] != "LISTING_DECLARED_COMPARISON":
+                        metrics.append("{}: missing/incompatible comparable data".format(
+                            h(m["metric"])))
+                    else:
+                        metrics.append("{}: {} {} versus {} {} ({} on second offer; "
+                                       "real benefit depends on use).".format(
+                                           h(m["label"]), h(m["left_value"]),
+                                           h(m["unit"]), h(m["right_value"]),
+                                           h(m["unit"]), h(m["right_vs_left"])))
+                pairs.append("<li>{}<br><span class='muted'>{}</span></li>".format(
+                    description, "<br>".join(metrics)))
+            comparison_html = ("""<section><div class="tag">COMPARATIVE ANALYSIS · NO VERDICT</div>
+                <h2>Prices, capabilities and unknowns</h2>
+                <p>Price differences are calculated against an explicit reference
+                price. Technical values are seller-declared, not verified benchmarks.
+                Greater capacity may not be useful for the intended workload.</p>
+                <table><thead><tr><th>Offer</th><th>Listed price</th>
+                <th>Condition</th><th>Questions to seller / listing</th></tr></thead>
+                <tbody>{}</tbody></table>
+                <h3>Direct comparisons</h3><ul>{}</ul>
+                <p class="warning">Research does not pick a winner.
+                The full tree below records the source links, evidence objections
+                and all open questions. Payment authorization is a separate step.</p>
+                </section>""".format("".join(rows), "".join(pairs)))
+            body = comparison_html + body
         body = collection_html + body
         # Native <details> is interactive without JavaScript and works with CSP.
         self.send_page(body)
@@ -362,6 +436,13 @@ https://www.adafruit.com/product/3400</textarea></label>
                     input_data["generated_questions"] = proposals
                     input_data["model_failures"] = failures
                     report = attach_collection_provenance(analyze(input_data), collected)
+                rid = self.server.reports.save(report)
+                self.research_report_page(rid, report)
+            elif self.path == "/compare/analyze":
+                raw = form.get("comparison_data", "")
+                if len(raw) > 60000:
+                    raise ValueError("Comparison input too large")
+                report = compare(json.loads(raw))
                 rid = self.server.reports.save(report)
                 self.research_report_page(rid, report)
             elif self.path == "/research/analyze":
