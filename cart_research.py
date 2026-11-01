@@ -18,6 +18,7 @@ from urllib.parse import quote, urlencode, urlsplit
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 
 from decision_tree import _node, to_html_tree
+from unit_economics import unit_cost
 
 USER_AGENT = "TraceCart/0.4 (https://github.com/issueslinux/tracecart)"
 OPF_ROOT = "https://world.openproductsfacts.org"
@@ -406,6 +407,7 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
                                     "merchant_url": item["merchant_url"]},
                      node_id="cart-selected")
     root["children"].append(selected)
+    economics = unit_cost(item, category)
     root["children"].append(_node("category_model",
         "Adaptive questions for " + category, "RESEARCH_QUESTIONS",
         {"question_count": len(qs), "questions_about": "sources_offers_reviews_not_user"},
@@ -413,6 +415,9 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
                {"answer": "Not established by retrieved sources; needs product evidence"},
                node_id="cart-q-{}".format(i)) for i, q in enumerate(qs)],
         node_id="cart-questions"))
+    root["children"].append(_node(
+        "unit_economics", "Cost per wash from selected seller's claims",
+        economics["status"], economics, node_id="unit-cost-from-source"))
     catalog_branch = _node("catalog_discovery", "Other product identities (NOT store offers)",
                            "CATALOG_ONLY", {"count": len(sources["catalog"]),
                                             "verified_retail_offers": 0},
@@ -461,6 +466,7 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
             "catalog_alternatives_found": len(sources["catalog"]),
             "current_competitor_offers_verified": 0,
             "cart_price": item["price"], "currency": item["currency"],
+            "unit_economics": economics,
             "comparison_status": "UNPRICED_ALTERNATIVES",
             "result": ("Other catalog products found; retailer offers and price "
                        "differences remain unverified. Show questions and alternatives "
@@ -470,6 +476,7 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
     report = {
         "schema_version": 1, "generated_at": now,
         "root": root, "source_discovery": sources,
+        "unit_economics": economics,
         "all_questions_preserved": True,
         "provenance": "External OPF and Open Prices APIs; optional Brave search; "
                       "cart price is user-supplied and NOT validated against checkout.",
