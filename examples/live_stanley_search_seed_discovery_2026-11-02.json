@@ -1,0 +1,181 @@
+{
+  "captured_at": "2026-11-02T17:35:06.834004+00:00",
+  "dataset": "EXTERNAL_WEB_SEARCH_SEED_WITH_LIVE_SOURCE_CHECKS_NOT_AUTO_BRAVE",
+  "selected_source": {
+    "url": "https://xdom.eu/KOMPRESOR-BEZOLEJOWY-AIR-KIT-1-5KM-8BAR-p30069",
+    "price": "490.14",
+    "currency": "PLN",
+    "gtin": "8016738753899",
+    "page_sha256": "8ebae82e038fa9c4cb337c8a4ef5d814a88f837aec4695e01a5082019f85accc",
+    "retrieved_at": "2026-11-02T17:35:06.832682+00:00",
+    "stock_claim": "http://schema.org/InStock"
+  },
+  "discovery_audit": {
+    "status": "SOURCE_CHECKS_COMPLETED",
+    "method": "EXISTING_AUTHORIZED_SEARCH_RESULTS_THEN_ROBOTS_AWARE_SOURCE_CHECK",
+    "counts": {
+      "search_hits_seen": 5,
+      "candidates_checked": 3,
+      "seller_pages_retrieved": 2,
+      "source_qualified_competing_offers": 1,
+      "marketplace_leads_found": 1
+    },
+    "search_hit_price_used": false,
+    "authorized_search_provider_required": true,
+    "source_check_budget": 3,
+    "candidate_audit": [
+      {
+        "search_result_index": 1,
+        "search_title_unverified": "Narzedzia Stanley AIR KIT",
+        "search_snippet_unverified": "Search result; no price used",
+        "candidate_url": "https://www.narzedzia.pl/kompresor-bezolejowy-z-akcesoriami-stanley-air-kit%2C132083.html",
+        "decision": "SOURCE_VERIFIED_COMPARABLE",
+        "source_type": "SEARCH_DISCOVERY_ONLY_NOT_A_SELLER_OFFER",
+        "search_price_used": false,
+        "source_check_status": "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON",
+        "source_http_status": null
+      },
+      {
+        "search_result_index": 2,
+        "search_title_unverified": "Ceneo comparison Stanley AIR KIT",
+        "search_snippet_unverified": "Search result; no price used",
+        "candidate_url": "https://www.ceneo.pl/37745332",
+        "decision": "DEFERRED_AGGREGATOR_NOT_SELLER",
+        "source_type": "SEARCH_DISCOVERY_ONLY_NOT_A_SELLER_OFFER",
+        "search_price_used": false
+      },
+      {
+        "search_result_index": 3,
+        "search_title_unverified": "Allegro Stanley AIR KIT product",
+        "search_snippet_unverified": "Search result; no price used",
+        "candidate_url": "https://allegro.pl/produkt/kompresor-bezolejowy-1100-w-stanley-air-kit-1-5km-8-bar-sprezarka-zestaw-e4cae746-3f65-411f-a748-e715e2d02305?offerId=18637535530",
+        "decision": "SOURCE_CHECK_INCOMPLETE",
+        "source_type": "SEARCH_DISCOVERY_ONLY_NOT_A_SELLER_OFFER",
+        "search_price_used": false,
+        "source_check_status": "SECOND_PAGE_NOT_RETRIEVED",
+        "source_http_status": "HTTP_403"
+      },
+      {
+        "search_result_index": 4,
+        "search_title_unverified": "EMAST Stanley AIR KIT",
+        "search_snippet_unverified": "Search result; no price used",
+        "candidate_url": "https://emast.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar",
+        "decision": "SOURCE_CHECK_INCOMPLETE",
+        "source_type": "SEARCH_DISCOVERY_ONLY_NOT_A_SELLER_OFFER",
+        "search_price_used": false,
+        "source_check_status": "SECOND_STOCK_NOT_CONFIRMED",
+        "source_http_status": null
+      },
+      {
+        "search_result_index": 5,
+        "search_title_unverified": "Mensura Stanley AIR KIT",
+        "search_snippet_unverified": "Search result; no price used",
+        "candidate_url": "https://www.mensura.pl/kompresor-bezolejowy-stanley-8215190stn595",
+        "decision": "DEFERRED_FETCH_BUDGET",
+        "source_type": "SEARCH_DISCOVERY_ONLY_NOT_A_SELLER_OFFER",
+        "search_price_used": false
+      }
+    ],
+    "page_checks": [
+      {
+        "url": "https://allegro.pl/produkt/kompresor-bezolejowy-1100-w-stanley-air-kit-1-5km-8-bar-sprezarka-zestaw-e4cae746-3f65-411f-a748-e715e2d02305?offerId=18637535530",
+        "status": "SECOND_PAGE_NOT_RETRIEVED",
+        "source_page_retrieved": false,
+        "source_http_status": "HTTP_403",
+        "qualifies_as_comparable_seller_price": false,
+        "source_page_sha256": null
+      },
+      {
+        "url": "https://www.narzedzia.pl/kompresor-bezolejowy-z-akcesoriami-stanley-air-kit%2C132083.html",
+        "status": "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON",
+        "source_page_retrieved": true,
+        "source_http_status": null,
+        "qualifies_as_comparable_seller_price": true,
+        "source_page_sha256": "99c0fcd30cf5047cd427b38bd4dc2c887d6f8b5c8afb158574314a4a1ada9c36"
+      },
+      {
+        "url": "https://emast.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar",
+        "status": "SECOND_STOCK_NOT_CONFIRMED",
+        "source_page_retrieved": true,
+        "source_http_status": null,
+        "qualifies_as_comparable_seller_price": false,
+        "source_page_sha256": "71961de9e3b51c80c6e5dd2ebf3f8fb46dc5acba9f786ad431a2d0332bcc6914"
+      }
+    ],
+    "limitations": [
+      "Search snippets and displayed preview prices are unverified hints, not current seller offers.",
+      "No broad-web completeness claim; a search provider may omit cheaper merchants.",
+      "Restricted or blocked pages remain visible; HTML access restrictions are never bypassed.",
+      "Only matching seller-declared GTIN, variant, price, stock and currency can qualify.",
+      "No independent reviews or laboratory tests have yet been collected by this step.",
+      "No checkout, delivered-price ranking or payment authorization."
+    ],
+    "payment_authorized": false
+  },
+  "candidate_sources": [
+    {
+      "url": "https://allegro.pl/produkt/kompresor-bezolejowy-1100-w-stanley-air-kit-1-5km-8-bar-sprezarka-zestaw-e4cae746-3f65-411f-a748-e715e2d02305?offerId=18637535530",
+      "status": "SECOND_PAGE_NOT_RETRIEVED",
+      "retrieved": false,
+      "seller_declared_price": null,
+      "currency": null,
+      "seller_gtin": null,
+      "stock_claim": null,
+      "page_sha256": null,
+      "retrieved_at": null,
+      "price_delta_pct_vs_selected": null
+    },
+    {
+      "url": "https://www.narzedzia.pl/kompresor-bezolejowy-z-akcesoriami-stanley-air-kit%2C132083.html",
+      "status": "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON",
+      "retrieved": true,
+      "seller_declared_price": "367.99",
+      "currency": "PLN",
+      "seller_gtin": "8016738753899",
+      "stock_claim": "http://schema.org/InStock",
+      "page_sha256": "99c0fcd30cf5047cd427b38bd4dc2c887d6f8b5c8afb158574314a4a1ada9c36",
+      "retrieved_at": "2026-11-02T17:35:07.668487+00:00",
+      "price_delta_pct_vs_selected": "-24.92"
+    },
+    {
+      "url": "https://emast.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar",
+      "status": "SECOND_STOCK_NOT_CONFIRMED",
+      "retrieved": true,
+      "seller_declared_price": "370.84",
+      "currency": "PLN",
+      "seller_gtin": "8016738753899",
+      "stock_claim": "",
+      "page_sha256": "71961de9e3b51c80c6e5dd2ebf3f8fb46dc5acba9f786ad431a2d0332bcc6914",
+      "retrieved_at": "2026-11-02T17:35:08.075948+00:00",
+      "price_delta_pct_vs_selected": null
+    }
+  ],
+  "research_critic": {
+    "lower_listed_price_leads": 1,
+    "unresolved_questions": [
+      {
+        "candidate_index": 2,
+        "url": "https://www.narzedzia.pl/kompresor-bezolejowy-z-akcesoriami-stanley-air-kit%2C132083.html",
+        "question": "Do independent product tests, condition evidence and seller policies support considering this lower-listed-price equivalent offer?",
+        "finding": "LOWER_SELLER_LISTED_PRICE_ONLY",
+        "selection": "OPEN"
+      },
+      {
+        "candidate_index": 3,
+        "url": "https://emast.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar",
+        "question": "Can the candidate seller provide current product-level availability evidence?",
+        "finding": "CANDIDATE_STOCK_UNKNOWN",
+        "selection": "OPEN"
+      },
+      {
+        "candidate_index": 1,
+        "url": "https://allegro.pl/produkt/kompresor-bezolejowy-1100-w-stanley-air-kit-1-5km-8-bar-sprezarka-zestaw-e4cae746-3f65-411f-a748-e715e2d02305?offerId=18637535530",
+        "question": "Find an independently accessible, permitted primary listing for this exact offer.",
+        "finding": "SOURCE_UNAVAILABLE",
+        "selection": "OPEN"
+      }
+    ]
+  },
+  "no_checkout_or_payment_authorization": true,
+  "report_sha256": "79e0d7f34f1dbbb3545eac0fa32238d35a9989cab38417be5798cc0598742310"
+}

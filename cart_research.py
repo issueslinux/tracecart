@@ -25,7 +25,7 @@ OPF_ROOT = "https://world.openproductsfacts.org"
 OPEN_PRICES_ROOT = "https://prices.openfoodfacts.org"
 BRAVE_ROOT = "https://api.search.brave.com"
 MAX_CANDIDATES = 8
-MAX_SEARCH_HITS = 6
+MAX_SEARCH_HITS = 12
 
 
 def _short(x, limit):
@@ -388,31 +388,57 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
         attempts.append({"source": "Open Prices", "status": "SKIPPED_NO_EAN"})
     key = os.environ.get("BRAVE_API_KEY", "")
     if key:
-        search_q = " ".join(item["title"].split()[:12]) + " kup online cena porównanie"
-        brave_url = BRAVE_ROOT + "/res/v1/web/search?" + urlencode({
-            "q": search_q[:240], "country": "PL", "search_lang": "pl", "count": 6,
-        })
-        try:
-            hits = fetch(brave_url, "api.search.brave.com",
-                         {"X-Subscription-Token": key})
-            results = hits.get("web", {}).get("results", [])
-            for hit in results[:MAX_SEARCH_HITS]:
-                if type(hit) is not dict:
-                    continue
-                target = hit.get("url", "")
-                parsed = urlsplit(target) if isinstance(target, str) else None
-                if parsed and parsed.scheme == "https" and parsed.hostname and not parsed.username:
-                    sources["web_hits"].append({
-                        "title": str(hit.get("title", ""))[:180],
-                        "url": target, "snippet": str(hit.get("description", ""))[:450],
-                        "source_kind": "UNVERIFIED_SEARCH_RESULT_NOT_A_PRICE_OFFER",
-                    })
-            attempts.append({"source": "Brave Web Search", "status": "OK",
-                             "candidate_urls": len(sources["web_hits"]),
-                             "verified_retail_prices": 0})
-        except (OSError, ValueError, KeyError, TypeError) as exc:
-            attempts.append({"source": "Brave Web Search", "status": "FAILED",
-                             "error_type": type(exc).__name__})
+        # A general search alone often misses a major marketplace offer.
+        # Request two small, distinct searches, one including a marketplace.
+        # This is provider-backed discovery, NOT a price-data source.
+        identity = item["barcode"] if _safe_code(item["barcode"]) else ""
+        name = " ".join(item["title"].split()[:9])
+        queries = [
+            ("GENERAL_RETAILERS", (identity + " " + name + " cena sklep").strip()),
+            ("ALLEGRO_MARKETPLACE", ("site:allegro.pl " + identity + " " +
+                                    " ".join(item["title"].split()[:5])).strip()),
+        ]
+        discovered = set()
+        for scope, search_q in queries:
+            brave_url = BRAVE_ROOT + "/res/v1/web/search?" + urlencode({
+                "q": search_q[:240], "country": "PL", "search_lang": "pl",
+                "count": 6,
+            })
+            try:
+                hits = fetch(brave_url, "api.search.brave.com",
+                             {"X-Subscription-Token": key})
+                results = hits.get("web", {}).get("results", [])
+                if type(results) is not list:
+                    raise ValueError("Invalid search results")
+                inspected = 0
+                for hit in results[:6]:
+                    if type(hit) is not dict:
+                        continue
+                    target = hit.get("url", "")
+                    parsed = urlsplit(target) if isinstance(target, str) else None
+                    if (parsed and parsed.scheme == "https" and parsed.hostname
+                            and not parsed.username and not parsed.password
+                            and not parsed.fragment and target not in discovered
+                            and len(sources["web_hits"]) < MAX_SEARCH_HITS):
+                        discovered.add(target)
+                        inspected += 1
+                        sources["web_hits"].append({
+                            "title": str(hit.get("title", ""))[:180],
+                            "url": target,
+                            "snippet": str(hit.get("description", ""))[:450],
+                            "search_scope": scope,
+                            "source_kind": "UNVERIFIED_SEARCH_RESULT_NOT_A_PRICE_OFFER",
+                        })
+                attempts.append({
+                    "source": "Brave Web Search " + scope, "status": "OK",
+                    "candidate_urls_added": inspected,
+                    "verified_retail_prices": 0,
+                })
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                attempts.append({
+                    "source": "Brave Web Search " + scope, "status": "FAILED",
+                    "error_type": type(exc).__name__,
+                })
     else:
         attempts.append({"source": "Brave Web Search", "status": "SKIPPED_NO_API_KEY",
                          "note": "Cross-store search requires configured search API; no fake offers."})
@@ -625,9 +651,16 @@ class CartResearchJobs:
                 {"extracted_product": clean, "page_metadata": source,
                  "price_is_confirmed_checkout_total": False},
                 node_id="cart-source-intake"))
-            report.pop("sha256", None)
-            report["sha256"] = sha256(json.dumps(
-                report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            # Automatic offer discovery can run only on public URLs already
+            # returned by an authorized search provider. Keep the background
+            # cart task bounded and do not invent search results if no key.
+            if report.get("source_discovery", {}).get("web_hits"):
+                from automatic_offer_discovery import enrich_with_discovered_offers
+                report = enrich_with_discovered_offers(report, clean, max_checks=3)
+            else:
+                report.pop("sha256", None)
+                report["sha256"] = sha256(json.dumps(
+                    report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
             state, result, error = "READY", json.dumps(report, ensure_ascii=False), None
         except Exception as exc:
             state, result, error = "FAILED", None, type(exc).__name__
