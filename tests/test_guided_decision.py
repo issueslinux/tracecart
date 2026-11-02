@@ -34,8 +34,12 @@ class HistoricalResearchUIProjectionTests(unittest.TestCase):
         self.assertEqual(evidence["input_source_problem"],"SOURCE_TOO_LARGE")
         self.assertEqual(evidence["seller_confirmed_competitor_prices"],0)
         self.assertFalse(actual["payment_authorized"])
-        self.assertEqual(len(actual["questions"]),4)
-        self.assertIn("x86",str(actual["questions"][2]))
+        self.assertEqual(actual["questions"], [])  # no buyer questionnaire
+        self.assertEqual(actual["research"]["mode"],
+                         "AUTONOMOUS_SOURCE_QUESTIONS_NO_BUYER_INPUT")
+        self.assertEqual(len(actual["research"]["sources"]), 4)
+        self.assertTrue(any("Notebookcheck" in s["publisher"]
+                            for s in actual["research"]["sources"]))
         self.assertTrue(all(c["index_only"] and not c["seller_price_verified"]
                             for c in actual["candidates"]))
 

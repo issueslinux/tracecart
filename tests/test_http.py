@@ -412,7 +412,7 @@ class WebFlowTests(unittest.TestCase):
         # Default is the clean progressive workspace, not 70 KB of 'None'.
         status,ui=self.request("GET","/cart/status/"+jid)
         self.assertEqual(status,200)
-        self.assertIn("Od produktu",ui)
+        self.assertIn("From a product",ui)
         self.assertIn('data-source="/cart/status/'+jid+'.decision.json"',ui)
         self.assertIn('data-audit="/cart/status/'+jid+'/audit"',ui)
         self.assertIn('src="/assets/decision-flow.js"',ui)
@@ -429,6 +429,10 @@ class WebFlowTests(unittest.TestCase):
         self.assertEqual(payload["category"],"LAPTOP")
         self.assertIn("Snapdragon",payload["display_title"])
         self.assertFalse(payload["payment_authorized"])
+        self.assertEqual(payload["questions"], [])
+        self.assertEqual(payload["research"]["mode"],
+                         "AUTONOMOUS_SOURCE_QUESTIONS_NO_BUYER_INPUT")
+        self.assertEqual(len(payload["research"]["sources"]), 4)
         status,audit=self.request("GET","/cart/status/"+jid+"/audit")
         self.assertEqual(status,200)
         self.assertIn("catalog_alternatives_found:",audit)
@@ -445,7 +449,7 @@ class WebFlowTests(unittest.TestCase):
     def test_flow_assets_are_same_origin_and_not_inline_script_enabled(self):
         status,home=self.request("GET","/cart")
         self.assertEqual(status,200)
-        self.assertIn("Nie kupuj",home)
+        self.assertIn("Know more.",home)
         self.assertIn('action="/cart/add"',home)
         self.assertIn('name="product_url"',home)
         self.assertIn('name="csrf"',home)
@@ -456,7 +460,7 @@ class WebFlowTests(unittest.TestCase):
         status,script=self.request("GET","/assets/decision-flow.js")
         self.assertEqual(status,200)
         self.assertIn("renderGraph",script)
-        self.assertIn("HOLD_FOR_PRICE_AND_SELLER_VERIFICATION",script)
+        self.assertIn("ABSTAIN_UNVERIFIED_PRICE_AND_VARIANT",script)
         with urlopen(self.base+"/cart",timeout=8) as response:
             csp=response.headers.get("Content-Security-Policy")
             self.assertIn("style-src 'self'",csp)
