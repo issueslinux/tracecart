@@ -26,12 +26,23 @@ def probe(urls, extractor=extract_product_page):
         except Exception as exc:
             # No arbitrary exception text: it may contain remote content.
             row['status'] = 'UNAVAILABLE_' + type(exc).__name__
+        if row['status'] == 'FETCHED':
+            row['shipping_diagnosis'] = ('EXTRACTED' if row['shipping'] else
+                'UNDETERMINED_ABSENT_OR_UNRECOGNIZED')
+            row['delivery_diagnosis'] = ('EXTRACTED' if row['delivery'] else
+                'UNDETERMINED_ABSENT_OR_UNRECOGNIZED')
+        else:
+            row['shipping_diagnosis'] = 'NOT_ASSESSED_PAGE_UNAVAILABLE'
+            row['delivery_diagnosis'] = 'NOT_ASSESSED_PAGE_UNAVAILABLE'
         rows.append(row)
     return {'dataset': 'LIVE_URLS_ROBOTS_RESPECTED',
             'generated_at': datetime.now(timezone.utc).isoformat(),
             'total': len(rows),
             'fetched': sum(r['status'] == 'FETCHED' for r in rows),
             'counts': {k: sum(r[k] for r in rows) for k in ('product','price','shipping','delivery')},
+            'diagnostics': {field: {status: sum(r[field] == status for r in rows)
+                for status in sorted({r[field] for r in rows})}
+                for field in ('shipping_diagnosis', 'delivery_diagnosis')},
             'cases': rows}
 
 
