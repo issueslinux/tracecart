@@ -19,6 +19,7 @@ from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote, urljoin, parse
 from urllib.robotparser import RobotFileParser
 from visible_offer import parse_primary_offer
 from structured_shipping import shipping_claim
+from structured_delivery import delivery_window_claim
 from product_variant import check_page_identity_consistency
 from visible_gtin import visible_gtin_claims
 
@@ -638,6 +639,7 @@ def extract_from_html(url, raw):
         "price_crosscheck": price_crosscheck,
         "reference_list_price": list_price,
         "structured_shipping_claim": shipping_claim(offers) if not identity_blocked else shipping_claim({}),
+        "structured_delivery_window_claim": delivery_window_claim(offers) if not identity_blocked else delivery_window_claim({}),
         "barcode_status": code_status,
         "barcode_evidence_methods": code_sources,
     }
