@@ -24,7 +24,8 @@ def conditional_shipping_comparison(selected, alternative, selected_source,
         raise ValueError("Buyer country must be ISO 3166-1 alpha-2")
     country = country.upper()
     result["buyer_country"] = country
-    claims = [source.get("structured_shipping_claim") or {}
+    claims = [(source.get("structured_shipping_claims_by_country") or {}).get(country)
+              or source.get("structured_shipping_claim") or {}
               for source in (selected_source, alternative_source)]
     if any(c.get("status") != "SELLER_DECLARED_DESTINATION_CONDITIONAL" or
            c.get("destination_country") != country for c in claims):
