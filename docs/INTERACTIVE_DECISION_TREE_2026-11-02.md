@@ -111,3 +111,10 @@ Dla wyłączonego JavaScript dostępna jest pełna wersja audytu.
 
 Dalszy potrzebny rozwój: niezależne testy urządzeń, wiarygodne parametry
 producentów i aktualne ceny sklepów. Nie są udawane w tym module.
+
+## Przekazanie prac
+
+Pełny aktualny status, polecenia uruchamiania, realne blokady
+i priorytety: [PROJECT_HANDOFF_2026-11-02](PROJECT_HANDOFF_2026-11-02.md).
+Gotowa pierwsza wiadomość nowego czatu:
+[NEW_CHAT_START_PROMPT_2026-11-02](NEW_CHAT_START_PROMPT_2026-11-02.md).

@@ -5,6 +5,22 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## CURRENT STATUS / NEW-CHAT HANDOFF (2026-11-02)
+
+**Start here for current architecture, audited Shopping counts, demo,
+security constraints and the next research milestone:**
+[Project handoff](docs/PROJECT_HANDOFF_2026-11-02.md)
+· [Copy/paste prompt for a new chat](docs/NEW_CHAT_START_PROMPT_2026-11-02.md).
+
+As verified on the local host on 2 November, the merged interactive
+decision-tree UI is running at **http://127.0.0.1:8781/cart**.
+Historical Lenovo report: /cart/status/w8MOeW8uE7pCqDYKf48-lXxy.
+The Shopping index provided **12 cards + 3 indexed seller links**,
+but **zero confirmed checkout prices**; the original x-kom price
+was not retrievable. No live PayPal Sandbox end-to-end approval,
+public judge-accessible deployment, video or Devpost submission
+has been confirmed. The source report and hash remain unchanged.
+
 ## NEW: interactive decision explorer (2026-11-02)
 
 The default cart workflow now uses a clean, light, progressive decision
@@ -94,9 +110,12 @@ asynchronous research adapter. The 20-product evaluation protocol is
 implemented; without keys the preview reports zero live provider calls,
 rather than fabricating coverage results.
 
-**Status on 2 November 2026: neither provider key is configured;
-0/20 live SerpApi/DataForSEO comparisons completed.** Existing test
-coverage uses injected synthetic provider JSON, not a real pricing audit.
+**Historical feasibility status earlier on 2 November (before the
+SerpApi key was configured):** initially neither provider key was
+configured and no live comparisons had completed. **This statement
+is no longer current.** A subsequent actual 20-product SerpApi
+test is documented above. Indexed prices from that test do not
+verify checkout prices. DataForSEO remains a separate paid adapter.
 
 [Search-First implementation and 20-product benchmark](docs/SEARCH_FIRST_PROVIDER_FEASIBILITY_2026-11-02.md)
 · [Provider availability audit](examples/search_first_20_protocol_2026-11-02.json).
@@ -289,7 +308,8 @@ an old app version must be retried with a new submission.
 ## URL FIRST — paste a product link, no manual product fields
 
 **Changed intake as requested:** the first step at
-[http://127.0.0.1:8771/cart](http://127.0.0.1:8771/cart) is now only
+[http://127.0.0.1:8781/cart](http://127.0.0.1:8781/cart) (current
+local instance; earlier tests used port 8771) is now only
 **the URL of the selected product**. TraceCart visits that page using
 public-IP-pinned HTTPS, verifies the page's robots.txt before fetching,
 refuses redirects, and extracts its actual Product JSON-LD (or limited
