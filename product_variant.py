@@ -85,3 +85,54 @@ def check_variant_consistency(selected_title, alternative_title, category):
         "equivalence_proven": False,
         "evidence_scope": "seller titles only; a matching GTIN remains seller-declared",
     }
+
+
+def check_page_identity_consistency(structured_title, open_graph_title,
+                                    declared_brand=""):
+    """Audit *within one seller page* before attributing price/GTIN to a SKU.
+
+    Only product-scoped JSON-LD name, product OpenGraph title and explicitly
+    declared Product.brand are eligible. HTML <title> and unrelated page
+    text can include SEO/recommendations and are deliberately excluded.
+    """
+    first = str(structured_title or "").strip()[:250]
+    second = str(open_graph_title or "").strip()[:250]
+    brand = str(declared_brand or "").strip().casefold()[:100]
+    is_laundry = bool(re.search(
+        r"\b(?:prania|proszek|proszku|powder|pulver|detergent|laundry|"
+        r"waschpulver|płyn|plyn|kapsułki|kapsulki)\b",
+        first + " " + second, re.I))
+    if not first or not is_laundry:
+        return {"status": "NOT_APPLICABLE", "conflicts": [],
+                "evidence": "No product-scoped detergent JSON-LD identity"}
+    primary, primary_ambiguous = _title_signals(first)
+    secondary, secondary_ambiguous = _title_signals(second) if second else ({}, [])
+    conflicts = []
+    if second:
+        for field in ("brand", "fabric_use", "form", "net_weight_grams"):
+            a, b = primary[field], secondary[field]
+            if a is not None and b is not None and a != b:
+                conflicts.append({"attribute": field, "jsonld_claim": a,
+                                  "opengraph_claim": b})
+    if brand in _TOKEN["brand"]:
+        for label, signals in (("jsonld_name", primary),
+                               ("opengraph_title", secondary)):
+            stated = signals.get("brand")
+            if stated is not None and stated != brand:
+                conflicts.append({"attribute": "brand",
+                                  "source": label, "declared_brand": brand,
+                                  "title_brand": stated})
+    if conflicts:
+        status = "CONFLICTING_PAGE_IDENTITY"
+    elif primary_ambiguous or secondary_ambiguous:
+        status = "AMBIGUOUS_PAGE_IDENTITY"
+    else:
+        status = "NO_EXPLICIT_PAGE_CONTRADICTION"
+    return {"status": status, "conflicts": conflicts,
+            "jsonld_title": first, "opengraph_title": second or None,
+            "declared_brand": brand or None,
+            "jsonld_signals": primary, "opengraph_signals": secondary,
+            "ambiguous_jsonld_fields": primary_ambiguous,
+            "ambiguous_opengraph_fields": secondary_ambiguous,
+            "equivalence_proven": False,
+            "evidence": "seller-declared Product JSON-LD, OG product title, Product.brand"}
