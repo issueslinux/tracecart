@@ -96,6 +96,91 @@ class ProductURLTests(unittest.TestCase):
         self.assertEqual(item["price"],"19.90")
         self.assertEqual(source["extraction_method"],"OpenGraph/HTML fallback")
 
+    def test_real_maxpronet_jsonld_sale_price_not_crossed_out_list_price(self):
+        # Source structure observed 2026-11-02 at Maxpronet product 84304.
+        # Not a fake retail price: seller JSON-LD published ListPrice 153.99
+        # and SalePrice 78.90; network tests are separate.
+        record = {"@context": "http://schema.org", "@type": "Product",
+                  "name": "Proszek do prania Persil Color - 75 prań, 4,5 kg",
+                  "offers": [{"@type": "Offer",
+                              "availability": "http://schema.org/InStock",
+                              "priceSpecification": [
+                                  {"@type": "UnitPriceSpecification",
+                                   "priceType": "https://schema.org/ListPrice",
+                                   "price": "153.99", "priceCurrency": "PLN"},
+                                  {"@type": "UnitPriceSpecification",
+                                   "priceType": "https://schema.org/SalePrice",
+                                   "price": "78.90", "priceCurrency": "PLN"}]}]}
+        raw = ("<script type='application/ld+json'>" +
+               json.dumps(record) + "</script>").encode()
+        item, meta = extract_from_html("https://maxpronet.pl/product-pol-84304-example.html", raw)
+        self.assertEqual(item["price"], "78.90")
+        self.assertEqual(item["currency"], "PLN")
+        self.assertEqual(meta["reference_list_price"], "153.99")
+        self.assertEqual(meta["price_evidence_method"],
+                         "EXPLICIT_SALE_PRICE_SPECIFICATION")
+        self.assertEqual(meta["price_status"], "SELLER_DECLARED")
+
+    def test_list_price_alone_is_not_an_active_offer_price(self):
+        record = {"@type": "Product", "name": "Example powder 75 prań",
+                  "offers": {"@type": "Offer", "priceSpecification": {
+                      "priceType": "https://schema.org/ListPrice",
+                      "price": "153.99", "priceCurrency": "PLN"}}}
+        raw = ("<script type='application/ld+json'>" +
+               json.dumps(record) + "</script>").encode()
+        item, meta = extract_from_html("https://example.org/p", raw)
+        self.assertIsNone(item["price"])
+        self.assertEqual(meta["price_status"], "NOT_FOUND")
+        self.assertEqual(meta["reference_list_price"], "153.99")
+
+    def test_conflicting_sale_prices_are_unknown(self):
+        record = {"@type": "Product", "name": "Example powder 75 prań",
+                  "offers": {"@type": "Offer", "priceSpecification": [
+                      {"priceType": "https://schema.org/SalePrice",
+                       "price": "78.90", "priceCurrency": "PLN"},
+                      {"priceType": "https://schema.org/SalePrice",
+                       "price": "87.90", "priceCurrency": "PLN"}]}}
+        raw = ("<script type='application/ld+json'>" +
+               json.dumps(record) + "</script>").encode()
+        item, meta = extract_from_html("https://example.org/p", raw)
+        self.assertIsNone(item["price"])
+        self.assertEqual(meta["price_status"], "CONFLICTING_SELLER_PRICE_METADATA")
+
+    def test_direct_offer_price_disagrees_with_sale_spec(self):
+        record = {"@type": "Product", "name": "Example powder 75 prań",
+                  "offers": {"@type": "Offer", "price": "90.00",
+                             "priceCurrency": "PLN",
+                             "priceSpecification": {
+                                 "priceType": "https://schema.org/SalePrice",
+                                 "price": "78.90", "priceCurrency": "PLN"}}}
+        raw = ("<script type='application/ld+json'>" +
+               json.dumps(record) + "</script>").encode()
+        item, meta = extract_from_html("https://example.org/p", raw)
+        self.assertIsNone(item["price"])
+        self.assertEqual(meta["price_evidence_method"],
+                         "CONFLICTING_DIRECT_AND_SALE_PRICE")
+
+    def test_aggregate_low_price_is_not_verified_seller_offer(self):
+        record = {"@type": "Product", "name": "Example powder 75 prań",
+                  "offers": {"@type": "AggregateOffer", "lowPrice": "9.90",
+                             "priceCurrency": "PLN", "offerCount": "20"}}
+        raw = ("<script type='application/ld+json'>" +
+               json.dumps(record) + "</script>").encode()
+        item, meta = extract_from_html("https://example.org/p", raw)
+        self.assertIsNone(item["price"])
+        self.assertEqual(meta["price_status"], "NOT_FOUND")
+
+    def test_unique_untyped_specification_is_accepted(self):
+        record = {"@type": "Product", "name": "Example powder 75 prań",
+                  "offers": {"@type": "Offer", "priceSpecification": {
+                      "price": "78.90", "priceCurrency": "PLN"}}}
+        raw = ("<script type='application/ld+json'>" +
+               json.dumps(record) + "</script>").encode()
+        item, meta = extract_from_html("https://example.org/p", raw)
+        self.assertEqual(item["price"], "78.90")
+        self.assertEqual(meta["price_evidence_method"],
+                         "UNTYPED_OFFER_PRICE_SPECIFICATION")
+
     def test_async_url_extracts_and_retains_full_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
             db=Path(directory)/"jobs.db"

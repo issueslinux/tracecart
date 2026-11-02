@@ -362,6 +362,58 @@ def _price(value):
         return None
 
 
+def _offer_price_evidence(offer):
+    """Select a current Offer price, never a crossed-out reference/list price.
+
+    A merchant can publish multiple UnitPriceSpecifications (e.g. ListPrice
+    153.99 and SalePrice 78.90). Only a unique explicit SalePrice, a
+    consistent direct Offer.price, or a unique untyped specification can
+    establish a current seller-listed price. Conflicts fail closed.
+    """
+    if not isinstance(offer, dict):
+        return None, None, "NOT_FOUND", None
+    kind = str(offer.get("@type", "Offer")).rsplit("/", 1)[-1]
+    if kind not in ("Offer", ""):
+        return None, None, "NOT_AN_INDIVIDUAL_OFFER", None
+    currency = offer.get("priceCurrency")
+    direct = _price(offer.get("price"))
+    specs = offer.get("priceSpecification", [])
+    if isinstance(specs, dict):
+        specs = [specs]
+    if not isinstance(specs, list):
+        specs = []
+    sale, untyped, reference = set(), set(), set()
+    for spec in specs[:20]:
+        if not isinstance(spec, dict):
+            continue
+        value = _price(spec.get("price"))
+        curr = spec.get("priceCurrency") or currency
+        if value is None or curr not in ("PLN", "EUR", "USD"):
+            continue
+        label = str(spec.get("priceType") or "").rsplit("/", 1)[-1].casefold()
+        entry = (value, curr)
+        if label == "saleprice":
+            sale.add(entry)
+        elif label in ("listprice", "strikethroughprice", "regularprice"):
+            reference.add(entry)
+        elif not label:
+            untyped.add(entry)
+    list_price = next(iter(reference))[0] if len(reference) == 1 else None
+    if len(sale) > 1 or len(untyped) > 1:
+        return None, None, "CONFLICTING_SPECIFICATIONS", list_price
+    if direct is not None and currency in ("PLN", "EUR", "USD"):
+        if sale and (direct, currency) not in sale:
+            return None, None, "CONFLICTING_DIRECT_AND_SALE_PRICE", list_price
+        return direct, currency, "DIRECT_OFFER_PRICE", list_price
+    if len(sale) == 1:
+        value, curr = next(iter(sale))
+        return value, curr, "EXPLICIT_SALE_PRICE_SPECIFICATION", list_price
+    if len(untyped) == 1:
+        value, curr = next(iter(untyped))
+        return value, curr, "UNTYPED_OFFER_PRICE_SPECIFICATION", list_price
+    return None, None, "NOT_FOUND", list_price
+
+
 def extract_from_html(url, raw):
     parser = _ProductTags()
     parser.feed(raw.decode("utf-8", "replace"))
@@ -378,13 +430,17 @@ def extract_from_html(url, raw):
                    parser.meta.get("twitter:title") or "".join(parser.title))
     if len(title) < 3:
         raise ValueError("No reliable product name can be extracted from this page")
-    price = _price(offers.get("price") or
-                   offers.get("lowPrice") or parser.meta.get("product:price:amount"))
-    currency = (offers.get("priceCurrency") or
-                parser.meta.get("product:price:currency"))
-    if currency not in ("PLN", "EUR", "USD"):
-        currency = None
-        price = None
+    price, currency, price_method, list_price = _offer_price_evidence(offers)
+    if price_method.startswith("CONFLICTING_"):
+        price = currency = None
+    elif price is None:
+        # OpenGraph is a separate product-level seller claim. It cannot
+        # validate a list/regular price as an active checkout offer.
+        og_currency = parser.meta.get("product:price:currency")
+        og_price = _price(parser.meta.get("product:price:amount"))
+        if og_price is not None and og_currency in ("PLN", "EUR", "USD"):
+            price, currency = og_price, og_currency
+            price_method = "PRODUCT_OPENGRAPH_PRICE"
     if price is None:
         currency = None
     code = (product.get("gtin13") or product.get("gtin") or
@@ -407,7 +463,11 @@ def extract_from_html(url, raw):
         "brand": _clean(brand, 100),
         "sku": _clean(product.get("sku"), 100),
         "availability_claim": availability,
-        "price_status": "SELLER_DECLARED" if price is not None else "NOT_FOUND",
+        "price_status": ("SELLER_DECLARED" if price is not None else
+                         "CONFLICTING_SELLER_PRICE_METADATA" if
+                         price_method.startswith("CONFLICTING_") else "NOT_FOUND"),
+        "price_evidence_method": price_method,
+        "reference_list_price": list_price,
         "barcode_status": "FOUND" if code else "NOT_FOUND",
     }
 
