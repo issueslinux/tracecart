@@ -18,6 +18,55 @@ from product_intake import (extract_product_page, normalized_product_url,
 from unit_economics import unit_cost
 
 
+def _stock_evidence(claim):
+    """Only a retailer's explicit, recognized in-stock statement establishes stock.
+
+    Missing or unrecognized schema.org availability is UNKNOWN, not InStock.
+    PreOrder and BackOrder do not establish immediate availability.
+    """
+    value = str(claim or "").strip().rstrip("/").rsplit("/", 1)[-1].casefold()
+    if value in ("instock", "limitedavailability"):
+        return "SELLER_CLAIMS_IN_STOCK"
+    if value in ("outofstock", "soldout", "discontinued"):
+        return "SELLER_CLAIMS_UNAVAILABLE"
+    if value in ("preorder", "presale", "backorder"):
+        return "SELLER_CLAIMS_NOT_IMMEDIATELY_AVAILABLE"
+    return "NOT_CONFIRMED"
+
+
+def _shipping_break_even(selected, competitor):
+    """Condition on ONE pack and equal currency; never guess delivery prices.
+
+    Both listed prices are already source-qualified by the caller.
+    """
+    left = Decimal(selected["price"])
+    right = Decimal(competitor["price"])
+    advantage = abs(left - right).quantize(Decimal("0.01"))
+    cheaper = ("alternative" if right < left else
+               "selected" if left < right else "neither")
+    return {
+        "status": ("CONDITIONAL_BREAK_EVEN" if cheaper != "neither"
+                   else "LISTED_PRICES_EQUAL_DELIVERY_DECIDES"),
+        "lower_listed_price_offer": cheaper,
+        "one_pack_listed_price_advantage": str(advantage),
+        "currency": selected["currency"],
+        "max_extra_shipping_and_fees_for_lower_listed_price_offer":
+            str(advantage),
+        "selected_delivery_price": None,
+        "alternative_delivery_price": None,
+        "actual_delivered_price_comparison": "UNKNOWN",
+        "interpretation": (
+            "For one pack, the cheaper listed offer remains cheaper after "
+            "delivery and fees only if its EXTRA delivery and fees versus "
+            "the other seller are less than the stated threshold. At the "
+            "threshold totals tie. Promotions, eligibility and final "
+            "checkout costs are unverified."
+            if cheaper != "neither" else
+            "Listed prices tie; delivery and fees determine which total "
+            "would be lower. Neither delivery price is verified."),
+    }
+
+
 def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     """Return immutable, source-attributed second-offer report, never a winner."""
     selected = validate_cart(selected)
@@ -83,17 +132,16 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         metadata.get("price_status") == "SELLER_DECLARED")
     selected_price_sourced = source.get("price_status") == "SELLER_DECLARED"
     independent_store = bool(competitor and not same_host)
-    availability = str(metadata.get("availability_claim") or "").casefold()
-    unavailable = any(word in availability for word in (
-        "outofstock", "discontinued", "soldout"))
-    selected_availability = str(source.get("availability_claim") or "").casefold()
-    selected_unavailable = any(word in selected_availability for word in (
-        "outofstock", "discontinued", "soldout"))
+    alternative_stock = _stock_evidence(metadata.get("availability_claim"))
+    selected_stock = _stock_evidence(source.get("availability_claim"))
+    unavailable = alternative_stock == "SELLER_CLAIMS_UNAVAILABLE"
+    selected_unavailable = selected_stock == "SELLER_CLAIMS_UNAVAILABLE"
+    stock_confirmed = (selected_stock == "SELLER_CLAIMS_IN_STOCK" and
+                       alternative_stock == "SELLER_CLAIMS_IN_STOCK")
     compared = bool(base_is_retrieved and selected_price_sourced
                     and ean_match and not dose_conflict
-                    and not unavailable and not selected_unavailable
-                    and independent_store and valid_seller_price
-                    and selected["price"] is not None
+                    and stock_confirmed and independent_store
+                    and valid_seller_price and selected["price"] is not None
                     and selected["currency"] == competitor["currency"])
     if error:
         status = "SECOND_PAGE_NOT_RETRIEVED"
@@ -113,6 +161,10 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         status = "SELECTED_OFFER_NOT_AVAILABLE"
     elif unavailable:
         status = "SECOND_OFFER_NOT_AVAILABLE"
+    elif selected_stock != "SELLER_CLAIMS_IN_STOCK":
+        status = "SELECTED_STOCK_NOT_CONFIRMED"
+    elif alternative_stock != "SELLER_CLAIMS_IN_STOCK":
+        status = "SECOND_STOCK_NOT_CONFIRMED"
     elif not valid_seller_price or not selected_price_sourced or selected["price"] is None:
         status = "LISTED_PRICE_MISSING"
     elif selected["currency"] != competitor["currency"]:
@@ -126,6 +178,7 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
             delta = str(((Decimal(competitor["price"]) - original) / original *
                          Decimal("100")).quantize(Decimal("0.01"),
                                                  rounding=ROUND_HALF_UP))
+    delivery = _shipping_break_even(selected, competitor) if compared else None
     comparison = {
         "status": status,
         "selected": selected,
@@ -143,9 +196,13 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "second_offer_availability_claim": metadata.get("availability_claim"),
         "second_offer_not_available": unavailable,
         "selected_offer_not_available": selected_unavailable,
+        "selected_stock_evidence": selected_stock,
+        "alternative_stock_evidence": alternative_stock,
+        "both_sellers_claim_stock": stock_confirmed,
         "selected_cost_per_wash": base_unit,
         "alternative_cost_per_wash": other_unit,
         "seller_listed_price_delta_pct_vs_selected": delta,
+        "delivery_break_even": delivery,
         "delta_is_not_delivered_price": True,
         "independent_lab_tests": 0,
         "final_checkout_price_verified": False,
@@ -153,7 +210,9 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "limitations": [
             "Retailer pages contain seller claims, not independently verified checkout totals.",
             "GTIN equality is a seller-declared identity match, not proof of equivalent performance.",
-            "Delivery, discounts, pack formulation, stock and dosing may change total value.",
+            "Delivery and fees are unknown: break-even is a conditional threshold, not a delivered-price claim.",
+            "Seller-declared in-stock status may change before checkout; missing stock evidence blocks price comparison.",
+            "Discounts, pack formulation and dosing may change total value.",
             "No price ranking without matching GTIN, source pages, currency and usable prices.",
         ],
     }
@@ -164,18 +223,14 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     report["root"]["children"].insert(-1, branch)
     summary = report["root"]["children"][-1]["details"]
     summary["live_second_offer_status"] = status
-    summary["current_competitor_offers_verified"] = int(
-        independent_store and valid_seller_price and base_is_retrieved
-        and ean_match and not dose_conflict and not unavailable
-        and not selected_unavailable
-        and selected_price_sourced)
+    summary["current_competitor_offers_verified"] = int(compared)
     summary["second_retailer_listed_price_observed"] = bool(
         independent_store and valid_seller_price)
     summary["comparison_status"] = status
     summary["result"] = (
-        "A second merchant's listed price is available with a seller-declared "
-        "matching GTIN. Compare listed prices only; delivery and product claims "
-        "remain unverified." if compared else
+        "Two retailers claim stock and a matching GTIN; listed prices are "
+        "comparable. Shipping break-even is conditional, not a delivered "
+        "total or purchase recommendation." if compared else
         "Second-offer evidence is incomplete or identity differs; no cheaper "
         "equivalent product is asserted.")
     report["live_competitor_comparison"] = comparison
