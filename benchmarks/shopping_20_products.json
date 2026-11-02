@@ -3,25 +3,192 @@
   "description": "20 named, commercially recognizable products for future live API coverage research. Names/variants are query targets, not confirmed current listings or GTINs. Only the Stanley GTIN was previously verified from actual seller claims.",
   "scope": "Poland, pl-PL; results are search-index observations, not authoritative current seller/checkout prices.",
   "products": [
-    {"id": "P01", "category": "tools", "title": "Stanley Air Kit OL 195 kompresor bezolejowy 8215190STN595", "barcode": "8016738753899"},
-    {"id": "P02", "category": "electronics", "title": "Raspberry Pi 5 8GB", "barcode": ""},
-    {"id": "P03", "category": "electronics", "title": "Apple iPhone 16 128GB", "barcode": ""},
-    {"id": "P04", "category": "electronics", "title": "Logitech MX Master 3S", "barcode": ""},
-    {"id": "P05", "category": "electronics", "title": "Samsung SSD 990 PRO 2TB", "barcode": ""},
-    {"id": "P06", "category": "audio", "title": "Sony WH-1000XM5", "barcode": ""},
-    {"id": "P07", "category": "tools", "title": "Bosch GSR 12V-15 wiertarko-wkretarka", "barcode": ""},
-    {"id": "P08", "category": "tools", "title": "Makita DDF482 wiertarko-wkretarka", "barcode": ""},
-    {"id": "P09", "category": "wearables", "title": "Garmin Forerunner 265", "barcode": ""},
-    {"id": "P10", "category": "gaming", "title": "Nintendo Switch OLED", "barcode": ""},
-    {"id": "P11", "category": "electronics", "title": "WD Black SN850X 2TB", "barcode": ""},
-    {"id": "P12", "category": "appliances", "title": "Dyson V15 Detect", "barcode": ""},
-    {"id": "P13", "category": "personal_care", "title": "Philips OneBlade QP2724", "barcode": ""},
-    {"id": "P14", "category": "electronics", "title": "Kindle Paperwhite 12 generacja 16 GB", "barcode": ""},
-    {"id": "P15", "category": "smartphones", "title": "Xiaomi Redmi Note 13 Pro 8GB 256GB", "barcode": ""},
-    {"id": "P16", "category": "monitors", "title": "LG 27GP850-B 27 cali", "barcode": ""},
-    {"id": "P17", "category": "electronics", "title": "Samsung T7 Shield 1TB", "barcode": ""},
-    {"id": "P18", "category": "tools", "title": "DeWalt DCD796 wiertarko-wkretarka", "barcode": ""},
-    {"id": "P19", "category": "gaming", "title": "ASUS TUF Gaming A15 FA507 laptop", "barcode": ""},
-    {"id": "P20", "category": "personal_care", "title": "Oral-B iO Series 6 szczoteczka", "barcode": ""}
+    {
+      "id": "P01",
+      "category": "tools",
+      "title": "Stanley Air Kit OL 195 kompresor bezolejowy 8215190STN595",
+      "barcode": "8016738753899",
+      "model_tokens": [
+        "AIRKIT",
+        "OL195"
+      ]
+    },
+    {
+      "id": "P02",
+      "category": "electronics",
+      "title": "Raspberry Pi 5 8GB",
+      "barcode": "",
+      "model_tokens": [
+        "RASPBERRYPI5",
+        "8GB"
+      ]
+    },
+    {
+      "id": "P03",
+      "category": "electronics",
+      "title": "Apple iPhone 16 128GB",
+      "barcode": "",
+      "model_tokens": [
+        "IPHONE16",
+        "128GB"
+      ]
+    },
+    {
+      "id": "P04",
+      "category": "electronics",
+      "title": "Logitech MX Master 3S",
+      "barcode": "",
+      "model_tokens": [
+        "MXMASTER3S"
+      ]
+    },
+    {
+      "id": "P05",
+      "category": "electronics",
+      "title": "Samsung SSD 990 PRO 2TB",
+      "barcode": "",
+      "model_tokens": [
+        "990PRO",
+        "2TB"
+      ]
+    },
+    {
+      "id": "P06",
+      "category": "audio",
+      "title": "Sony WH-1000XM5",
+      "barcode": "",
+      "model_tokens": [
+        "WH1000XM5"
+      ]
+    },
+    {
+      "id": "P07",
+      "category": "tools",
+      "title": "Bosch GSR 12V-15 wiertarko-wkretarka",
+      "barcode": "",
+      "model_tokens": [
+        "GSR12V15"
+      ]
+    },
+    {
+      "id": "P08",
+      "category": "tools",
+      "title": "Makita DDF482 wiertarko-wkretarka",
+      "barcode": "",
+      "model_tokens": [
+        "DDF482"
+      ]
+    },
+    {
+      "id": "P09",
+      "category": "wearables",
+      "title": "Garmin Forerunner 265",
+      "barcode": "",
+      "model_tokens": [
+        "FORERUNNER265"
+      ]
+    },
+    {
+      "id": "P10",
+      "category": "gaming",
+      "title": "Nintendo Switch OLED",
+      "barcode": "",
+      "model_tokens": [
+        "SWITCHOLED"
+      ]
+    },
+    {
+      "id": "P11",
+      "category": "electronics",
+      "title": "WD Black SN850X 2TB",
+      "barcode": "",
+      "model_tokens": [
+        "SN850X",
+        "2TB"
+      ]
+    },
+    {
+      "id": "P12",
+      "category": "appliances",
+      "title": "Dyson V15 Detect",
+      "barcode": "",
+      "model_tokens": [
+        "V15DETECT"
+      ]
+    },
+    {
+      "id": "P13",
+      "category": "personal_care",
+      "title": "Philips OneBlade QP2724",
+      "barcode": "",
+      "model_tokens": [
+        "QP2724"
+      ]
+    },
+    {
+      "id": "P14",
+      "category": "electronics",
+      "title": "Kindle Paperwhite 12 generacja 16 GB",
+      "barcode": "",
+      "model_tokens": [
+        "PAPERWHITE12"
+      ]
+    },
+    {
+      "id": "P15",
+      "category": "smartphones",
+      "title": "Xiaomi Redmi Note 13 Pro 8GB 256GB",
+      "barcode": "",
+      "model_tokens": [
+        "REDMINOTE13PRO",
+        "256GB"
+      ]
+    },
+    {
+      "id": "P16",
+      "category": "monitors",
+      "title": "LG 27GP850-B 27 cali",
+      "barcode": "",
+      "model_tokens": [
+        "27GP850B"
+      ]
+    },
+    {
+      "id": "P17",
+      "category": "electronics",
+      "title": "Samsung T7 Shield 1TB",
+      "barcode": "",
+      "model_tokens": [
+        "T7SHIELD",
+        "1TB"
+      ]
+    },
+    {
+      "id": "P18",
+      "category": "tools",
+      "title": "DeWalt DCD796 wiertarko-wkretarka",
+      "barcode": "",
+      "model_tokens": [
+        "DCD796"
+      ]
+    },
+    {
+      "id": "P19",
+      "category": "gaming",
+      "title": "ASUS TUF Gaming A15 FA507 laptop",
+      "barcode": "",
+      "model_tokens": [
+        "FA507"
+      ]
+    },
+    {
+      "id": "P20",
+      "category": "personal_care",
+      "title": "Oral-B iO Series 6 szczoteczka",
+      "barcode": "",
+      "model_tokens": [
+        "IOSERIES6"
+      ]
+    }
   ]
 }

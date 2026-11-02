@@ -44,6 +44,15 @@ evidence tier and never bypasses a HTTP 403.
 [Feasibility gate, installation and limits](docs/MARKETPLACE_BROWSER_CAPTURE_FEASIBILITY.md) ·
 [Blocking issue #38](https://github.com/issueslinux/tracecart/issues/38).
 
+## Search-first provider quality audit (offline replay)
+
+A bounded 20-product SerpApi/DataForSEO study can now be replayed from
+actual saved API JSON without incurring new queries. It measures model-token
+matched indexed price observations, marketplaces and retailer-link coverage,
+separating pending/missing provider responses from no usable matches.
+Until real provider responses are supplied, coverage remains **NOT MEASURED**.
+[Offline provider audit instructions](benchmarks/SEARCH_FIRST_OFFLINE_AUDIT.md).
+
 ## NEW: automatic competing-offer source checks from authorized search
 
 With `BRAVE_API_KEY` configured, the URL-first cart job now runs two
