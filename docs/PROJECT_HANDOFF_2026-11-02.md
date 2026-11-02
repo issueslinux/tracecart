@@ -1,3 +1,23 @@
+# AKTUALIZACJA PO HANDOFF — 2 listopada 2026, etap autonomicznych pytań
+
+**Ten handoff opisuje bazowy stan przed kolejnym etapem.**
+Nowy, zweryfikowany etap opisuje dokument
+[AUTONOMOUS_EVIDENCE_2026-11-02.md](AUTONOMOUS_EVIDENCE_2026-11-02.md).
+
+Frontend `/cart` i `/cart/status/{id}` jest po angielsku. Użytkownik
+podaje wyłącznie URL; nie klika odpowiedzi. LLM Qwen po wynikach
+Shopping potrafi wygenerować cztery pytania do źródeł (realny lokalny test;
+pierwszy cold-start zakończył się timeoutem). Odpowiedzi mogą pozostać
+OPEN, a nie być zmyślane. Historyczny raport nie jest edytowany.
+Dla Lenovo dodano PSREF 15Q8X10 i 16IPH11 oraz niezależne badania
+Notebookcheck **różnych konfiguracji** — bez przypisywania wyników
+IPS/60 Wh wariantowi OLED i bez traktowania Core 5 210H jako
+Core Ultra 5 322. Stan: 375 testów Python, 8 Node i realny headless Chromium
+na kopii zachowanego zadania. Otwarta blokada: brak zweryfikowanego
+checkout, pełnego collectora testów, sandboxowego E2E PayPal oraz filmu/Devpost.
+
+---
+
 # TraceCart — stan i przekazanie prac, 2 listopada 2026, 21:45 CET
 
 **Cel:** następny czat ma móc kontynuować pracę samodzielnie, bez odtwarzania poprzedniej wielogodzinnej rozmowy. Ten dokument odróżnia stan sprawdzony od planów.

@@ -5,6 +5,23 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## UPDATE: no-click English research path + real Lenovo source differentiation
+
+**2 November 2026 (supersedes the historical click-to-answer flow below):**
+The default /cart and /cart/status/{id} pages now use English and require only
+one product URL. The buyer is **never asked to answer the research questions**.
+The source/critic tree expands automatically from saved source questions and
+a bounded post-index local Qwen question-only pass. A model outage leaves
+visible research gaps, not hallucinated answers.
+
+Lenovo 15Q8X10 Snapdragon family OEM specifications, independent Notebookcheck
+IPS/60Wh measurement and a separate Intel test are now displayed with explicit
+**tested-configuration scope**, not as proof about the submitted x-kom OLED
+SKU or indexed 16IPH11 Core Ultra 5 322. No checkout price or automatic
+purchase authorization has been established. **Current verification: 375 Python,
+8 Node, plus a headless Chromium replay of the saved job.**
+[Full evidence, sources, test protocol and outstanding contest gates](docs/AUTONOMOUS_EVIDENCE_2026-11-02.md).
+
 ## CURRENT STATUS / NEW-CHAT HANDOFF (2026-11-02)
 
 **Start here for current architecture, audited Shopping counts, demo,
@@ -21,13 +38,12 @@ was not retrievable. No live PayPal Sandbox end-to-end approval,
 public judge-accessible deployment, video or Devpost submission
 has been confirmed. The source report and hash remain unchanged.
 
-## NEW: interactive decision explorer (2026-11-02)
+## HISTORICAL: earlier interactive buyer decision explorer (superseded)
 
-The default cart workflow now uses a clean, light, progressive decision
-tree. Submit a single URL at /cart: the form redirects directly to the
-result, and the browser renders evidence, questions, selected answers and
-a conditional final decision. Editing earlier answers recalculates the
-branches without rerunning the provider API. The complete old research
+The earlier cart workflow used a click-to-answer decision tree. That
+implementation has now been superseded by the autonomous English research
+path described above. The retained historical example screenshots and
+comments below describe the previous implementation. The complete old research
 audit remains available at /cart/status/{id}/audit; raw report JSON remains
 unchanged and its original hash stays intact.
 

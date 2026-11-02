@@ -1,63 +1,61 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>TraceCart — sprawdź przed zakupem</title>
+  <title>TraceCart — evidence before checkout</title>
   <link rel="stylesheet" href="/assets/decision-flow.css">
 </head>
 <body class="flow-page">
-  <header class="site-header">
-    <div class="site-inner">
-      <a class="brand" href="/cart" aria-label="TraceCart">
-        <span class="brand-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span>tracecart<span class="brand-dot">.</span></span>
-      </a>
-      <div class="site-meta">PRODUCT INTELLIGENCE / ZAKUPY BEZ ZGADYWANIA</div>
-      <span class="entry-private">PRIVATE LOCAL SESSION</span>
-    </div>
-  </header>
+  <header class="site-header"><div class="site-inner">
+    <a class="brand" href="/cart" aria-label="TraceCart">
+      <span class="brand-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span>tracecart<span class="brand-dot">.</span></span>
+    </a>
+    <div class="site-meta">AUTONOMOUS PRODUCT INTELLIGENCE</div>
+    <span class="entry-private">SANDBOX RESEARCH / NO PAYMENTS</span>
+  </div></header>
   <main class="workspace entry-workspace">
-    <div class="workspace-topline"><span>START / 01</span><span>JEDEN LINK → ŚCIEŻKA DECYZYJNA</span></div>
+    <div class="workspace-topline"><span>START / 01</span><span>ONE LINK → INDEPENDENT RESEARCH</span></div>
     <div class="entry-hero">
       <div class="entry-content">
-        <span class="eyebrow">NARZĘDZIE DO PRZEMYŚLANYCH DECYZJI</span>
-        <h1>Nie kupuj<br>na <em>ślepo.</em></h1>
-        <p class="intro-lead">Wklej produkt. Znajdziemy podobną półkę cenową i techniczną, pokażemy, co wiadomo, a następnie przejdziemy przez pytania prowadzące do decyzji.</p>
+        <span class="eyebrow">SOURCE-FIRST SHOPPING ASSISTANT</span>
+        <h1>Know more.<br>Buy <em>better.</em></h1>
+        <p class="intro-lead">Paste a product link. TraceCart investigates comparable products, scrutinizes seller quotes, and maps what is known versus what still needs proof. No questionnaires.</p>
       </div>
       <div class="entry-flow-map" aria-hidden="true">
-        <div class="entry-map-node entry-map-node-first"><span>01</span><strong>Produkt</strong><small>Wskazany adres</small></div>
+        <div class="entry-map-node entry-map-node-first"><span>01</span><strong>Product</strong><small>Your URL</small></div>
         <div class="entry-map-line"></div>
-        <div class="entry-map-node"><span>02</span><strong>Dowody</strong><small>Sklepy, ceny, luki</small></div>
+        <div class="entry-map-node"><span>02</span><strong>Evidence</strong><small>Sources &amp; tests</small></div>
         <div class="entry-map-line"></div>
-        <div class="entry-map-node"><span>03</span><strong>Pytania</strong><small>Twój cel i wymagania</small></div>
+        <div class="entry-map-node"><span>03</span><strong>Research</strong><small>Agent questions</small></div>
         <div class="entry-map-line"></div>
-        <div class="entry-map-node entry-map-node-last"><span>04</span><strong>Wniosek</strong><small>Rekomendacja warunkowa</small></div>
+        <div class="entry-map-node entry-map-node-last"><span>04</span><strong>Verdict</strong><small>With uncertainty</small></div>
       </div>
     </div>
     <section class="entry-form-zone">
       <div class="entry-form-label">
-        <span class="module-index">ROZPOCZNIJ ANALIZĘ</span>
-        <h2>Co zamierzasz kupić?</h2>
-        <p>Obsługujemy także Allegro i sklepy, które blokują bezpośredni odczyt. W takich przypadkach pokazujemy wyraźnie oznaczone dane wyszukiwarki.</p>
+        <span class="module-index">AUTOMATIC INVESTIGATION</span>
+        <h2>What are you considering?</h2>
+        <p>Marketplace links, including Allegro, are supported as research leads when direct seller access is restricted. Indexed prices are never treated as verified checkout totals.</p>
       </div>
       <form method="post" action="/cart/add" class="entry-form">
         <input type="hidden" name="csrf" value="{{CSRF}}">
-        <label for="product_url">Product URL / Link do produktu</label>
+        <label for="product_url">Product URL</label>
         <input id="product_url" name="product_url" type="url" maxlength="1200"
-               placeholder="https://allegro.pl/... lub https://www.x-kom.pl/..."
+               placeholder="https://store.example/product/..."
                autocomplete="url" required aria-describedby="privacy-note">
-        <button type="submit">Przeanalizuj produkt <span aria-hidden="true">↗</span></button>
-        <p id="privacy-note" class="entry-caveat">Bez opłat i bez płatności. Link służy do badania — nie uruchamia żadnego zamówienia. Żaden wynik nie jest automatycznie uznawany za potwierdzony.</p>
+        <button type="submit">Research this product <span aria-hidden="true">↗</span></button>
+        <p id="privacy-note" class="entry-caveat">No purchase, no payment authorization, and no automatic ranking from search snippets alone.</p>
       </form>
     </section>
     <div class="entry-bottom">
-      <div><strong>01 / PODOBNE PRODUKTY</strong><p>Nie tylko identyczne modele. Również produkty o zbliżonej klasie i przeznaczeniu.</p></div>
-      <div><strong>02 / JAWNE LUKI W DANYCH</strong><p>Cena z indeksu to nie cena w koszyku. Podejrzane okazje wymagają sprawdzenia.</p></div>
-      <div><strong>03 / DECYZJA, NIE RAPORT</strong><p>Odpowiadasz na krótkie pytania. Drzewo prowadzi do uzasadnionego wniosku.</p></div>
+      <div><strong>01 / COMPARABLE ALTERNATIVES</strong><p>Functional and technical peers, not just exact product IDs.</p></div>
+      <div><strong>02 / SOURCE QUALIFICATION</strong><p>Manufacturer claims, independent measurements and index quotes are different kinds of evidence.</p></div>
+      <div><strong>03 / NO BUYER INTERROGATION</strong><p>Research questions are addressed to sources, never to you.</p></div>
     </div>
-    <footer class="flow-footer"><strong>TRACECART / LOCAL</strong><span>Przed zakupem potwierdź cenę, wariant, dostępność i gwarancję.</span></footer>
+    <footer class="flow-footer"><strong>TRACECART / RESEARCH</strong><span>Confirm price, exact variant and terms with the merchant before purchasing.</span></footer>
   </main>
 </body>
 </html>

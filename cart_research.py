@@ -486,7 +486,8 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
                {"group": name, "question_count": len(items)},
                [_node("question", q, "OPEN",
                       {"answer": "Unknown until documented by a permitted source",
-                       "group": name},
+                       "group": name,
+                       "question_origin": ("LOCAL_LLM" if q in ai_questions else "RULE_BASED")},
                       node_id="cart-q-{}-{}".format(name, i))
                 for i, q in enumerate(items)],
                node_id="cart-group-{}".format(name))
@@ -680,6 +681,12 @@ class CartResearchJobs:
                 from automatic_offer_discovery import enrich_with_discovered_offers
                 report = enrich_with_discovered_offers(report, clean, max_checks=3)
             else:
+                report.pop("sha256", None)
+                report["sha256"] = sha256(json.dumps(
+                    report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            if report.get("indexed_shopping"):
+                from autonomous_research import enrich_index_research_with_llm
+                report = enrich_index_research_with_llm(report, clean)
                 report.pop("sha256", None)
                 report["sha256"] = sha256(json.dumps(
                     report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()

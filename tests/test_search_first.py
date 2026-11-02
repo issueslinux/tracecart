@@ -201,7 +201,9 @@ class SearchFirstTests(unittest.TestCase):
             try:
                 with patch("product_intake.extract_product_page",
                            side_effect=SourceAccessDenied(403)), patch(
-                           "search_first.search_serpapi_shopping", return_value=output):
+                           "search_first.search_serpapi_shopping", return_value=output), patch(
+                           "autonomous_research.enrich_index_research_with_llm",
+                           side_effect=lambda report, item: report):
                     jid = jobs.submit_url(item["merchant_url"])
                     for _ in range(150):
                         row = jobs.read(jid)

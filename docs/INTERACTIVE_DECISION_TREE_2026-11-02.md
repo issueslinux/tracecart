@@ -1,3 +1,5 @@
+> **Historical document:** The former click-through buyer questionnaire was replaced by the [English autonomous evidence path](AUTONOMOUS_EVIDENCE_2026-11-02.md).
+
 # TraceCart — interaktywne drzewo decyzji (2 listopada 2026)
 
 ## Diagnoza zadania Lenovo

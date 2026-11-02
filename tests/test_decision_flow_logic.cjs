@@ -1,91 +1,64 @@
 "use strict";
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
-const browserCode=require('../assets/decision-flow.js');
-const raw=JSON.parse(fs.readFileSync(path.resolve(__dirname,
- '../examples/live_lenovo_ideapad_decision_projection_2026-11-02.json'),'utf8'));
-const flow=()=>JSON.parse(JSON.stringify(raw));
+const test=require("node:test");
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const ui=require("../assets/decision-flow.js");
+const historical=JSON.parse(fs.readFileSync(path.resolve(__dirname,
+  "../examples/live_lenovo_ideapad_decision_projection_2026-11-02.json"),"utf8"));
+const report=()=>JSON.parse(JSON.stringify(historical));
 
-test('historical job has real Google Shopping evidence despite zero OPF catalog',()=>{
- const data=flow();
- assert.equal(data.evidence.catalog_only,0);
- assert.equal(data.evidence.google_shopping_cards,12);
- assert.equal(data.evidence.indexed_store_links,3);
- assert.equal(data.evidence.seller_confirmed_competitor_prices,0);
- assert.equal(data.evidence.selected_seller_price,null);
+test("independent recorded counts do not become verified prices",()=>{
+ const d=report();
+ assert.equal(d.evidence.catalog_only,0);
+ assert.equal(d.evidence.google_shopping_cards,12);
+ assert.equal(d.evidence.indexed_store_links,3);
+ assert.equal(d.evidence.seller_confirmed_competitor_prices,0);
 });
-
-test('x86 compatibility changes candidate and cannot imply checkout verification',()=>{
- const state=browserCode.prioritize(flow(),{
-   usage:'coding',priority:'balanced',compatibility:'x86',verification:'no'});
- assert.equal(state.outcome,'HOLD_FOR_PRICE_AND_SELLER_VERIFICATION');
- assert.ok(state.candidate);
- assert.equal(state.candidate.cpu_architecture,'x86');
- assert.notEqual(state.candidate.price,'124.95');
- assert.ok(state.notes.some(x=>x.includes('ARM')));
- assert.equal(state.payment_authorized,false);
- assert.equal(state.price_check_performed_by_tracecart,false);
+test("fully autonomous conclusion does not require buyer answers",()=>{
+ const d=report();
+ const v=ui.automaticVerdict(d);
+ assert.equal(v.status,"ABSTAIN_UNVERIFIED_PRICE_AND_VARIANT");
+ assert.equal(v.payment_authorized,false);
+ assert.equal(v.price_check_performed_by_tracecart,false);
+ assert.equal(v.shortlist.length,2);
+ assert.equal(v.shortlist[0].cpu_architecture,"ARM");
+ assert.equal(v.shortlist[1].cpu_architecture,"x86");
 });
-
-test('accepting ARM may find Snapdragon offer but cannot turn indexed quote into fact',()=>{
- const outcome=browserCode.prioritize(flow(),{
-   usage:'office',priority:'balanced',compatibility:'arm',verification:'yes'});
- assert.equal(outcome.candidate.cpu_architecture,'ARM');
- assert.equal(outcome.candidate.price,'2849.00');
- assert.equal(outcome.buyer_claimed_verification,true);
- assert.equal(outcome.price_check_performed_by_tracecart,false);
- assert.equal(outcome.payment_authorized,false);
- assert.equal(outcome.outcome,'CONDITIONAL_SHORTLIST_NOT_A_PURCHASE_AUTHORIZATION');
+test("ARM and x86 appear together without invented user requirements",()=>{
+ const v=ui.automaticVerdict(report());
+ assert.equal(v.shortlist[0].price,"2849.00");
+ assert.equal(v.shortlist[1].price,"3167.00");
 });
-
-test('user prioritizing screen OLED must not receive machine with unknown panel',()=>{
- const outcome=browserCode.prioritize(flow(),{
-   usage:'office',priority:'screen',compatibility:'arm',verification:'no'});
- assert.equal(outcome.outcome,'INSUFFICIENT_COMPARABLE_EVIDENCE');
- assert.equal(outcome.candidate,null);
- assert.equal(outcome.payment_authorized,false);
+test("extreme price anomalies cannot win shortlist",()=>{
+ const candidates=ui.validCandidates(report());
+ assert.ok(candidates.length);
+ assert.ok(candidates.every(x=>!x.price_warnings.length));
+ assert.ok(candidates.every(x=>x.price!=="124.95"));
 });
-
-test('demanding GPU use case abstains without benchmark evidence',()=>{
- const outcome=browserCode.prioritize(flow(),{
-   usage:'demanding',priority:'balanced',compatibility:'x86',verification:'yes'});
- assert.equal(outcome.outcome,'HOLD_FOR_PERFORMANCE_EVIDENCE');
- assert.ok(outcome.notes.some(x=>x.includes('GPU')));
- assert.equal(outcome.payment_authorized,false);
+test("missing candidates or no evidence forces abstention",()=>{
+ const d=report();
+ d.candidates=[];
+ const v=ui.automaticVerdict(d);
+ assert.deepEqual(v.shortlist,[]);
+ assert.equal(v.payment_authorized,false);
 });
-
-test('the anomalous 124.95 indexed price never becomes a price winner',()=>{
- for(const priority of ('price','balanced')) {
-   const result=browserCode.prioritize(flow(),{
-      usage:'office',priority,compatibility:'arm',verification:'no'});
-   assert.ok(result.candidate);
-   assert.notEqual(result.candidate.price,'124.95');
-   assert.ok(Number(result.candidate.price)>1000);
- }
+test("source links are HTTPS, not local or script URLs",()=>{
+ assert.equal(ui.safeHref("javascript:alert(1)"),null);
+ assert.equal(ui.safeHref("http://example.com/"),null);
+ assert.equal(ui.safeHref("https://localhost:9999/"),null);
+ assert.equal(ui.safeHref("https://127.0.0.1:8080/"),null);
+ assert.ok(ui.safeHref("https://psref.lenovo.com/Product/IdeaPad/IdeaPad_Slim_3_15Q8X10"));
+ assert.equal(ui.safeHref("/cart/status/w8MOeW8uE7pCqDYKf48-lXxy/audit"),
+ "/cart/status/w8MOeW8uE7pCqDYKf48-lXxy/audit");
 });
-
-test('strict link policy rejects javascript and blocks private host; audit same-origin is allowed',()=>{
- assert.equal(browserCode.safeHref('javascript:alert(1)'),null);
- assert.equal(browserCode.safeHref('http://example.com/offer'),null);
- assert.equal(browserCode.safeHref('https://localhost:8888/'),null);
- assert.equal(browserCode.safeHref('https://127.0.0.1:8080/a'),null);
- assert.equal(browserCode.safeHref('/cart/status/w8MOeW8uE7pCqDYKf48-lXxy/audit'),
-              '/cart/status/w8MOeW8uE7pCqDYKf48-lXxy/audit');
- assert.ok(browserCode.safeHref('https://allegro.pl/oferta/item'));
+test("unknown price is not zero and public display uses English locale",()=>{
+ assert.equal(ui.money(null,"PLN"),"Price unavailable");
+ assert.equal(ui.money("2849","PLN"),"2,849.00 PLN");
 });
-
-test('no candidate means abstention, no fabricated winner and no payment',()=>{
- const data=flow();
- data.candidates=[];
- const outcome=browserCode.prioritize(data,{priority:'price',verification:'yes'});
- assert.equal(outcome.candidate,null);
- assert.equal(outcome.outcome,'INSUFFICIENT_COMPARABLE_EVIDENCE');
- assert.equal(outcome.payment_authorized,false);
-});
-
-test('price formatting uses Polish locale and no null-to-zero sales pitch',()=>{
- assert.equal(browserCode.money(null,'PLN'),'Brak ceny'); // regression needed
- assert.equal(browserCode.money('2849','PLN'),'2849,00 PLN');
+test("front-end does not contain buyer-question choice controls",()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,"../assets/decision-flow.js"),"utf8");
+ assert.ok(source.includes("autonomous"));
+ assert.equal(source.includes("choice-btn"),false);
+ assert.equal(source.includes("renderQuestion("),false);
 });

@@ -10,6 +10,7 @@ from statistics import median
 from urllib.parse import urlsplit
 import re
 
+from autonomous_research import build_research_path
 from similar_tier import (
     category_of, read_specs, enrich_alternatives, STATUS_SIMILAR, STATUS_POSSIBLE,
 )
@@ -129,7 +130,7 @@ def _display_title(title, category, unverified):
         if specs.get("ram_gb"):
             parts.append("{:g} GB RAM".format(specs["ram_gb"]))
         if specs.get("capacity_gb"):
-            parts.append("{:g} GB SSD (z nazwy URL)".format(specs["capacity_gb"]))
+            parts.append("{:g} GB SSD (URL text only)".format(specs["capacity_gb"]))
         if specs.get("display_technology"):
             parts.append(specs["display_technology"])
         return " · ".join(parts)
@@ -193,14 +194,14 @@ def build_decision_projection(record):
         reasons=[]
         anomaly=candidate.get("index_price_anomaly")
         if anomaly=="SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED":
-            reasons.append("Cena rażąco niższa od innych wyników")
+            reasons.append("Very low indexed quote relative to peers")
         if median_index and amount and currency=="PLN" and amount < median_index*Decimal("0.40"):
-            reasons.append("Cena rażąco niższa od mediany ofert tej kategorii")
+            reasons.append("Very low indexed quote relative to category median")
         source_name=(candidate.get("source") or "").lower()
         lowered=title_candidate.casefold()
         if ("abonament" in lowered or "abonament" in source_name
                 or "miesięcznie" in lowered or "miesiecznie" in lowered):
-            reasons.append("Cena może dotyczyć abonamentu lub rat")
+            reasons.append("May represent installments or a subscription")
         if comparison.get("condition_difference"):
             reasons.append(comparison["condition_difference"])
         if reasons:
@@ -218,9 +219,9 @@ def build_decision_projection(record):
             "price":str(amount) if amount is not None else None,
             "currency":currency if currency in ("PLN","EUR","USD") else None,
             "link":link,
-            "link_kind":("strona sprzedawcy (nieodczytana)" if
+            "link_kind":("seller URL (not retrieved)" if
                          candidate.get("merchant_url") else
-                         "wyszukiwarka Google Shopping (bez linku do oferty)"),
+                         "Google Shopping search (no direct seller link)"),
             "source_kind":candidate.get("source_kind"),
             "tier":comparison["status"],
             "technical_fit":comparison.get("technical_score"),
@@ -258,18 +259,18 @@ def build_decision_projection(record):
         evidence["seller_confirmed_competitor_prices"]=0
     reasons=[]
     if selected.get("price") is None:
-        reasons.append("Nie odczytano ceny produktu ze wskazanego sklepu.")
+        reasons.append("Selected retailer price could not be retrieved.")
     if source.get("intake_status") == "URL_ONLY_UNVERIFIED":
-        reasons.append("Opis produktu pochodzi z adresu URL, nie z pobranej strony sprzedawcy.")
+        reasons.append("Selected product description is inferred from URL, not fetched seller HTML.")
     if direct or cards:
-        reasons.append("Oferty Google Shopping są obserwacjami indeksu, nie zweryfikowanymi cenami zakupów.")
+        reasons.append("Google Shopping quotes are indexed observations, not verified checkout prices.")
     if not direct and not cards:
-        reasons.append("Nie udało się pobrać porównywalnych ofert z wyszukiwarki.")
+        reasons.append("No comparable indexed offers could be retrieved.")
     if suspicious or suspicious_raw:
         reasons.append(
-            "{} indeksowanych cen jest skrajnie niższych od pozostałych; "
-            "mogą to być błędy indeksu, raty lub inne warianty. Nie są "
-            "wiarygodnymi cenami zakupu.".format(suspicious_raw))
+            "{} indexed quotes are much lower than others; "
+            "they may be index errors, installments or other variants. They are not "
+            "verified purchase prices.".format(suspicious_raw))
     payload={
         "state":"READY",
         "title":str(title)[:200],
@@ -278,10 +279,11 @@ def build_decision_projection(record):
         "selected_url":_public_link(selected.get("merchant_url")),
         "category":category,
         "selected_specs":read_specs(title,category),
-        "source_provenance":"Tytuł z URL" if source.get("intake_status")=="URL_ONLY_UNVERIFIED"
-                            else "Deklaracje strony sprzedawcy",
+        "source_provenance":"URL-derived, unverified title" if source.get("intake_status")=="URL_ONLY_UNVERIFIED"
+                            else "Retailer page claims",
         "evidence":evidence,
-        "questions":questions_for(category)[:MAX_QUESTIONS],
+        "questions":[],  # Deprecated buyer questionnaire; no clicks required.
+        "research":build_research_path(report, selected, candidates[:MAX_CANDIDATES], evidence),
         "candidates":candidates[:MAX_CANDIDATES],
         "research_questions":[
             "Czy cena jest aktualna, bez abonamentu i dotyczy wskazanego wariantu?",
