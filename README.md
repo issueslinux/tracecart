@@ -5,6 +5,20 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: keep cheaper marketplace leads visible despite HTTP 403
+
+A blocked retailer URL may still represent the most interesting price lead.
+The cart comparison accepts an optional user-observed marketplace URL and
+price and keeps it as explicitly UNVERIFIED evidence, even if safe retrieval
+returns HTTP 403. The interface and full decision tree retain the link,
+price observation, audit trail, research questions and any price conflicts.
+
+On 2 November 2026, Stanley Air Kit Allegro offer 18637535530 was observed
+at **229.00 PLN** (previously **265.00 PLN**); two directly fetched sellers
+showed **382.28 PLN** and **490.14 PLN**. These are different evidence tiers,
+NOT verified checkout savings or a complete market ranking.
+[Method, limitations and real source audit](docs/MARKETPLACE_PRICE_LEADS_2026-11-02.md).
+
 ## NEW: evidence-driven Offer Research Critic
 
 Once seller-page comparisons finish, TraceCart now creates an **actionable
