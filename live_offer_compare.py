@@ -18,6 +18,7 @@ from product_intake import (extract_product_page, normalized_product_url,
 from unit_economics import unit_cost
 from product_variant import check_variant_consistency
 from purchase_dimensions import purchase_questions, fulfillment_assessment
+from shipping_comparison import conditional_shipping_comparison
 
 
 def _stock_evidence(claim):
@@ -69,7 +70,7 @@ def _shipping_break_even(selected, competitor):
     }
 
 
-def compare_live_offer(base_report, selected, candidate_url, extractor=None):
+def compare_live_offer(base_report, selected, candidate_url, extractor=None, buyer_country=None):
     """Return immutable, source-attributed second-offer report, never a winner."""
     selected = validate_cart(selected)
     candidate_url = normalized_product_url(candidate_url)
@@ -224,6 +225,8 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "alternative_cost_per_wash": other_unit,
         "seller_listed_price_delta_pct_vs_selected": delta,
         "delivery_break_even": delivery,
+        "conditional_shipping_comparison": conditional_shipping_comparison(
+            selected, competitor, source, metadata, compared, country=buyer_country) if competitor else None,
         "purchase_question_groups": purchase_questions(),
         "selected_fulfillment": fulfillment_assessment(selected["price"], selected["currency"]),
         "alternative_fulfillment": fulfillment_assessment(competitor["price"], competitor["currency"]) if competitor else None,
