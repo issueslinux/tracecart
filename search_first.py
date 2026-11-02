@@ -453,6 +453,10 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
     except (OSError, ValueError, TypeError, KeyError) as exc:
         output = _empty("FAILED_" + type(exc).__name__, stamp)
         # Do not disclose provider keys or raw network exception strings.
+    if output["indexed_offers"] or output["search_result_groups"]:
+        from similar_tier import enrich_alternatives
+        output["functional_alternatives"] = enrich_alternatives(
+            selected, output["indexed_offers"], output["search_result_groups"])
     output["provider_calls"] = attempts
     return output
 
@@ -473,6 +477,12 @@ def attach_shopping_evidence(report, selected, search_result):
                         "store_offers_indexed": len(data["indexed_offers"]),
                         "provider_calls": data["provider_calls"],
                         "marketplace_hosts_seen": data["marketplace_hosts_seen"],
+                        "alternative_tier_counts": (
+                            data.get("functional_alternatives", {}).get("status_counts", {})),
+                        "selected_product_category": (
+                            data.get("functional_alternatives", {}).get("selected_category")),
+                        "price_reference_provenance": (
+                            data.get("functional_alternatives", {}).get("price_reference_provenance")),
                         "source_qualified_seller_offers": 0,
                         "payment_authorized": False,
                     },

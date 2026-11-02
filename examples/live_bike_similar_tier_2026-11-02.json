@@ -1,0 +1,493 @@
+{
+  "captured_date": "2026-11-02",
+  "source": "ACTUAL_AUTHORIZED_SERPAPI_GOOGLE_SHOPPING_2_CALL_E2E_URL_FIRST",
+  "input_user_url": "https://allegro.pl/produkt/rower-elektryczny-meski-damski-250w-15ah-100km-27-5-ebike-shimano-7s-25kmh-d0481fa2-8a35-4009-871d-108ca1cc1d78?offerId=18482612668",
+  "intake_status": "URL_ONLY_UNVERIFIED",
+  "access_problem": "HTTP_403",
+  "shopping_status": "ONLY_GOOGLE_SHOPPING_CARDS_DETAIL_FAILED",
+  "provider_calls": 2,
+  "indexed_card_count": 12,
+  "comparable_research": {
+    "selected_category": "E_BIKE",
+    "category_label": "rower elektryczny",
+    "selected_declared_specs": {
+      "power_w": 250.0,
+      "battery_ah": 15.0,
+      "wheel_in": 27.5,
+      "speed_kmh": 25.0,
+      "claimed_range_km": 100.0,
+      "gears": 7.0
+    },
+    "price_reference": "2534.03",
+    "price_reference_currency": "PLN",
+    "price_reference_provenance": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+    "status_counts": {
+      "SIMILAR_TECHNICAL_TIER_INDEX_ONLY": 6,
+      "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK": 4,
+      "DIFFERENT_TECHNICAL_TIER": 0,
+      "DIFFERENT_PRODUCT_CATEGORY": 0,
+      "CATEGORY_UNKNOWN_NO_TECHNICAL_COMPARISON": 0,
+      "CATEGORY_MATCH_INSUFFICIENT_SPECS": 2
+    },
+    "ranked_alternatives": [
+      {
+        "source": "Allegro",
+        "title": "Rower elektryczny Męski/Damski 250W 15AH 100KM 27,5\" Ebike Shimano-7S 25KMH",
+        "indexed_price": "2469.05",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+M%C4%99ski%2FDamski+250W+15AH+100KM+27%2C5%22+Ebike+Shimano-7S+25KMH+Allegro&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "SIMILAR_TECHNICAL_TIER_INDEX_ONLY",
+          "technical_score": 100,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "pojemność akumulatora (Ah): 15Ah ↔ 15Ah",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\"",
+            "liczba przełożeń: 7 ↔ 7",
+            "deklarowana prędkość: 25km/h ↔ 25km/h",
+            "deklarowany zasięg: 100km ↔ 100km"
+          ],
+          "different_features": [],
+          "unconfirmed_features": [
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 6,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "Allegro",
+        "title": "Nowy Rower elektryczny Męski/Damski 250W 15AH 100KM 27,5\" Ebike Shimano-7S",
+        "indexed_price": "2469.00",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Nowy+Rower+elektryczny+M%C4%99ski%2FDamski+250W+15AH+100KM+27%2C5%22+Ebike+Shimano-7S+Allegro&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "SIMILAR_TECHNICAL_TIER_INDEX_ONLY",
+          "technical_score": 92,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "pojemność akumulatora (Ah): 15Ah ↔ 15Ah",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\"",
+            "liczba przełożeń: 7 ↔ 7",
+            "deklarowany zasięg: 100km ↔ 100km"
+          ],
+          "different_features": [],
+          "unconfirmed_features": [
+            "deklarowana prędkość",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 5,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NEW_TITLE_CLAIM",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "Allegro",
+        "title": "Rower Elektryczny Damski 250W 15AH 100KM 27.5\" E-bike Shimano 7 Biegowa Pl",
+        "indexed_price": "2599.00",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Rower+Elektryczny+Damski+250W+15AH+100KM+27.5%22+E-bike+Shimano+7+Biegowa+Pl+Allegro&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "SIMILAR_TECHNICAL_TIER_INDEX_ONLY",
+          "technical_score": 92,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "pojemność akumulatora (Ah): 15Ah ↔ 15Ah",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\"",
+            "liczba przełożeń: 7 ↔ 7",
+            "deklarowany zasięg: 100km ↔ 100km"
+          ],
+          "different_features": [],
+          "unconfirmed_features": [
+            "deklarowana prędkość",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 5,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "Allegro",
+        "title": "Rower elektryczny Męski/Damski Allgobike AM27 250W 36V 15AH 100KM 27.5\" Pl",
+        "indexed_price": "2599.00",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+M%C4%99ski%2FDamski+Allgobike+AM27+250W+36V+15AH+100KM+27.5%22+Pl+Allegro&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "SIMILAR_TECHNICAL_TIER_INDEX_ONLY",
+          "technical_score": 85,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "pojemność akumulatora (Ah): 15Ah ↔ 15Ah",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\"",
+            "deklarowany zasięg: 100km ↔ 100km"
+          ],
+          "different_features": [],
+          "unconfirmed_features": [
+            "liczba przełożeń",
+            "deklarowana prędkość",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 4,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "Allegro",
+        "title": "Orzel C27 Rower Elektryczny 27,5\" 250W 15Ah 25km/h 100km Męski Damski Ebike",
+        "indexed_price": "3399.00",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Orzel+C27+Rower+Elektryczny+27%2C5%22+250W+15Ah+25km%2Fh+100km+M%C4%99ski+Damski+Ebike+Allegro&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "SIMILAR_TECHNICAL_TIER_INDEX_ONLY",
+          "technical_score": 87,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "pojemność akumulatora (Ah): 15Ah ↔ 15Ah",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\"",
+            "deklarowana prędkość: 25km/h ↔ 25km/h"
+          ],
+          "different_features": [
+            "deklarowany zasięg: 100km ↔ 25km"
+          ],
+          "unconfirmed_features": [
+            "liczba przełożeń",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 5,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "Allegro",
+        "title": "Rower elektryczny miejski Allgobike AM27 250W 15Ah 100KM Ebike Shimano 45Nm",
+        "indexed_price": "2469.05",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+miejski+Allgobike+AM27+250W+15Ah+100KM+Ebike+Shimano+45Nm+Allegro&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "SIMILAR_TECHNICAL_TIER_INDEX_ONLY",
+          "technical_score": 68,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "pojemność akumulatora (Ah): 15Ah ↔ 15Ah",
+            "deklarowany zasięg: 100km ↔ 100km"
+          ],
+          "different_features": [],
+          "unconfirmed_features": [
+            "rozmiar koła (cale)",
+            "liczba przełożeń",
+            "deklarowana prędkość",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 3,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "Decathlon",
+        "title": "Evercross Rower elektryczny Ek15 27,5\" Mtb 250W 36V 25 km/h amortyzacja + hamulce",
+        "indexed_price": "3028.99",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Evercross+Rower+elektryczny+Ek15+27%2C5%22+Mtb+250W+36V+25+km%2Fh+amortyzacja+%2B+hamulce+Decathlon&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK",
+          "technical_score": 57,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\"",
+            "deklarowana prędkość: 25km/h ↔ 25km/h"
+          ],
+          "different_features": [
+            "deklarowany zasięg: 100km ↔ 25km"
+          ],
+          "unconfirmed_features": [
+            "pojemność akumulatora (Ah)",
+            "liczba przełożeń",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 4,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "Decathlon",
+        "title": "Rower elektryczny EK15 27,5\" MTB 250W 36V 25 km/h amortyzacja + hamulce",
+        "indexed_price": "3028.99",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+EK15+27%2C5%22+MTB+250W+36V+25+km%2Fh+amortyzacja+%2B+hamulce+Decathlon&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK",
+          "technical_score": 57,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\"",
+            "deklarowana prędkość: 25km/h ↔ 25km/h"
+          ],
+          "different_features": [
+            "deklarowany zasięg: 100km ↔ 25km"
+          ],
+          "unconfirmed_features": [
+            "pojemność akumulatora (Ah)",
+            "liczba przełożeń",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 4,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "SIMILAR_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "iwobike.pl",
+        "title": "Rower Elektryczny Męski Damski Górski 27,5\" MTB Shimano Alivio 250 W LCD",
+        "indexed_price": "3919.00",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Rower+Elektryczny+M%C4%99ski+Damski+G%C3%B3rski+27%2C5%22+MTB+Shimano+Alivio+250+W+LCD+iwobike.pl&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK",
+          "technical_score": 49,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\""
+          ],
+          "different_features": [],
+          "unconfirmed_features": [
+            "pojemność akumulatora (Ah)",
+            "liczba przełożeń",
+            "deklarowana prędkość",
+            "deklarowany zasięg",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 2,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "HIGHER_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      },
+      {
+        "source": "iwobike.pl",
+        "title": "Rower Elektryczny Damski Męski Górski Koła 27,5\" Mtb Full Amory 250 W LCD",
+        "indexed_price": "4507.00",
+        "currency": "PLN",
+        "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+        "merchant_url": null,
+        "shopping_lookup_url": "https://www.google.com/search?tbm=shop&q=Rower+Elektryczny+Damski+M%C4%99ski+G%C3%B3rski+Ko%C5%82a+27%2C5%22+Mtb+Full+Amory+250+W+LCD+iwobike.pl&gl=pl&hl=pl",
+        "comparison": {
+          "category": "E_BIKE",
+          "category_label": "rower elektryczny",
+          "selected_category": "E_BIKE",
+          "status": "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK",
+          "technical_score": 49,
+          "matched_features": [
+            "moc silnika: 250W ↔ 250W",
+            "rozmiar koła (cale): 27.5\" ↔ 27.5\""
+          ],
+          "different_features": [],
+          "unconfirmed_features": [
+            "pojemność akumulatora (Ah)",
+            "liczba przełożeń",
+            "deklarowana prędkość",
+            "deklarowany zasięg",
+            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego"
+          ],
+          "comparison_basis": "ONLY_PUBLIC_SEARCH_INDEX_TITLES_NOT_PRODUCT_TESTS",
+          "same_model_required": false,
+          "actual_quality_not_measured": true,
+          "advertised_range_is_unverified": true,
+          "evidence_dimensions_compared": 2,
+          "selected_spec_dimensions": 6,
+          "selected_condition_from_title": "NOT_STATED",
+          "candidate_condition_from_title": "NOT_STATED",
+          "price_band": "HIGHER_INDEX_PRICE_BAND",
+          "price_reference_kind": "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS",
+          "price_reference_value": "2534.025",
+          "price_reference_currency": "PLN"
+        },
+        "index_price_anomaly": "NOT_ASSESSED_CARD",
+        "source_verified": false,
+        "selected_model_identity_verified": false,
+        "real_quality_test_available": false
+      }
+    ],
+    "total_index_observations": 12,
+    "no_independent_product_tests": true,
+    "price_versus_quality_not_measured": true,
+    "same_sku_not_required_for_alternatives": true,
+    "payment_authorized": false,
+    "limitations": [
+      "Similarity is heuristic, from indexed title specifications, not independent testing.",
+      "Power, battery and advertised range may be incomplete or seller-inaccurate.",
+      "Price segment derived from search-index peers is not the selected item's current seller price.",
+      "A related bike model may differ in brakes, battery cells, frame, warranty and safety."
+    ]
+  },
+  "source_qualified_seller_price_count": 0,
+  "payment_authorized": false,
+  "result_tree_sha256": "d287288da8176ee1abd3db1cec8b6587e91c2f6d2119ec9e87d3cac9cec937ce",
+  "limitations": "Functional comparison based on indexed listing titles, not validated battery quality, braking performance, warranty, actual range or checkout price."
+}

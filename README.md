@@ -5,6 +5,24 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: comparable alternatives, not only identical SKUs (2026-11-02)
+
+TraceCart now presents a separate **similar functional/price-tier** shortlist
+beside strict same-SKU comparisons. Different brands and models are eligible:
+for e-bikes, it compares indexed motor power, battery Ah/nominal Wh when known,
+wheel size, gears, assist speed and advertised range. Unknown specs remain
+explicit. Alternative ranking distinguishes close specifications, partial
+matches, different technical tiers and different categories; severe capacity
+and power differences are not treated as equivalents.
+
+Price bands use the selected listing price when available or a clearly marked
+median of sufficiently similar indexed results, not an invented purchase total.
+The 12-card real Allegro bicycle test produced **six close technical
+alternatives** and **four possible alternatives needing more data**. The
+index-only results do not prove actual ride quality or current checkout prices.
+
+[Technical design, real bike results, assumptions and missing evidence](docs/SIMILAR_PRODUCT_TIER_2026-11-02.md).
+
 ## FIX: Allegro bicycle Shopping cards survive Google Product detail errors
 
 On **2 November 2026**, the user submitted a specific Allegro 250W/15Ah

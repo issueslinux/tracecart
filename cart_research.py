@@ -622,6 +622,13 @@ class CartResearchJobs:
             except (SourceAccessDenied, SourceRedirect, SourceHTTPFailure) as exc:
                 item, source = generic_url_identity(
                     url, "HTTP_" + str(exc.status))
+            except (TimeoutError, ConnectionError) as exc:
+                # HTTPS source timeouts and resets are connectivity failures,
+                # not evidence that the item cannot be researched. Continue
+                # with the URL-only (unverified) product identity and Search-First.
+                # Do not catch arbitrary ValueError / unsafe private DNS errors.
+                item, source = generic_url_identity(
+                    url, "SOURCE_" + type(exc).__name__.upper())
             except ValueError as exc:
                 # Product-page access/metadata failure is recoverable using
                 # only the customer-provided URL, regardless of retailer.
