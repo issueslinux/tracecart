@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from live_offer_compare import compare_live_offer
 from offer_research_critic import critique_competing_offers, critic_tree_branch
 from product_intake import normalized_product_url
+from marketplace_leads import add_marketplace_leads
 
 
 MAX_OTHER_MERCHANTS = 4
@@ -23,7 +24,7 @@ def _host(url):
     return hostname[4:] if hostname.startswith("www.") else hostname
 
 
-def compare_live_offers(base_report, selected, candidate_urls, extractor=None, buyer_country=None):
+def compare_live_offers(base_report, selected, candidate_urls, extractor=None, buyer_country=None, marketplace_observations=None):
     """Compare 1..4 merchant URLs. Fail validation before any network calls."""
     if type(candidate_urls) is not list or not (1 <= len(candidate_urls) <= MAX_OTHER_MERCHANTS):
         raise ValueError("Provide 1 to 4 alternative product URLs")
@@ -37,7 +38,8 @@ def compare_live_offers(base_report, selected, candidate_urls, extractor=None, b
     if len(set(hosts)) != len(hosts):
         raise ValueError("Use one candidate URL per retailer")
     if len(urls) == 1:
-        return compare_live_offer(base_report, selected, urls[0], extractor=extractor, buyer_country=buyer_country)
+        single = compare_live_offer(base_report, selected, urls[0], extractor=extractor, buyer_country=buyer_country)
+        return add_marketplace_leads(single, selected, marketplace_observations)
 
     result = deepcopy(base_report)
     if "root" not in result or not result["root"].get("children"):
@@ -96,4 +98,4 @@ def compare_live_offers(base_report, selected, candidate_urls, extractor=None, b
     result.pop("sha256", None)
     result["sha256"] = sha256(json.dumps(
         result, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    return result
+    return add_marketplace_leads(result, selected, marketplace_observations)

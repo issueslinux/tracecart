@@ -719,5 +719,49 @@ class WebFlowTests(unittest.TestCase):
         self.assertEqual(status, 403)
 
 
+    def test_marketplace_price_lead_survives_http_403_without_false_saving(self):
+        from test_live_offer_compare import SELECTED, BASE
+        from product_intake import SourceAccessDenied
+        import sqlite3
+        import cart_research as cart
+        with patch.object(cart, "generate_local_ai_questions", return_value=[]):
+            base = cart.research_cart(SELECTED, fetch=lambda url, host, headers=None: (
+                {"items": []} if host == "prices.openfoodfacts.org"
+                else {"products": []}))
+        base["source_intake"] = {**BASE["source_intake"],
+                                 "extraction_method": "Product JSON-LD",
+                                 "barcode_status": "FOUND"}
+        job_id = "L" * 24
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            db.execute(
+                "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
+                "VALUES (?,?,?,?,?,NULL)",
+                (job_id, json.dumps(SELECTED), "READY",
+                 "2026-11-02T00:00:00+00:00", json.dumps(base)))
+        market_url = "https://allegro.pl/produkt/sample-stanley"
+        def blocked(url):
+            raise SourceAccessDenied(403)
+        with patch("live_offer_compare.extract_product_page", side_effect=blocked):
+            status, body = self.request("POST", "/cart/compare-live", {
+                "csrf": self.csrf, "job_id": job_id,
+                "marketplace_url": market_url,
+                "marketplace_price": "29.99",
+                "marketplace_currency": "PLN"})
+        self.assertEqual(status, 200, body[:500])
+        self.assertIn("MARKETPLACE PRICE LEADS", body)
+        self.assertIn("29.99", body)
+        self.assertIn("UNVERIFIED", body)
+        rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', body).group(1)
+        status, raw = self.request("GET", "/research/report/" + rid + ".json")
+        self.assertEqual(status, 200)
+        report = json.loads(raw)
+        self.assertEqual(report["live_competitor_comparison"]["status"], "SECOND_PAGE_NOT_RETRIEVED")
+        self.assertEqual(report["marketplace_leads"]["potential_lower_price_leads"], 1)
+        self.assertFalse(report["marketplace_leads"]["payment_authorized"])
+        self.assertEqual(report["marketplace_leads"]["source_qualified_comparisons"], 0)
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

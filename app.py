@@ -65,6 +65,37 @@ def h(text):
     return escape(str(text), quote=True)
 
 
+def marketplace_lead_panel(report):
+    """Show unverified marketplace observations without a false price winner."""
+    data = report.get('marketplace_leads') or {}
+    if not data:
+        return ''
+    rows = []
+    for lead in data['observations']:
+        gap = lead['difference_vs_selected_listed_price']
+        gap_label = (
+            gap + ' ' + lead['currency'] + ' (UNVERIFIED observation gap)'
+            if gap is not None else 'NOT COMPARABLE')
+        rows.append(
+            '<tr><td><a href="{}" target="_blank" rel="noopener noreferrer">'
+            '{}</a></td><td>{} {}</td><td>{}</td><td>{}</td></tr>'.format(
+                h(lead['url']), h(lead['url']),
+                h(lead['observed_price']), h(lead['currency']),
+                h(lead['comparison_status']), h(gap_label)))
+    return (
+        '<section><div class="tag">MARKETPLACE PRICE LEADS · UNVERIFIED</div>'
+        '<h2>Potentially cheaper offers, including blocked marketplaces</h2>'
+        '<p>These are <b>reported prices</b>, not source pages successfully '
+        'retrieved and verified by TraceCart. The lead remains visible '
+        'even if the marketplace refuses automated access. '
+        'Stock, exact SKU, condition and current price still require verification.</p>'
+        '<table><tr><th>Link</th><th>Reported price</th>'
+        '<th>Evidence status</th><th>Difference vs selected listing</th>'
+        '</tr>{}</table><p class="warning">Do not rank these as confirmed '
+        'offers or use them for checkout claims.</p></section>'.format(
+            ''.join(rows)))
+
+
 def research_critic_panel(report):
     """Escaped, actionable summary for single- and multi-seller research."""
     critic = (report.get('multi_offer_research_critic') or
@@ -467,6 +498,18 @@ https://www.adafruit.com/product/3400</textarea></label>
             value="{}" placeholder="e.g. PL" autocomplete="country"></label>
             <p>Country suggested from browser language-region settings, not verified location.
             Check or change it before comparing delivery costs. If blank, delivery costs stay unknown.</p>
+            <p><b>Optional cheaper marketplace lead</b> (e.g. a listing your browser
+            can display but TraceCart cannot fetch). This stays an UNVERIFIED
+            observation: neither product identity nor price is confirmed here.</p>
+            <label>Marketplace listing URL
+            <input type="text" name="marketplace_url" maxlength="1200"
+            placeholder="https://marketplace.example/product/..."></label>
+            <label>Price seen in browser (product price only)
+            <input type="text" name="marketplace_price" maxlength="16"
+            placeholder="265.00"></label>
+            <label>Observed price currency
+            <select name="marketplace_currency"><option>PLN</option>
+            <option>EUR</option><option>USD</option></select></label>
             <button>Audit competing sources and compare seller claims</button>
             </form></section>""".format(
                 h(search_url), self.hidden(), h(job_id), h(country_hint)))
@@ -650,6 +693,8 @@ https://www.adafruit.com/product/3400</textarea></label>
         if (report.get('multi_offer_research_critic') or
                 report.get('single_offer_research_critic')):
             body = research_critic_panel(report) + body
+        if report.get('marketplace_leads'):
+            body = marketplace_lead_panel(report) + body
         comparison = report.get("comparison_summary")
         if comparison:
             rows = []
@@ -828,12 +873,29 @@ https://www.adafruit.com/product/3400</textarea></label>
                         if line.strip()]
                 if not urls and form.get("competitor_url"):
                     urls = [form["competitor_url"]]  # legacy clients
+                marketplace_url = form.get("marketplace_url", "").strip()
+                marketplace_price = form.get("marketplace_price", "").strip()
+                if bool(marketplace_url) != bool(marketplace_price):
+                    raise ValueError("Marketplace lead URL and observed price must both be supplied")
+                market_leads = None
+                if marketplace_url:
+                    market_leads = [{
+                        "url": marketplace_url,
+                        "price": marketplace_price,
+                        "currency": form.get("marketplace_currency", "PLN"),
+                        "origin": "USER_REPORTED_NOT_FETCHED",
+                    }]
+                    # When only a marketplace listing was supplied, attempt
+                    # ordinary robots-aware retrieval too, retaining denial.
+                    if not urls:
+                        urls = [marketplace_url]
                 buyer_country = form.get("buyer_country", "").strip().upper() or None
                 if buyer_country is not None and (len(buyer_country) != 2 or
                         not buyer_country.isascii() or not buyer_country.isalpha()):
                     raise ValueError("Destination country must be two ASCII letters")
                 report = compare_live_offers(
-                    job["report"], job["item"], urls, buyer_country=buyer_country)
+                    job["report"], job["item"], urls, buyer_country=buyer_country,
+                    marketplace_observations=market_leads)
                 rid = self.server.reports.save(report)
                 self.research_report_page(rid, report)
             elif self.path == "/propose":

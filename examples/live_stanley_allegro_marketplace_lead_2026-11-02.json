@@ -1,0 +1,61 @@
+{
+  "research_case": "Stanley Air Kit — seller-page baseline vs marketplace web observation",
+  "snapshot_type": "PROVENANCE_SEPARATED_NOT_FINAL_CHECKOUT_OR_MARKET_RANKING",
+  "captured_at": "2026-11-02T16:56:45.010117+00:00",
+  "selected_direct_retrieved_source": {
+    "url": "https://xdom.eu/KOMPRESOR-BEZOLEJOWY-AIR-KIT-1-5KM-8BAR-p30069",
+    "seller_listed_price": "490.14",
+    "currency": "PLN",
+    "seller_gtin_claim": "8016738753899",
+    "page_sha256": "18c13bd1917bccc20d90e9f0629fffeb9b3e92aea86f60c5eb9c998914c548da",
+    "retrieved_at": "2026-11-02T16:56:45.008819+00:00"
+  },
+  "marketplace_external_public_page_review": {
+    "url": "https://allegro.pl/produkt/kompresor-bezolejowy-1100-w-stanley-air-kit-1-5km-8-bar-sprezarka-zestaw-e4cae746-3f65-411f-a748-e715e2d02305",
+    "price_on_public_page_observed": "229.00",
+    "previous_displayed_price": "265.00",
+    "currency": "PLN",
+    "offer_id": "18637535530",
+    "reported_condition": "new",
+    "seller": "Oficjalny sklep Allegro",
+    "seller_product_gtin_claim": "8016738753899",
+    "observed_at": "2026-11-02T16:56:45.010117+00:00",
+    "provenance": "PUBLIC_WEB_PAGE_REVIEW_NOT_SAFELY_FETCHED_BY_TRACECART",
+    "comparison_not_retailer_verified": true
+  },
+  "tracecart_competitor_retrieval_status": "SECOND_PAGE_NOT_RETRIEVED",
+  "tracecart_access_diagnostic": "HTTP_403",
+  "unverified_marketplace_lead": {
+    "id": "market-lead-1",
+    "url": "https://allegro.pl/produkt/kompresor-bezolejowy-1100-w-stanley-air-kit-1-5km-8-bar-sprezarka-zestaw-e4cae746-3f65-411f-a748-e715e2d02305",
+    "origin": "PUBLIC_PAGE_REVIEW_NOT_FETCHED_BY_TRACECART",
+    "recorded_at": "2026-11-02T16:56:45.250863+00:00",
+    "observed_at_unverified": "2026-11-02T16:56:45.010117+00:00",
+    "observed_price": "229.00",
+    "currency": "PLN",
+    "condition_claim": "NEW_CLAIM",
+    "gtin_claim_not_verified": "8016738753899",
+    "gtin_checksum_valid": true,
+    "same_gtin_claim_not_verified": true,
+    "comparison_status": "OBSERVED_LOWER_LISTED_PRICE_NOT_VERIFIED",
+    "difference_vs_selected_listed_price": "261.14",
+    "source_page_downloaded_by_tracecart": false,
+    "stock_verified": false,
+    "independent_product_test": false,
+    "payment_authorized": false,
+    "research_questions": [
+      "Can an authorized source confirm this exact listing's active price and availability?",
+      "Does the seller identify the same exact model, condition and included accessories?",
+      "Is there independent product testing or a reliable review of this exact variant?"
+    ]
+  },
+  "source_qualified_competitor_offers": 0,
+  "payment_authorized": false,
+  "limitations": [
+    "An observed search/browser price is not fetched or verified by TraceCart.",
+    "The marketplace product identity, stock, price, condition and merchant may differ.",
+    "Do not exclude a cheaper-looking lead merely because a marketplace returns HTTP 403.",
+    "No ranking or checkout saving may be inferred from these observations."
+  ],
+  "full_report_sha256": "b093223c1395bf39dad2cc2b19b6535645a501a2dfc814132b32bfaa00973947"
+}
