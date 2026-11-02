@@ -17,7 +17,7 @@
     <div class="site-meta">RESEARCH / <strong>EVIDENCE PATH</strong> <span class="separator">·</span> SANDBOX DEMO</div>
     <a class="site-link" href="/cart">+ New analysis <span aria-hidden="true">↗</span></a>
   </div></header>
-  <main class="workspace" id="decision-app" data-source="{{DECISION_URL}}" data-audit="{{AUDIT_URL}}">
+  <main class="workspace" id="decision-app" data-source="{{DECISION_URL}}" data-audit="{{AUDIT_URL}}" data-product-url="{{PRODUCT_URL}}">
     <div class="workspace-topline"><span>01 / PRODUCT RESEARCH</span><span>NO BUYER QUESTIONS · NO PURCHASE</span></div>
     <section class="intro"><div class="intro-head">
       <div>
@@ -45,6 +45,10 @@
         </div>
         <div id="decision-graph" class="decision-graph" aria-live="polite" hidden></div>
         <div id="flow-final" hidden></div>
+        <section id="offer-questions-region" class="alternatives-region" aria-live="polite">
+          <div class="subsection-heading"><span>PER-OFFER RESEARCH BACKLOG</span><span id="offer-plan-count" class="fine-print">Preparing source questions…</span></div>
+          <div id="offer-research-cards"></div>
+        </section>
         <section id="alternatives-region" class="alternatives-region" hidden>
           <div class="subsection-heading"><span>INDEXED ALTERNATIVES TO INVESTIGATE</span><span class="fine-print">Search prices ≠ checkout totals</span></div>
           <div id="alternatives-cards"></div>

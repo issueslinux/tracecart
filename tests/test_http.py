@@ -420,6 +420,20 @@ class WebFlowTests(unittest.TestCase):
         status,derived=self.request("GET","/cart/status/"+jid+".decision.json")
         self.assertEqual(status,200)
         payload=json.loads(derived)
+        self.assertEqual(len(payload["offers"]),16)
+        self.assertEqual(sum(x["question_count"] for x in payload["offers"]),4608)
+        status,qjson=self.request("GET","/cart/status/"+jid+
+                                  "/questions.json?offer=1&offset=24&limit=12")
+        self.assertEqual(status,200)
+        question_page=json.loads(qjson)
+        self.assertEqual(question_page["offer_id"],"offer-1")
+        self.assertEqual(question_page["offset"],24)
+        self.assertEqual(len(question_page["questions"]),12)
+        self.assertTrue(all(q["status"]=="PLANNED_NOT_INVESTIGATED"
+                            for q in question_page["questions"]))
+        bad,_=self.request("GET","/cart/status/"+jid+
+                           "/questions.json?offer=999&offset=0&limit=24")
+        self.assertEqual(bad,400)
         self.assertEqual(payload["evidence"]["catalog_only"],0)
         self.assertEqual(payload["evidence"]["google_shopping_cards"],12)
         self.assertEqual(payload["evidence"]["indexed_store_links"],3)

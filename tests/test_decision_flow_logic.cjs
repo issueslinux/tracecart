@@ -62,3 +62,14 @@ test("front-end does not contain buyer-question choice controls",()=>{
  assert.equal(source.includes("choice-btn"),false);
  assert.equal(source.includes("renderQuestion("),false);
 });
+
+
+test("no-click rendering supports immediate pre-result stage and paginated offer plans",()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,"../assets/decision-flow.js"),"utf8");
+ assert.ok(source.includes("renderStaged({"));
+ assert.ok(source.includes("renderOfferQueue(data"));
+ assert.ok(source.includes("IntersectionObserver"));
+ assert.ok(source.includes("PLANNED"));
+ assert.ok(source.includes('polls<12?450:POLL_MS'));
+ assert.equal(source.includes("choice-btn"),false);
+});

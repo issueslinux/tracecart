@@ -5,6 +5,22 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: immediate research tree, hundreds of planned source checks per offer
+
+**2026-11-02 later update:** no more blank 10–45 second "Building the research
+path" wait. After one URL, the page draws a source investigation node
+immediately and receives incremental SQL-backed research stage updates.
+For the existing Lenovo example it discovers **16 independent listing leads**
+(1 input + 15 index rows) and creates **288 source-check questions per lead**
+(**4608 planned investigations**) from a product-specific 24×12 structured
+backlog, with paginated loading (24 questions at a time) instead of flooding
+the DOM. A separate background local Qwen worker asks additional
+offer-specific source questions as they become available; it does not block
+the result, browsing or payment safety controls. The structured 4608
+are **not claimed to be LLM-written or independently answered**.
+Only source-confirmed findings may be marked as answered.
+[Full architecture, evidence and real Chromium checks](docs/PROGRESSIVE_OFFER_RESEARCH_2026-11-02.md).
+
 ## UPDATE: no-click English research path + real Lenovo source differentiation
 
 **2 November 2026 (supersedes the historical click-to-answer flow below):**

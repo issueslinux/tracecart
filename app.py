@@ -407,6 +407,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{AUDIT_URL}}":"/cart/status/"+job_id+"/audit",
             "{{RAW_URL}}":"/cart/status/"+job_id+".json",
             "{{SHORT_ID}}":job_id[:8],
+            "{{PRODUCT_URL}}":(result.get("item") or {}).get("merchant_url") or "",
         }
         for key,value in substitutions.items():
             tmpl=tmpl.replace(key,h(value))
@@ -485,10 +486,12 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             self.send_flow_asset(path)
         elif path.startswith("/cart/status/"):
             suffix = path[len("/cart/status/"):]
+            question_page = suffix.endswith("/questions.json")
             audit = suffix.endswith("/audit")
             projected = suffix.endswith(".decision.json")
             raw = suffix.endswith(".json") and not projected
-            job_id = (suffix[:-len("/audit")] if audit else
+            job_id = (suffix[:-len("/questions.json")] if question_page else
+                      suffix[:-len("/audit")] if audit else
                       suffix[:-len(".decision.json")] if projected else
                       suffix[:-len(".json")] if raw else suffix)
             try:
@@ -496,7 +499,33 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             except ValueError as exc:
                 self.send_page('<section class="error">{}</section>'.format(h(exc)), 404)
                 return
-            if projected:
+            if question_page:
+                from offer_question_bank import offer_summaries, questions_for_offer
+                from similar_tier import category_of
+                args = parse_qs(urlsplit(self.path).query)
+                try:
+                    number = int(args.get("offer", ["0"])[0])
+                    offset = int(args.get("offset", ["0"])[0])
+                    limit = int(args.get("limit", ["24"])[0])
+                    item = result.get("item") or {}
+                    category = category_of(item.get("title") or item.get("merchant_url") or "")
+                    offers = offer_summaries({**result,
+                          "report": result.get("report") or result.get("preview_report")}, category)
+                    if not 0 <= number < len(offers):
+                        raise ValueError("Invalid offer")
+                    output = questions_for_offer(offers[number], category, offset, limit)
+                    payload = json.dumps(output, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("X-Content-Type-Options", "nosniff")
+                    self.send_header("Content-Security-Policy", FLOW_CSP)
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+                except (TypeError, ValueError, IndexError):
+                    self.send_page("<section class='error'>Invalid question page</section>", 400)
+            elif projected:
                 self.send_flow_projection(result)
             elif raw:
                 output = json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8")
