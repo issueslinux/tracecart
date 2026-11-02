@@ -1,0 +1,268 @@
+{
+  "state": "READY",
+  "title": "1521342 laptop 15 16 lenovo ideapad slim 3 15 snapdragon x1 26 100 16gb 512 win11 oled.html",
+  "display_title": "Laptop Lenovo IdeaPad Slim 3 · Snapdragon · 16 GB RAM · 512 GB SSD (z nazwy URL) · OLED",
+  "selected_url": "https://www.x-kom.pl/p/1521342-laptop-15-16-lenovo-ideapad-slim-3-15-snapdragon-x1-26-100-16gb-512-win11-oled.html",
+  "category": "LAPTOP",
+  "selected_specs": {
+    "ram_gb": 16.0,
+    "capacity_gb": 512.0,
+    "cpu_family": "Snapdragon ARM",
+    "display_technology": "OLED"
+  },
+  "source_provenance": "Tytuł z URL",
+  "evidence": {
+    "catalog_only": 0,
+    "google_shopping_cards": 12,
+    "indexed_store_links": 3,
+    "indexed_listing_records": 15,
+    "unverified_similar_product_leads": 4,
+    "index_prices_flagged_in_alternatives": 1,
+    "unusually_low_raw_index_quotes": 3,
+    "seller_confirmed_competitor_prices": 0,
+    "selected_seller_price": null,
+    "selected_currency": null,
+    "input_source_status": "URL_ONLY_UNVERIFIED",
+    "input_source_problem": "SOURCE_TOO_LARGE",
+    "shopping_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+    "shopping_api_calls": 2,
+    "independent_product_tests": 0
+  },
+  "questions": [
+    {
+      "id": "usage",
+      "title": "Do czego potrzebujesz laptopa?",
+      "detail": "Inne zastosowanie zmienia to, które cechy są najważniejsze.",
+      "choices": [
+        {
+          "value": "office",
+          "label": "Codzienna praca",
+          "hint": "Przeglądarka, dokumenty, spotkania."
+        },
+        {
+          "value": "coding",
+          "label": "Programowanie i aplikacje",
+          "hint": "Zgodność narzędzi i środowiska ma znaczenie."
+        },
+        {
+          "value": "demanding",
+          "label": "Gry lub wymagające aplikacje",
+          "hint": "Weryfikujemy GPU, wydajność i zgodność."
+        }
+      ]
+    },
+    {
+      "id": "priority",
+      "title": "Co ma największe znaczenie?",
+      "detail": "To wybór użytkownika, nie dowód jakości produktu.",
+      "choices": [
+        {
+          "value": "price",
+          "label": "Możliwie dobra cena",
+          "hint": "Szukamy wartości, odrzucając podejrzane ceny."
+        },
+        {
+          "value": "balanced",
+          "label": "Rozsądny kompromis",
+          "hint": "Cena i porównywalna konfiguracja."
+        },
+        {
+          "value": "screen",
+          "label": "Ekran i komfort pracy",
+          "hint": "OLED/IPS nie traktujemy jako tożsame."
+        }
+      ]
+    },
+    {
+      "id": "compatibility",
+      "title": "Czy potrzebujesz programów zgodnych z x86?",
+      "detail": "Snapdragon X wykorzystuje ARM; nie każde narzędzie Windows x86 działa identycznie.",
+      "choices": [
+        {
+          "value": "x86",
+          "label": "Tak, zgodność x86 jest ważna",
+          "hint": "Intel/AMD zamiast niezweryfikowanej kompatybilności ARM."
+        },
+        {
+          "value": "arm",
+          "label": "Nie, ARM może być OK",
+          "hint": "Można uwzględnić modele Snapdragon."
+        },
+        {
+          "value": "unknown",
+          "label": "Nie wiem",
+          "hint": "Nie deklarujemy zgodności aplikacji bez sprawdzenia."
+        }
+      ]
+    },
+    {
+      "id": "verification",
+      "title": "Czy sprawdziłeś cenę i warunki konkretnej oferty?",
+      "detail": "Bez sprawdzenia ceny, wariantu, gwarancji i dostępności nie ma pewnej decyzji zakupowej.",
+      "choices": [
+        {
+          "value": "yes",
+          "label": "Tak, osobiście w sklepie",
+          "hint": "Zapisujemy Twoją deklarację, nie weryfikację TraceCart."
+        },
+        {
+          "value": "no",
+          "label": "Jeszcze nie",
+          "hint": "Cena z Google Shopping może być błędna lub nieaktualna."
+        },
+        {
+          "value": "unavailable",
+          "label": "Strona jest niedostępna",
+          "hint": "Nie uznajemy ceny indeksowanej za potwierdzoną."
+        }
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "id": "candidate-1",
+      "source": "Allegro",
+      "title": "Laptop Lenovo IdeaPad Slim 3 15Q8X10 Snapdragon X X1-26-100 16GB 512GB",
+      "price": "2849.00",
+      "currency": "PLN",
+      "link": "https://www.google.com/search?tbm=shop&q=Laptop+Lenovo+IdeaPad+Slim+3+15Q8X10+Snapdragon+X+X1-26-100+16GB+512GB+Allegro&gl=pl&hl=pl",
+      "link_kind": "wyszukiwarka Google Shopping (bez linku do oferty)",
+      "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+      "tier": "SIMILAR_TECHNICAL_TIER_INDEX_ONLY",
+      "technical_fit": 82,
+      "matched_specs": [
+        "pamięć RAM: 16GB ↔ 16GB",
+        "pojemność pamięci: 512GB ↔ 512GB",
+        "rodzina procesora: Snapdragon ARM ↔ Snapdragon ARM"
+      ],
+      "missing_specs": [
+        "typ matrycy"
+      ],
+      "different_specs": [],
+      "specs": {
+        "ram_gb": 16.0,
+        "capacity_gb": 512.0,
+        "cpu_family": "Snapdragon ARM"
+      },
+      "cpu_architecture": "ARM",
+      "quality_verified": false,
+      "seller_price_verified": false,
+      "price_warnings": [],
+      "index_only": true
+    },
+    {
+      "id": "candidate-2",
+      "source": "Ceneo.pl",
+      "title": "Laptop Lenovo IdeaPad Slim 3 15IPH11 Ultra 5 322 / 16 GB / 512 GB / W11",
+      "price": "3167.00",
+      "currency": "PLN",
+      "link": "https://www.google.com/search?tbm=shop&q=Laptop+Lenovo+IdeaPad+Slim+3+15IPH11+Ultra+5+322+%2F+16+GB+%2F+512+GB+%2F+W11+Ceneo.pl&gl=pl&hl=pl",
+      "link_kind": "wyszukiwarka Google Shopping (bez linku do oferty)",
+      "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+      "tier": "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK",
+      "technical_fit": 56,
+      "matched_specs": [
+        "pamięć RAM: 16GB ↔ 16GB",
+        "pojemność pamięci: 512GB ↔ 512GB"
+      ],
+      "missing_specs": [
+        "typ matrycy"
+      ],
+      "different_specs": [
+        "rodzina procesora: Snapdragon ARM ↔ Intel x86"
+      ],
+      "specs": {
+        "ram_gb": 16.0,
+        "capacity_gb": 512.0,
+        "cpu_family": "Intel x86"
+      },
+      "cpu_architecture": "x86",
+      "quality_verified": false,
+      "seller_price_verified": false,
+      "price_warnings": [],
+      "index_only": true
+    },
+    {
+      "id": "candidate-3",
+      "source": "eLenovo.pl",
+      "title": "Lenovo IdeaPad Slim 3 16IPH11 | Intel Core Ultra 5 322 | 16\" | 16GB | 512GB | W11 Home",
+      "price": "3399.00",
+      "currency": "PLN",
+      "link": "https://elenovo.pl/lenovo-ideapad-slim-3-16iph11-intel-core-ultra-5-322-16-16gb-512gb-w11-home-1",
+      "link_kind": "strona sprzedawcy (nieodczytana)",
+      "source_kind": "INDEXED_STORE_LINK",
+      "tier": "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK",
+      "technical_fit": 56,
+      "matched_specs": [
+        "pamięć RAM: 16GB ↔ 16GB",
+        "pojemność pamięci: 512GB ↔ 512GB"
+      ],
+      "missing_specs": [
+        "typ matrycy"
+      ],
+      "different_specs": [
+        "rodzina procesora: Snapdragon ARM ↔ Intel x86"
+      ],
+      "specs": {
+        "ram_gb": 16.0,
+        "capacity_gb": 512.0,
+        "cpu_family": "Intel x86",
+        "screen_in": 16.0
+      },
+      "cpu_architecture": "x86",
+      "quality_verified": false,
+      "seller_price_verified": false,
+      "price_warnings": [],
+      "index_only": true
+    },
+    {
+      "id": "candidate-4",
+      "source": "Media Expert",
+      "title": "Laptop LENOVO 83n3005xpb 15.3\" Qualcomm Snapdragon X X1-26-100 16 GB RAM Windows 11 Home Notebook",
+      "price": "124.95",
+      "currency": "PLN",
+      "link": "https://www.google.com/search?tbm=shop&q=Laptop+LENOVO+83n3005xpb+15.3%22+Qualcomm+Snapdragon+X+X1-26-100+16+GB+RAM+Windows+11+Home+Notebook+Media+Expert&gl=pl&hl=pl",
+      "link_kind": "wyszukiwarka Google Shopping (bez linku do oferty)",
+      "source_kind": "SEARCH_CARD_NO_DIRECT_OFFER",
+      "tier": "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK",
+      "technical_fit": 55,
+      "matched_specs": [
+        "pamięć RAM: 16GB ↔ 16GB",
+        "rodzina procesora: Snapdragon ARM ↔ Snapdragon ARM"
+      ],
+      "missing_specs": [
+        "pojemność pamięci",
+        "typ matrycy"
+      ],
+      "different_specs": [],
+      "specs": {
+        "ram_gb": 16.0,
+        "cpu_family": "Snapdragon ARM",
+        "screen_in": 15.3
+      },
+      "cpu_architecture": "ARM",
+      "quality_verified": false,
+      "seller_price_verified": false,
+      "price_warnings": [
+        "Cena rażąco niższa od innych wyników",
+        "Cena rażąco niższa od mediany ofert tej kategorii"
+      ],
+      "index_only": true
+    }
+  ],
+  "research_questions": [
+    "Czy cena jest aktualna, bez abonamentu i dotyczy wskazanego wariantu?",
+    "Czy parametry i zgodność oprogramowania są potwierdzone u producenta?",
+    "Czy warunki zwrotu, gwarancja i reputacja sprzedawcy są udokumentowane?"
+  ],
+  "warnings": [
+    "Nie odczytano ceny produktu ze wskazanego sklepu.",
+    "Opis produktu pochodzi z adresu URL, nie z pobranej strony sprzedawcy.",
+    "Oferty Google Shopping są obserwacjami indeksu, nie zweryfikowanymi cenami zakupów.",
+    "3 indeksowanych cen jest skrajnie niższych od pozostałych; mogą to być błędy indeksu, raty lub inne warianty. Nie są wiarygodnymi cenami zakupu."
+  ],
+  "decision_boundary": "NO_AUTOMATIC_PAYMENT_OR_VERIFIED_CHEAPEST_CLAIM",
+  "measurement_provenance": "Read-only reinterpretation of saved research report",
+  "saved_report_sha256": "35c53afb5be630f1faf38e699d0396e7760601d27be02752d5c50547c1551ead",
+  "payment_authorized": false
+}

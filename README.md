@@ -5,6 +5,26 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: interactive decision explorer (2026-11-02)
+
+The default cart workflow now uses a clean, light, progressive decision
+tree. Submit a single URL at /cart: the form redirects directly to the
+result, and the browser renders evidence, questions, selected answers and
+a conditional final decision. Editing earlier answers recalculates the
+branches without rerunning the provider API. The complete old research
+audit remains available at /cart/status/{id}/audit; raw report JSON remains
+unchanged and its original hash stays intact.
+
+**Real Lenovo correction:** the existing x-kom laptop job had an OPF
+catalog count of zero but **12 Google Shopping cards, 3 indexed seller
+links and 4 title-level comparable alternative configurations**. The
+sidebar now shows those separate counts. The original x-kom item price
+remains unknown because the retailer page exceeded the bounded reader.
+Snapdragon ARM and Intel x86 are treated as distinct compatibility
+choices. No index quote is promoted to a verified seller/checkout price.
+
+[Design, source evidence, conditional decisions and real-browser checks](docs/INTERACTIVE_DECISION_TREE_2026-11-02.md).
+
 ## NEW: comparable alternatives, not only identical SKUs (2026-11-02)
 
 TraceCart now presents a separate **similar functional/price-tier** shortlist

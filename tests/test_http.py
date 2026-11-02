@@ -382,6 +382,107 @@ class WebFlowTests(unittest.TestCase):
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
 
+    def test_interactive_decision_http_on_existing_laptop_job(self):
+        # A real sanitized snapshot of the user's old x-kom job: OPF catalog
+        # zero, but Shopping 12 cards + 3 index-store links.
+        fixture=(Path(__file__).resolve().parents[1] /
+                 "examples/live_lenovo_ideapad_index_evidence_2026-11-02.json")
+        historical=json.loads(fixture.read_text(encoding="utf-8"))
+        # The fixture is intentionally truncated to source + index evidence;
+        # restore the legacy auditor's non-source structural fields so it
+        # can render its full old-style tree as well.
+        report=historical["report"]
+        report["source_discovery"].update({"attempts":[],"web_hits":[]})
+        report["root"]["id"]="research-root"
+        report["root"]["kind"]="research"
+        report["root"]["title"]="Historic laptop analysis"
+        report["root"]["status"]="IN_PROGRESS"
+        report["root"]["details"].update({
+            "category":"laptop","local_ai_question_generation":"UNAVAILABLE_timeout"})
+        report["root"]["children"][-1].update({
+            "id":"cart-summary","title":"Legacy catalog-only summary","children":[]})
+        jid="H"*24
+        import sqlite3
+        with sqlite3.connect(str(Path(self.tmp.name)/"webquotes.sqlite")) as db:
+            db.execute(
+                "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
+                "VALUES (?,?,?,?,?,NULL)",
+                (jid,json.dumps(historical["item"]),"READY",
+                 "2026-11-02T20:10:00+00:00",json.dumps(historical["report"])))
+        # Default is the clean progressive workspace, not 70 KB of 'None'.
+        status,ui=self.request("GET","/cart/status/"+jid)
+        self.assertEqual(status,200)
+        self.assertIn("Od produktu",ui)
+        self.assertIn('data-source="/cart/status/'+jid+'.decision.json"',ui)
+        self.assertIn('data-audit="/cart/status/'+jid+'/audit"',ui)
+        self.assertIn('src="/assets/decision-flow.js"',ui)
+        self.assertNotIn("unit_economics:",ui)
+        status,derived=self.request("GET","/cart/status/"+jid+".decision.json")
+        self.assertEqual(status,200)
+        payload=json.loads(derived)
+        self.assertEqual(payload["evidence"]["catalog_only"],0)
+        self.assertEqual(payload["evidence"]["google_shopping_cards"],12)
+        self.assertEqual(payload["evidence"]["indexed_store_links"],3)
+        self.assertEqual(payload["evidence"]["unverified_similar_product_leads"],4)
+        self.assertEqual(payload["evidence"]["seller_confirmed_competitor_prices"],0)
+        self.assertEqual(payload["evidence"]["unusually_low_raw_index_quotes"],3)
+        self.assertEqual(payload["category"],"LAPTOP")
+        self.assertIn("Snapdragon",payload["display_title"])
+        self.assertFalse(payload["payment_authorized"])
+        status,audit=self.request("GET","/cart/status/"+jid+"/audit")
+        self.assertEqual(status,200)
+        self.assertIn("catalog_alternatives_found:",audit)
+        self.assertIn("Ważne: różne źródła mają osobne liczniki",audit)
+        self.assertIn("12",audit)
+        status,raw=self.request("GET","/cart/status/"+jid+".json")
+        self.assertEqual(status,200)
+        stored=json.loads(raw)
+        self.assertEqual(stored["report"]["sha256"],historical["report"]["sha256"])
+        self.assertEqual(stored["report"]["root"]["children"][-1]["details"][
+            "catalog_alternatives_found"],0)
+        self.assertNotIn("functional_alternatives",stored["report"]["indexed_shopping"])
+
+    def test_flow_assets_are_same_origin_and_not_inline_script_enabled(self):
+        status,home=self.request("GET","/cart")
+        self.assertEqual(status,200)
+        self.assertIn("Nie kupuj",home)
+        self.assertIn('action="/cart/add"',home)
+        self.assertIn('name="product_url"',home)
+        self.assertIn('name="csrf"',home)
+        status,css=self.request("GET","/assets/decision-flow.css")
+        self.assertEqual(status,200)
+        self.assertIn("decision-graph",css)
+        self.assertNotIn("@import",css)
+        status,script=self.request("GET","/assets/decision-flow.js")
+        self.assertEqual(status,200)
+        self.assertIn("renderGraph",script)
+        self.assertIn("HOLD_FOR_PRICE_AND_SELLER_VERIFICATION",script)
+        with urlopen(self.base+"/cart",timeout=8) as response:
+            csp=response.headers.get("Content-Security-Policy")
+            self.assertIn("style-src 'self'",csp)
+            self.assertIn("script-src 'self'",csp)
+            self.assertNotIn("'unsafe-inline'",csp)
+            self.assertIn("frame-ancestors 'none'",csp)
+        self.assertEqual(self.request("GET","/assets/unknown.js")[0],404)
+
+    def test_pending_flow_projection_has_no_fake_ready_candidate(self):
+        import sqlite3
+        jid="Q"*24
+        with sqlite3.connect(str(Path(self.tmp.name)/"webquotes.sqlite")) as db:
+            db.execute(
+                "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
+                "VALUES (?,?,?,?,NULL,NULL)",
+                (jid,json.dumps({"merchant_url":"https://example.com/laptop",
+                                 "intake":"URL_EXTRACTION_PENDING"}),
+                 "RUNNING","2026-11-02T20:10:00+00:00"))
+        status,view=self.request("GET","/cart/status/"+jid)
+        self.assertEqual(status,200)
+        self.assertIn(".decision.json",view)
+        status,projection=self.request("GET","/cart/status/"+jid+".decision.json")
+        self.assertEqual(status,200)
+        self.assertEqual(json.loads(projection)["state"],"RUNNING")
+        self.assertNotIn("candidates",json.loads(projection))
+
     def test_allegro_403_returns_limited_ready_report_not_failed(self):
         from product_intake import SourceAccessDenied
         from test_allegro_fallback import ALLEGRO_URL
@@ -401,7 +502,7 @@ class WebFlowTests(unittest.TestCase):
                 time.sleep(.02)
         self.assertEqual(result["state"], "READY")
         self.assertIsNone(result["item"]["price"])
-        status, body = self.request("GET", "/cart/status/" + jid)
+        status, body = self.request("GET", "/cart/status/" + jid + "/audit")
         self.assertEqual(status, 200)
         self.assertIn("Limited URL-only identification", body)
         self.assertIn("HTTP_403", body)
@@ -444,7 +545,7 @@ class WebFlowTests(unittest.TestCase):
                     break
                 time.sleep(.02)
         self.assertEqual(self.server.cart_jobs.read(jid)["state"],"READY")
-        status, page = self.request("GET","/cart/status/"+jid)
+        status, page = self.request("GET","/cart/status/"+jid+"/audit")
         self.assertEqual(status,200)
         self.assertIn("Original product page",page)
         self.assertIn("34.90 PLN",page)
@@ -479,7 +580,7 @@ class WebFlowTests(unittest.TestCase):
                 break
             time.sleep(.02)
         self.assertEqual(self.server.cart_jobs.read(job_id)["state"], "READY")
-        status, ready = self.request("GET", "/cart/status/" + job_id)
+        status, ready = self.request("GET", "/cart/status/" + job_id + "/audit")
         self.assertEqual(status, 200)
         self.assertIn("Other matching product identities found online", ready)
         self.assertIn("Complete expandable research", ready)
@@ -609,7 +710,7 @@ class WebFlowTests(unittest.TestCase):
                 "VALUES (?,?,?,?,?,NULL)",
                 (job_id, json.dumps(SELECTED), "READY",
                  "2026-11-02T00:00:00+00:00", json.dumps(report)))
-        status, original = self.request("GET", "/cart/status/" + job_id)
+        status, original = self.request("GET", "/cart/status/" + job_id + "/audit")
         self.assertEqual(status, 200)
         self.assertIn("Compare up to four other stores", original)
         self.assertIn("Search shopping listings", original)

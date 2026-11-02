@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>TraceCart — ścieżka decyzji</title>
+  <link rel="stylesheet" href="/assets/decision-flow.css">
+  <script defer src="/assets/decision-flow.js"></script>
+</head>
+<body class="flow-page">
+  <header class="site-header">
+    <div class="site-inner">
+      <a class="brand" href="/cart" aria-label="TraceCart, nowa analiza">
+        <span class="brand-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>tracecart<span class="brand-dot">.</span></span>
+      </a>
+      <div class="site-meta">RESEARCH / <strong>DECISION PATH</strong> <span class="separator">·</span> LOKALNE ŚRODOWISKO</div>
+      <a class="site-link" href="/cart">+ Nowa analiza <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main class="workspace" id="decision-app" data-source="{{DECISION_URL}}" data-audit="{{AUDIT_URL}}">
+    <div class="workspace-topline"><span>01 / ANALIZA ZAKUPOWA</span><span>WNIOSKI OPARTE NA DOWODACH</span></div>
+    <section class="intro">
+      <div class="intro-head">
+        <div>
+          <p class="eyebrow">Zamiast kolejnego długiego raportu</p>
+          <h1>Od produktu<br>do <em>decyzji.</em></h1>
+          <p class="intro-lead">Przechodź przez pytania, porównuj rzeczywiste wskazówki z wyszukiwarki i zobacz, czego jeszcze nie da się potwierdzić.</p>
+        </div>
+        <div class="status-ticket">
+          <div class="ticket-top">ANALIZA <span id="status-indicator" class="status-led" aria-hidden="true"></span></div>
+          <strong id="job-state">Ładowanie</strong>
+          <small>Ocena produktu, nie automatyczny zakup</small>
+          <span class="ticket-index">ID <span>{{SHORT_ID}}</span></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="research-layout" aria-label="Wyniki i drzewo decyzji">
+      <div class="research-main">
+        <div class="module-heading">
+          <span class="module-index">A / DRZEWO WNIOSKOWANIA</span>
+          <span id="flow-counter" class="module-counter">0 / 0</span>
+        </div>
+        <div id="flow-loading" class="loading-state" role="status" aria-live="polite">
+          <span class="loading-progress" aria-hidden="true"></span>
+          <h2>Buduję ścieżkę badania…</h2>
+          <p>Po znalezieniu danych pojawią się gałęzie z pytaniami i odpowiedziami. Nie musisz odświeżać strony.</p>
+        </div>
+        <div id="decision-graph" class="decision-graph" aria-live="polite" hidden></div>
+        <div id="flow-final" hidden></div>
+        <section id="alternatives-region" class="alternatives-region" hidden>
+          <div class="subsection-heading"><span>OFERTY DO SPRAWDZENIA</span><span class="fine-print">Ceny w indeksie ≠ ceny w koszyku</span></div>
+          <div id="alternatives-cards"></div>
+        </section>
+      </div>
+
+      <aside class="research-aside">
+        <div class="aside-module">
+          <div class="aside-top">B / STAN DOWODÓW</div>
+          <h2>Co udało się<br><em>ustalić?</em></h2>
+          <dl class="evidence-stats">
+            <div><dt>Karty Google Shopping</dt><dd id="stat-cards">—</dd></div>
+            <div><dt>Indeksowane linki do sklepów</dt><dd id="stat-store-links">—</dd></div>
+            <div><dt>Potwierdzone ceny konkurencji</dt><dd id="stat-verified">—</dd></div>
+            <div><dt>Alternatywy z podobnej klasy</dt><dd id="stat-alternatives">—</dd></div>
+          </dl>
+          <p id="counts-note" class="evidence-note">Liczby pojawią się po analizie. Katalog produktów i Google Shopping to różne źródła.</p>
+        </div>
+        <div class="aside-module aside-module-warnings">
+          <div class="aside-top">C / RYZYKA</div>
+          <ul id="risk-list"><li>Oczekiwanie na dane źródłowe.</li></ul>
+        </div>
+        <div class="aside-module aside-module-actions">
+          <div class="aside-top">D / WERYFIKOWALNOŚĆ</div>
+          <a href="{{RAW_URL}}" class="text-action">Pełne dane JSON <span aria-hidden="true">↗</span></a>
+          <a href="{{AUDIT_URL}}" class="text-action">Techniczne drzewo źródeł <span aria-hidden="true">↗</span></a>
+          <p>Twój wybór odpowiedzi pozostaje w tej karcie. Nie zmienia dokumentów źródłowych ani nie uruchamia płatności.</p>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="flow-footer">
+      <strong>TRACECART / ANALIZA</strong>
+      <span>Żadna rekomendacja nie uruchamia płatności, nie potwierdza zakupu ani nie zastępuje weryfikacji oferty u sprzedawcy.</span>
+      <a href="/cart">Nowe wyszukiwanie ↗</a>
+    </footer>
+    <noscript><p class="no-script">Aby skorzystać z interaktywnego drzewa decyzji, włącz JavaScript. <a href="{{AUDIT_URL}}">Tradycyjny raport jest nadal dostępny.</a></p></noscript>
+  </main>
+</body>
+</html>

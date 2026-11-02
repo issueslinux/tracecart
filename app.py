@@ -26,6 +26,18 @@ from live_offer_compare import compare_live_offer
 from multi_offer_compare import compare_live_offers
 from browser_capture import parse_browser_capture
 from country_suggestion import suggested_country
+from guided_decision import build_decision_projection
+
+FLOW_ASSETS = {
+    "/assets/decision-flow.css": ("text/css; charset=utf-8", "decision-flow.css"),
+    "/assets/decision-flow.js": ("text/javascript; charset=utf-8", "decision-flow.js"),
+}
+
+FLOW_CSP = (
+    "default-src 'none'; script-src 'self'; style-src 'self'; "
+    "connect-src 'self'; form-action 'self'; img-src 'none'; "
+    "base-uri 'none'; frame-ancestors 'none'; object-src 'none'"
+)
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -342,6 +354,74 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_flow_asset(self, path):
+        content_type, name = FLOW_ASSETS[path]
+        payload = (Path(__file__).resolve().parent / "assets" / name).read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", FLOW_CSP)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def cart_entry_page(self):
+        tmpl=(Path(__file__).resolve().parent / "assets" /
+              "decision-entry.html").read_text(encoding="utf-8")
+        payload=tmpl.replace("{{CSRF}}",h(self.server.csrf)).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type","text/html; charset=utf-8")
+        self.send_header("Cache-Control","no-store")
+        self.send_header("Content-Security-Policy",FLOW_CSP)
+        self.send_header("X-Content-Type-Options","nosniff")
+        self.send_header("Referrer-Policy","same-origin")
+        self.send_header("X-Frame-Options","DENY")
+        self.send_header("Content-Length",str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def send_flow_projection(self, record):
+        output=json.dumps(build_decision_projection(record),
+                          ensure_ascii=False,separators=(",",":")).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", FLOW_CSP)
+        self.send_header("Content-Length", str(len(output)))
+        self.end_headers()
+        self.wfile.write(output)
+
+    def cart_status_page(self, job_id, result):
+        """Read-only decision explorer, also for historical persisted jobs.
+
+        The old complete audit stays available under /cart/status/<id>/audit.
+        A fresh projection is drawn in the browser; no original evidence
+        or saved hash is rewritten, and user answers never leave the page.
+        """
+        tmpl=(Path(__file__).resolve().parent / "assets" /
+              "decision-page.html").read_text(encoding="utf-8")
+        substitutions={
+            "{{DECISION_URL}}":"/cart/status/"+job_id+".decision.json",
+            "{{AUDIT_URL}}":"/cart/status/"+job_id+"/audit",
+            "{{RAW_URL}}":"/cart/status/"+job_id+".json",
+            "{{SHORT_ID}}":job_id[:8],
+        }
+        for key,value in substitutions.items():
+            tmpl=tmpl.replace(key,h(value))
+        payload=tmpl.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type","text/html; charset=utf-8")
+        self.send_header("Cache-Control","no-store")
+        self.send_header("Content-Security-Policy", FLOW_CSP)
+        self.send_header("X-Content-Type-Options","nosniff")
+        self.send_header("Referrer-Policy","same-origin")
+        self.send_header("X-Frame-Options","DENY")
+        self.send_header("Content-Length",str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def trusted_host(self):
         # Reject DNS rebinding via an attacker-controlled Host value.
         host = self.headers.get("Host", "")
@@ -400,34 +480,25 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 <a class="btn" href="/compare">Compare offers</a></p>
                 </section>""".format(self.hidden(), menu))
         elif path == "/cart":
-            self.send_page("""<section><div class="tag">URL FIRST · BEFORE CHECKOUT</div>
-                <h2>Paste the link to the product you have chosen</h2>
-                <p>Only the product URL is needed. TraceCart first retrieves
-                the original page (respecting robots.txt and public-HTTPS-only
-                network rules), extracts name, price, currency, barcode and stock
-                wherever these are actually available, then starts product-specific
-                research and searches for alternatives in the background.</p>
-                <form method="post" action="/cart/add">{}
-                <label>Product URL<input type="text" name="product_url"
-                value="https://www.adafruit.com/product/1083"
-                maxlength="1200" required></label>
-                <button>Analyze this product before checkout</button></form>
-                <p class="muted">Example: a real Adafruit product page. Other public
-                HTTPS product pages may work where robots.txt and structured
-                metadata permit access. A blocked page, missing product name,
-                or ambiguous multi-product listing fails safely. Missing prices
-                remain unknown: they are never replaced with 0.</p>
-                </section>""".format(self.hidden()))
+            self.cart_entry_page()
+        elif path in FLOW_ASSETS:
+            self.send_flow_asset(path)
         elif path.startswith("/cart/status/"):
-            path_id = path[len("/cart/status/"):]
-            raw = path_id.endswith(".json")
-            job_id = path_id[:-5] if raw else path_id
+            suffix = path[len("/cart/status/"):]
+            audit = suffix.endswith("/audit")
+            projected = suffix.endswith(".decision.json")
+            raw = suffix.endswith(".json") and not projected
+            job_id = (suffix[:-len("/audit")] if audit else
+                      suffix[:-len(".decision.json")] if projected else
+                      suffix[:-len(".json")] if raw else suffix)
             try:
                 result = self.server.cart_jobs.read(job_id)
             except ValueError as exc:
                 self.send_page('<section class="error">{}</section>'.format(h(exc)), 404)
                 return
-            if raw:
+            if projected:
+                self.send_flow_projection(result)
+            elif raw:
                 output = json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -436,6 +507,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Length", str(len(output)))
                 self.end_headers()
                 self.wfile.write(output)
+            elif audit:
+                self.legacy_cart_status_page(job_id, result)
             else:
                 self.cart_status_page(job_id, result)
         elif path == "/compare":
@@ -527,7 +600,7 @@ https://www.adafruit.com/product/3400</textarea></label>
         else:
             self.send_page("<section class='error'>Not found</section>", 404)
 
-    def cart_status_page(self, job_id, result):
+    def legacy_cart_status_page(self, job_id, result):
         state = result["state"]
         title = result["item"].get("title", "Reading the selected product page")
         if state in ("QUEUED", "RUNNING"):
@@ -720,7 +793,21 @@ https://www.adafruit.com/product/3400</textarea></label>
                 h(search_url), self.hidden(), h(job_id), h(country_hint)))
         discovery_panel = (shopping_search_panel(report) +
                            automatic_discovery_panel(report))
-        self.send_page(source_details + econ_html + discovery_panel + competitor_form + body)
+        indexed=report.get("indexed_shopping") or {}
+        note=(
+            '<section><h2>Ważne: różne źródła mają osobne liczniki</h2>'
+            '<p><strong>catalog_alternatives_found</strong> liczy tylko rekordy '
+            'z katalogu OPF: <b>{}</b>. Wyszukiwarka Google Shopping '
+            'zwróciła <b>{}</b> kart produktów i <b>{}</b> indeksowanych '
+            'odnośników do sklepów. Żaden z tych odnośników nie potwierdza '
+            'ostatecznej ceny zakupu ani niezależnej jakości produktu.</p>'
+            '<p><a class="btn" href="/cart/status/{}">'
+            'Przejdź do interaktywnego drzewa decyzji</a></p></section>'
+        ).format(h(len(sources.get("catalog") or [])),
+                 h(len(indexed.get("search_result_groups") or [])),
+                 h(len(indexed.get("indexed_offers") or [])),h(job_id))
+        self.send_page(note + source_details + econ_html + discovery_panel
+                       + competitor_form + body)
 
     def send_json_report(self, report, rid):
         content = json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
@@ -1074,7 +1161,14 @@ https://www.adafruit.com/product/3400</textarea></label>
                     item = {k: form.get(k, "") for k in (
                         "title", "price", "currency", "barcode", "merchant_url")}
                     job_id = self.server.cart_jobs.submit(item)
-                self.cart_status_page(job_id, self.server.cart_jobs.read(job_id))
+                # Post/Redirect/Get: render the interactive tree immediately
+                # after the click, without a second link or duplicate POST on refresh.
+                self.send_response(303)
+                self.send_header("Location","/cart/status/"+job_id)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("X-Content-Type-Options","nosniff")
+                self.send_header("Content-Length","0")
+                self.end_headers()
             elif self.path == "/cart/compare-live":
                 job = self.server.cart_jobs.read(form.get("job_id", ""))
                 if job["state"] != "READY" or not job.get("report"):
