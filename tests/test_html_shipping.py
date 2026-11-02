@@ -16,3 +16,20 @@ class HTMLShippingTests(unittest.TestCase):
         jsonld = '<script type="application/ld+json">{"@type":"Product","name":"International Widget","offers":{"@type":"Offer","shippingDetails":{"shippingDestination":{"addressCountry":"DE"},"shippingRate":{"value":"9","currency":"EUR"}}}}</script>'
         _, meta = extract_from_html('https://example.org/item', (MICRO + jsonld).encode())
         self.assertNotIn('DE', meta['structured_shipping_claims_by_country'])
+
+class ScopeTests(unittest.TestCase):
+    def test_wrapper_divs_preserve_semantic_scope(self):
+        html = MICRO.replace('<div itemprop="offers"', '<section><div itemprop="offers"').replace('</div></div></div>', '</div></div></section></div>')
+        self.assertEqual(html_shipping_claims(html).get('DE', {}).get('shipping_cost'), '5.50')
+
+    def test_multiple_product_offers_fail_closed(self):
+        self.assertEqual(html_shipping_claims(MICRO + MICRO), {})
+
+    def test_multiple_offers_fail_closed(self):
+        start = MICRO.index('<div itemprop="offers"')
+        offer = MICRO[start:-6]
+        self.assertEqual(html_shipping_claims(MICRO[:-6] + offer + '</div>'), {})
+
+    def test_unrelated_scope_not_a_shipping_claim(self):
+        html = '<div itemscope itemtype="https://schema.org/Product"><meta itemprop="name" content="Widget"><div itemscope itemtype="https://schema.org/Offer" itemprop="offers"><div itemscope itemtype="https://schema.org/OfferShippingDetails" itemprop="shippingDetails"><div itemscope itemtype="https://schema.org/DefinedRegion" itemprop="shippingDestination"><meta itemprop="currency" content="EUR"></div></div></div></div>'
+        self.assertEqual(html_shipping_claims(html), {})
