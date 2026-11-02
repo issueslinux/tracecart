@@ -10,6 +10,8 @@ import re
 # Strong wash-cycle labels, in several EU languages.
 CYCLE_PATTERNS = (
     r"(?<!\w)(\d{1,4})\s*(?:prań|pran|pra[ńn]|prania)(?!\w)",
+    # Polish shop-title shorthand, e.g. "75pr" (75 prań).
+    r"(?<!\w)(\d{1,4})\s*pr\.?(?!\w)",
     r"(?<!\w)(\d{1,4})\s*(?:washes|wash\s*loads|loads)(?!\w)",
     r"(?<!\w)(\d{1,4})\s*(?:doses|lavages|waschladungen|waschgänge)(?!\w)",
 )
