@@ -23,6 +23,7 @@ from source_crosscheck import collect_spec_crosscheck
 from comparison import compare
 from cart_research import CartResearchJobs
 from live_offer_compare import compare_live_offer
+from multi_offer_compare import compare_live_offers
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -411,22 +412,20 @@ https://www.adafruit.com/product/3400</textarea></label>
             h(job_id), lines, question_summary, attempt_html, to_html_tree(report))
         search_url = "https://www.google.com/search?" + urlencode({
             "tbm": "shop", "q": result["item"]["title"][:140]})
-        competitor_form = ("""<section><h2>Check a second real store offer</h2>
-            <p>Find a second merchant's product URL, paste it here and
-            TraceCart will read its public Product metadata using the same
-            robots.txt and HTTPS restrictions. A price from a search snippet
-            is never used as evidence. Comparison of listed prices requires
-            matching seller-declared GTINs and currency; shipping and final
-            checkout total remain unknown.</p>
+        competitor_form = ("""<section><h2>Compare up to four other stores</h2>
+            <p>Paste 1–4 public HTTPS product-page URLs, one per line, from
+            different retailers. TraceCart checks robots.txt and independently
+            retrieves each source, preserving failures, stock, price and
+            GTIN evidence in the complete tree. Search snippets never become
+            verified prices. Delivery and final checkout totals remain unknown.</p>
             <p><a href="{}" target="_blank" rel="noopener noreferrer">
             Search shopping listings (external)</a></p>
             <form method="post" action="/cart/compare-live">{}
             <input type="hidden" name="job_id" value="{}">
-            <label>Alternative retailer product URL
-            <input type="text" name="competitor_url" maxlength="1200"
-            placeholder="https://another-shop.example/product/..."
-            required></label>
-            <button>Verify second page and compare source claims</button>
+            <label>Alternative retailer product URLs (one per line)
+            <textarea name="competitor_urls" rows="4" maxlength="4800"
+            placeholder="https://other-store.example/product/..."></textarea></label>
+            <button>Audit competing sources and compare seller claims</button>
             </form></section>""".format(
                 h(search_url), self.hidden(), h(job_id)))
         self.send_page(source_details + econ_html + competitor_form + body)
@@ -568,6 +567,44 @@ https://www.adafruit.com/product/3400</textarea></label>
                     h(live.get("alternative_stock_evidence") or "UNKNOWN"),
                     delivery_note))
             body = table + body
+        multi = report.get("live_competitor_comparisons")
+        if multi:
+            rows = []
+            for entry in multi:
+                other = entry.get("alternative") or {}
+                source = entry.get("alternative_source") or {}
+                cost = entry.get("alternative_cost_per_wash") or {}
+                rows.append(
+                    '<tr><td><a href="{}" target="_blank" '
+                    'rel="noopener noreferrer">{}</a></td>'
+                    '<td>{}</td><td>{}</td><td>{}</td>'
+                    '<td>{}</td><td>{}</td><td>{}</td></tr>'.format(
+                        h(entry["alternative_requested_url"]),
+                        h(entry["alternative_requested_url"]),
+                        h(entry["status"]),
+                        h("{} {}".format(other.get("price"), other.get("currency"))
+                          if other.get("price") is not None else "UNKNOWN"),
+                        h(cost.get("cost_per_wash") or "UNKNOWN"),
+                        h(entry.get("alternative_stock_evidence") or "UNKNOWN"),
+                        h(source.get("retrieved_at") or "NOT DOWNLOADED"),
+                        h(source.get("page_sha256") or "NOT AVAILABLE")))
+            info = report["multi_offer_summary"]
+            body = ("""<section><div class="tag">BOUNDED MULTI-STORE EVIDENCE</div>
+                <h2>Independent source audit: {} of {} pages retrieved</h2>
+                <p>{} other seller pages passed the identity, stock, price
+                and currency gates against the original selected product.
+                These are seller claims, not independently verified stock or
+                checkout totals. Distinct domains may belong to one company.</p>
+                <table><tr><th>Source</th><th>Evidence status</th>
+                <th>Listed price</th><th>Cost per wash</th><th>Stock</th>
+                <th>Retrieved</th><th>SHA-256</th></tr>{}</table>
+                <p class="warning">No delivered-price winner. Shipping,
+                fees, discount eligibility, destination and actual product
+                performance remain unknown. All unsuccessful source checks
+                and critic objections are retained in the full tree.</p>
+                </section>""".format(
+                    h(info["pages_retrieved"]), h(info["requested"]),
+                    h(info["source_qualified_comparisons"]), "".join(rows))) + body
         comparison = report.get("comparison_summary")
         if comparison:
             rows = []
@@ -726,10 +763,13 @@ https://www.adafruit.com/product/3400</textarea></label>
                 job = self.server.cart_jobs.read(form.get("job_id", ""))
                 if job["state"] != "READY" or not job.get("report"):
                     raise ValueError("Original cart research must be READY")
-                if not form.get("competitor_url"):
-                    raise ValueError("Second product URL required")
-                report = compare_live_offer(
-                    job["report"], job["item"], form["competitor_url"])
+                raw_urls = form.get("competitor_urls", "")
+                urls = [line.strip() for line in raw_urls.splitlines()
+                        if line.strip()]
+                if not urls and form.get("competitor_url"):
+                    urls = [form["competitor_url"]]  # legacy clients
+                report = compare_live_offers(
+                    job["report"], job["item"], urls)
                 rid = self.server.reports.save(report)
                 self.research_report_page(rid, report)
             elif self.path == "/propose":
