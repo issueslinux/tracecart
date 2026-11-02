@@ -19,6 +19,7 @@ from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote, urljoin, parse
 from urllib.robotparser import RobotFileParser
 from visible_offer import parse_primary_offer
 from product_variant import check_page_identity_consistency
+from visible_gtin import visible_gtin_claims
 
 USER_AGENT = "TraceCartResearchBot/0.5 (+https://github.com/issueslinux/tracecart)"
 MAX_URL_LEN = 1200
@@ -299,7 +300,7 @@ def normalized_gtin(value):
     return code.zfill(14) if total % 10 == 0 else None
 
 
-def _barcode_evidence(product, parser):
+def _barcode_evidence(product, parser, html=""):
     """Read only explicitly labelled product GTINs, never SKU/MPN/URLs.
 
     If seller fields disagree or any explicitly claimed GTIN is malformed,
@@ -332,6 +333,7 @@ def _barcode_evidence(product, parser):
     for label, value in rows[:150]:
         if _is_gtin_label(label):
             claims.append((value, "HTML_EXPLICIT_EAN_TABLE_ROW"))
+    claims.extend(visible_gtin_claims(html))
     if not claims:
         return "", "NOT_FOUND", []
     normalized = [normalized_gtin(code) for code, _ in claims]
@@ -578,7 +580,7 @@ def extract_from_html(url, raw):
                 price_method = "PRODUCT_OPENGRAPH_PRICE"
     if price is None:
         currency = None
-    code, code_status, code_sources = _barcode_evidence(product, parser)
+    code, code_status, code_sources = _barcode_evidence(product, parser, raw.decode("utf-8", "replace"))
     brand = product.get("brand", "")
     if isinstance(brand, dict):
         brand = brand.get("name", "")

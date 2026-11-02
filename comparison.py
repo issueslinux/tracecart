@@ -11,6 +11,7 @@ import json
 import re
 
 from decision_tree import _dec, _id, _safe_url, _short, analyze, _node
+from fulfillment import normalize_fulfillment
 
 MAX_OPTIONS = 12
 MAX_METRICS = 24
@@ -58,7 +59,7 @@ def compare(payload):
     currencies = set()
     for option in options:
         allowed = {"id", "title", "price", "currency", "url", "condition", "metrics"}
-        if type(option) is not dict or set(option) != allowed:
+        if type(option) is not dict or not allowed.issubset(option) or set(option) - allowed - {"fulfillment"}:
             raise ValueError("Unexpected or missing offer fields")
         oid = _id(option["id"])
         if oid in original_ids:
@@ -71,6 +72,7 @@ def compare(payload):
         currencies.add(currency)
         price = _dec(option["price"])
         source = _safe_url(option["url"])
+        fulfillment = normalize_fulfillment(option.get("fulfillment"), currency, price)
         condition = option["condition"]
         if condition not in ("new", "used", "refurbished", "unknown"):
             raise ValueError("Condition must be new/used/refurbished/unknown")
@@ -121,6 +123,7 @@ def compare(payload):
         normalized.append({
             "id": oid, "title": title, "currency": currency, "price": Decimal(price),
             "condition": condition, "url": source, "metrics": clean_metrics,
+            "fulfillment": fulfillment,
         })
         evidence_offers.append({
             "id": oid, "title": title, "price": price, "currency": currency,
@@ -148,17 +151,23 @@ def compare(payload):
         record = {
             "offer_id": o["id"], "title": o["title"], "price": str(o["price"]),
             "currency": o["currency"], "condition": o["condition"],
+            "fulfillment": o["fulfillment"],
             "advantages": [], "limitations": [],
             "seller_questions": concerns,
             "unknowns": ["Actual total cost including delivery/fees is unverified.",
                          "Independent confirmation of specification claims is missing."],
         }
+        if o["fulfillment"]["product_plus_shipping"] is not None:
+            record["unknowns"][0] = "Payment fees and final checkout total remain unverified."
         if concerns:
             record["unknowns"].append("Used/refurbished condition and seller assurances are unverified.")
         comparison["options"].append(record)
         # Append seller questions to the full auditable decision tree, not a detached summary.
         tree_offer = next(x for x in report["root"]["children"]
                           if x["kind"] == "offer" and x["details"]["offer_id"] == o["id"])
+        tree_offer["children"].append(mk_node(
+            "fulfillment", "Delivery and transport evidence", o["fulfillment"]["status"],
+            o["fulfillment"], node_id="fulfillment-{}".format(o["id"])))
         for index, question in enumerate(concerns):
             tree_offer["children"].append(mk_node(
                 "follow_up", question, "OPEN",
@@ -205,7 +214,22 @@ def compare(payload):
                     ),
                     "source_urls": [a["source_url"], b["source_url"]],
                 })
+            left_total = left["fulfillment"]["product_plus_shipping"]
+            right_total = right["fulfillment"]["product_plus_shipping"]
+            transport_difference = (str(Decimal(right_total) - Decimal(left_total))
+                                    if left_total is not None and right_total is not None
+                                    else None)
             pair = {
+                "right_minus_left_product_plus_shipping": transport_difference,
+                "transport_comparison_status": (
+                    "CONDITIONAL_SELLER_DECLARED_PRODUCT_PLUS_SHIPPING"
+                    if transport_difference is not None else "UNKNOWN_TRANSPORT_COST"),
+                "delivery_time_comparison": {
+                    "left_eta_days": [left["fulfillment"]["eta_min_days"],
+                                      left["fulfillment"]["eta_max_days"]],
+                    "right_eta_days": [right["fulfillment"]["eta_min_days"],
+                                       right["fulfillment"]["eta_max_days"]],
+                    "status": "SELLER_CLAIMS_NOT_DELIVERY_GUARANTEE"},
                 "left_offer": left["id"], "right_offer": right["id"],
                 "left_price": str(left["price"]), "right_price": str(right["price"]),
                 "right_vs_left_pct": increase, "left_cheaper_vs_right_pct": saving,

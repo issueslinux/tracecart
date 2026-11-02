@@ -1,0 +1,123 @@
+{
+  "captured_at": "2026-11-02T07:12:51.288148+00:00",
+  "case": "Stanley Air Kit OL 195 / 8215190STN595",
+  "identity": "MATCHING_SELLER_DECLARED_VALID_GTIN_NOT_INDEPENDENT_OEM_CONFIRMATION",
+  "gtin": "8016738753899",
+  "live_comparison_status": "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON",
+  "seller_page_observations": [
+    {
+      "item": {
+        "title": "STANLEY KOMPRESOR / SPRĘŻARKA BEZOLEJOWA AIR KIT OL 195 1,1KW 8 BAR - Fabryka-Na",
+        "price": "382.28",
+        "currency": "PLN",
+        "barcode": "8016738753899",
+        "merchant_url": "https://fabryka-narzedzi.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar-p-70017.html"
+      },
+      "source": {
+        "source_url": "https://fabryka-narzedzi.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar-p-70017.html",
+        "extraction_method": "OpenGraph/HTML fallback",
+        "brand": "",
+        "sku": "",
+        "availability_claim": "https://schema.org/InStock",
+        "availability_crosscheck": "NOT_CONTRADICTED",
+        "identity_status": "NOT_APPLICABLE",
+        "identity_consistency": {
+          "status": "NOT_APPLICABLE",
+          "conflicts": [],
+          "evidence": "No product-scoped detergent JSON-LD identity"
+        },
+        "observed_price_not_attributable": null,
+        "price_status": "SELLER_DECLARED",
+        "price_evidence_method": "PRODUCT_OFFER_MICRODATA",
+        "price_crosscheck": "NOT_BOTH_AVAILABLE",
+        "reference_list_price": null,
+        "barcode_status": "FOUND_CHECKSUM_VALID",
+        "barcode_evidence_methods": [
+          "PRODUCT_MICRODATA_GTIN13"
+        ],
+        "retrieved_at": "2026-11-02T07:12:49.588765+00:00",
+        "page_sha256": "3c14949e4d6d9be10d041fe74d89a2809a49f3b9b8a0e7b08008f105e3662f58",
+        "robots_url": "https://fabryka-narzedzi.pl/robots.txt",
+        "source_type": "seller_page_NOT_independent_test"
+      }
+    },
+    {
+      "item": {
+        "title": "KOMPRESOR BEZOLEJOWY AIR KIT 1.5KM 8BAR",
+        "price": "490.14",
+        "currency": "PLN",
+        "barcode": "8016738753899",
+        "merchant_url": "https://xdom.eu/KOMPRESOR-BEZOLEJOWY-AIR-KIT-1-5KM-8BAR-p30069"
+      },
+      "source": {
+        "source_url": "https://xdom.eu/KOMPRESOR-BEZOLEJOWY-AIR-KIT-1-5KM-8BAR-p30069",
+        "extraction_method": "Product JSON-LD",
+        "brand": "STANLEY",
+        "sku": "",
+        "availability_claim": "http://schema.org/InStock",
+        "availability_crosscheck": "NOT_CONTRADICTED",
+        "identity_status": "NOT_APPLICABLE",
+        "identity_consistency": {
+          "status": "NOT_APPLICABLE",
+          "conflicts": [],
+          "evidence": "No product-scoped detergent JSON-LD identity"
+        },
+        "observed_price_not_attributable": null,
+        "price_status": "SELLER_DECLARED",
+        "price_evidence_method": "DIRECT_OFFER_PRICE",
+        "price_crosscheck": "NOT_BOTH_AVAILABLE",
+        "reference_list_price": null,
+        "barcode_status": "FOUND_CHECKSUM_VALID",
+        "barcode_evidence_methods": [
+          "PRODUCT_JSON_LD_GTIN13"
+        ],
+        "retrieved_at": "2026-11-02T07:12:50.605486+00:00",
+        "page_sha256": "4b1e1c3a93feaeab8ad04510e8b8b5ff064bf3e56b0e8f73b7c39518c2d38e4f",
+        "robots_url": "https://xdom.eu/robots.txt",
+        "source_type": "seller_page_NOT_independent_test"
+      }
+    }
+  ],
+  "shipping_claims_from_public_product_page": [
+    {
+      "method": "courier",
+      "cost": "26.00",
+      "currency": "PLN",
+      "eta_min_days": null,
+      "eta_max_days": null,
+      "source_url": "https://fabryka-narzedzi.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar-p-70017.html",
+      "evidence_status": "SELLER_DECLARED"
+    },
+    {
+      "method": "unspecified_delivery",
+      "cost": "17.99",
+      "currency": "PLN",
+      "eta_min_days": null,
+      "eta_max_days": null,
+      "source_url": "https://xdom.eu/KOMPRESOR-BEZOLEJOWY-AIR-KIT-1-5KM-8BAR-p30069",
+      "evidence_status": "SELLER_DECLARED"
+    }
+  ],
+  "conditional_product_plus_shipping": [
+    {
+      "seller": "fabryka_narzedzi",
+      "amount": "408.28",
+      "currency": "PLN"
+    },
+    {
+      "seller": "xdom",
+      "amount": "508.13",
+      "currency": "PLN"
+    }
+  ],
+  "right_minus_left_conditional_total": "99.85",
+  "delivery_eta_days": null,
+  "limitations": [
+    "Product pages and shipping amounts are seller claims, not confirmed checkout totals.",
+    "Shipping prices may depend on destination, selected method, quantity and eligibility.",
+    "The Fabryka 1-2 days and xDom 24 hours are dispatch estimates, NOT delivery arrival times.",
+    "Buyer travel costs, payment fees, returns and condition/contents need verification.",
+    "No automatic purchase, checkout or PayPal capture."
+  ],
+  "snapshot_sha256": "a0c99eb29720bf2a79b378c4502f0e7c86461085fff78b10afa0abe8fb6c0c7c"
+}

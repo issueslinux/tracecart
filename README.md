@@ -5,6 +5,25 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: real Stanley Air Kit same-EAN offer comparison + transport evidence
+
+On **2 November 2026**, TraceCart directly retrieved two in-stock seller
+pages for **Stanley Air Kit / EAN 8016738753899**: Fabryka Narzędzi
+**382.28 PLN** and xDom **490.14 PLN**. A narrowly scoped HTML EAN parser
+unlocked this comparison; source timestamps and SHA-256 are preserved.
+Public product pages also declare courier shipping of **26.00 PLN** for
+Fabryka and shipping of **17.99 PLN** (method unspecified) for xDom.
+The resulting **conditional** product + shipping figures are **408.28 PLN**
+and **508.13 PLN**. These are NOT verified checkout totals; eligibility,
+destination, payment fees, condition and actual delivery time remain unknown.
+
+Cart questions are now grouped into **product, offer, seller, delivery,
+payment and total cost**. `/compare` optionally accepts source-declared
+shipping and ETA evidence, keeps unknowns explicit and never forces a
+purchase decision. **Shipping is not yet automatically extracted by
+TraceCart.** [Full method and constraints](docs/TRANSPORT_AND_PURCHASE_STAGES_2026-11-02.md) ·
+[Live source evidence](examples/live_stanley_two_shop_2026-11-02.json).
+
 ## Source-qualified sale prices: live MAXPRONET Persil result (2 Nov 2026)
 
 TraceCart now understands an individual Product JSON-LD Offer with both

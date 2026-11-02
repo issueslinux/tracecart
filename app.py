@@ -188,6 +188,12 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 source-declared capacity, and list unknowns and questions to the
                 SELLER for used products. No questionnaire to the buyer and no
                 automatic 'best buy' verdict. Full evidence tree stays available.</p>
+                <p>Optional per-offer <code>fulfillment</code> evidence can include
+                <code>method</code>, <code>cost</code>, <code>currency</code>,
+                <code>eta_min_days</code>, <code>eta_max_days</code>,
+                <code>source_url</code> and <code>evidence_status: SELLER_DECLARED</code>.
+                Transport amounts and times are source claims, not verified checkout
+                totals; unknown cost is never assumed to be zero.</p>
                 <p class="warning">The prefilled example is FICTIONAL, with
                 example.org/com/net sources. No listings or reviews have been fetched.</p>
                 <form method="post" action="/compare/analyze">{}
@@ -611,10 +617,19 @@ https://www.adafruit.com/product/3400</textarea></label>
             for opt in comparison["options"]:
                 questions = ("<br>".join("• " + h(q) for q in opt["seller_questions"])
                              if opt["seller_questions"] else "None automatically required")
+                shipping = opt["fulfillment"]
+                if shipping["product_plus_shipping"] is not None:
+                    transport = ("{} {} (product + seller-declared shipping); ETA {}–{} days. "
+                                 "Fees and final checkout unknown.".format(
+                                     h(shipping["product_plus_shipping"]), h(opt["currency"]),
+                                     h(shipping["eta_min_days"]) if shipping["eta_min_days"] is not None else "?",
+                                     h(shipping["eta_max_days"]) if shipping["eta_max_days"] is not None else "?"))
+                else:
+                    transport = "Transport cost unknown (pickup travel cost not assumed zero)."
                 rows.append("<tr><td>{}</td><td><strong>{} {}</strong></td>"
-                            "<td>{}</td><td>{}</td></tr>".format(
+                            "<td>{}</td><td>{}</td><td>{}</td></tr>".format(
                                 h(opt["title"]), h(opt["price"]), h(opt["currency"]),
-                                h(opt["condition"]), questions))
+                                h(opt["condition"]), transport, questions))
             pairs = []
             for pair in comparison["pairwise"]:
                 change = pair["right_vs_left_pct"]
@@ -641,6 +656,11 @@ https://www.adafruit.com/product/3400</textarea></label>
                                            h(m["label"]), h(m["left_value"]),
                                            h(m["unit"]), h(m["right_value"]),
                                            h(m["unit"]), h(m["right_vs_left"])))
+                shipping_diff = pair["right_minus_left_product_plus_shipping"]
+                if shipping_diff is not None:
+                    description += (" Seller-declared product + shipping difference "
+                                    "(right minus left): {} {}. Checkout fees unknown."
+                                    .format(h(shipping_diff), h(comparison["currency"])))
                 pairs.append("<li>{}<br><span class='muted'>{}</span></li>".format(
                     description, "<br>".join(metrics)))
             comparison_html = ("""<section><div class="tag">COMPARATIVE ANALYSIS · NO VERDICT</div>
@@ -649,7 +669,8 @@ https://www.adafruit.com/product/3400</textarea></label>
                 price. Technical values are seller-declared, not verified benchmarks.
                 Greater capacity may not be useful for the intended workload.</p>
                 <table><thead><tr><th>Offer</th><th>Listed price</th>
-                <th>Condition</th><th>Questions to seller / listing</th></tr></thead>
+                <th>Condition</th><th>Transport and timing</th>
+                <th>Questions to seller / listing</th></tr></thead>
                 <tbody>{}</tbody></table>
                 <h3>Direct comparisons</h3><ul>{}</ul>
                 <p class="warning">Research does not pick a winner.
