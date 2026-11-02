@@ -19,6 +19,7 @@ from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote, urljoin, parse
 from urllib.robotparser import RobotFileParser
 from visible_offer import parse_primary_offer
 from structured_shipping import shipping_claim, shipping_claims
+from html_shipping import html_shipping_claims
 from structured_delivery import delivery_window_claim, delivery_windows_by_country
 from product_variant import check_page_identity_consistency
 from visible_gtin import visible_gtin_claims
@@ -537,6 +538,12 @@ def extract_from_html(url, raw):
             offers = offers[0]
     if not isinstance(offers, dict):
         offers = {}
+    micro_shipping = html_shipping_claims(raw)
+    structured_rates = shipping_claims(offers)
+    for country in set(micro_shipping) & set(structured_rates):
+        if (micro_shipping[country]["shipping_cost"], micro_shipping[country]["currency"]) != (structured_rates[country]["shipping_cost"], structured_rates[country]["currency"]):
+            del micro_shipping[country]
+            del structured_rates[country]
     title = _clean(product.get("name") or parser.meta.get("og:title") or
                    parser.meta.get("twitter:title") or "".join(parser.title))
     if len(title) < 3:
@@ -639,7 +646,7 @@ def extract_from_html(url, raw):
         "price_crosscheck": price_crosscheck,
         "reference_list_price": list_price,
         "structured_shipping_claim": shipping_claim(offers) if not identity_blocked else shipping_claim({}),
-        "structured_shipping_claims_by_country": shipping_claims(offers) if not identity_blocked else {},
+        "structured_shipping_claims_by_country": {**micro_shipping, **structured_rates} if not identity_blocked else {},
         "structured_delivery_window_claim": delivery_window_claim(offers) if not identity_blocked else delivery_window_claim({}),
         "structured_delivery_windows_by_country": delivery_windows_by_country(offers) if not identity_blocked else {},
         "barcode_status": code_status,
