@@ -24,6 +24,7 @@ from comparison import compare
 from cart_research import CartResearchJobs
 from live_offer_compare import compare_live_offer
 from multi_offer_compare import compare_live_offers
+from country_suggestion import suggested_country
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -418,6 +419,7 @@ https://www.adafruit.com/product/3400</textarea></label>
             h(job_id), lines, question_summary, attempt_html, to_html_tree(report))
         search_url = "https://www.google.com/search?" + urlencode({
             "tbm": "shop", "q": result["item"]["title"][:140]})
+        country_hint = suggested_country(self.headers.get("Accept-Language", "")) or ""
         competitor_form = ("""<section><h2>Compare up to four other stores</h2>
             <p>Paste 1–4 public HTTPS product-page URLs, one per line, from
             different retailers. TraceCart checks robots.txt and independently
@@ -431,12 +433,14 @@ https://www.adafruit.com/product/3400</textarea></label>
             <label>Alternative retailer product URLs (one per line)
             <textarea name="competitor_urls" rows="4" maxlength="4800"
             placeholder="https://other-store.example/product/..."></textarea></label>
-            <label>Destination country (ISO two-letter code, optional)
+            <label>Destination country (editable, ISO two-letter code)
             <input name="buyer_country" maxlength="2" pattern="[A-Za-z]{{2}}"
-            placeholder="PL" autocomplete="country"></label>
+            value="{}" placeholder="e.g. PL" autocomplete="country"></label>
+            <p>Country suggested from browser language-region settings, not verified location.
+            Check or change it before comparing delivery costs. If blank, delivery costs stay unknown.</p>
             <button>Audit competing sources and compare seller claims</button>
             </form></section>""".format(
-                h(search_url), self.hidden(), h(job_id)))
+                h(search_url), self.hidden(), h(job_id), h(country_hint)))
         self.send_page(source_details + econ_html + competitor_form + body)
 
     def send_json_report(self, report, rid):
