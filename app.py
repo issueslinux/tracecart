@@ -24,6 +24,7 @@ from comparison import compare
 from cart_research import CartResearchJobs
 from live_offer_compare import compare_live_offer
 from multi_offer_compare import compare_live_offers
+from browser_capture import parse_browser_capture
 from country_suggestion import suggested_country
 
 PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -538,6 +539,14 @@ https://www.adafruit.com/product/3400</textarea></label>
             value="{}" placeholder="e.g. PL" autocomplete="country"></label>
             <p>Country suggested from browser language-region settings, not verified location.
             Check or change it before comparing delivery costs. If blank, delivery costs stay unknown.</p>
+            <p><b>Browser-based marketplace capture (feasibility prototype)</b>.
+            Open the product in your ordinary browser, click the TraceCart
+            Capture extension, and paste its JSON here. This is a user-initiated,
+            still UNVERIFIED DOM observation; it cannot establish the market's
+            lowest price or do unattended marketplace research.</p>
+            <label>Browser capture JSON (optional, one product)
+            <textarea name="browser_capture_json" rows="6" maxlength="3800"
+            placeholder='{{"version":1,"method":"USER_SELECTED_VISIBLE_PRICE",...}}'></textarea></label>
             <p><b>Optional cheaper marketplace lead</b> (e.g. a listing your browser
             can display but TraceCart cannot fetch). This stays an UNVERIFIED
             observation: neither product identity nor price is confirmed here.</p>
@@ -918,9 +927,16 @@ https://www.adafruit.com/product/3400</textarea></label>
                     urls = [form["competitor_url"]]  # legacy clients
                 marketplace_url = form.get("marketplace_url", "").strip()
                 marketplace_price = form.get("marketplace_price", "").strip()
+                browser_json = form.get("browser_capture_json", "").strip()
+                if browser_json and (marketplace_url or marketplace_price):
+                    raise ValueError("Choose browser capture OR typed marketplace lead")
                 if bool(marketplace_url) != bool(marketplace_price):
                     raise ValueError("Marketplace lead URL and observed price must both be supplied")
                 market_leads = None
+                if browser_json:
+                    market_leads = [parse_browser_capture(browser_json)]
+                    if not urls:
+                        urls = [market_leads[0]["url"]]
                 if marketplace_url:
                     market_leads = [{
                         "url": marketplace_url,

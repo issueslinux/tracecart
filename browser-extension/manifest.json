@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "TraceCart — Capture Visible Product",
+  "version": "0.1.0",
+  "description": "Capture one user-opened product listing for local, unverified research. No scraping, network uploads or background access.",
+  "permissions": ["activeTab", "scripting", "clipboardWrite"],
+  "action": {
+    "default_title": "Capture current product for TraceCart",
+    "default_popup": "popup.html"
+  }
+}

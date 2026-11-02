@@ -19,6 +19,7 @@ MAX_LEADS = 4
 ORIGINS = frozenset({
     "USER_REPORTED_NOT_FETCHED",
     "PUBLIC_PAGE_REVIEW_NOT_FETCHED_BY_TRACECART",
+    "USER_BROWSER_ACTIVE_TAB_NOT_SERVER_VERIFIED",
 })
 CONDITIONS = frozenset(("NEW_CLAIM", "USED_CLAIM", "OPEN_BOX_CLAIM", "UNKNOWN"))
 
@@ -63,7 +64,8 @@ def add_marketplace_leads(report, selected, observations):
     now = datetime.now(timezone.utc).isoformat()
     for index, entry in enumerate(observations, 1):
         if type(entry) is not dict or (set(entry) -
-                {"url", "price", "currency", "origin", "observed_at", "gtin_claim", "condition"}):
+                {"url", "price", "currency", "origin", "observed_at", "gtin_claim", "condition",
+                 "observed_title", "observation_method", "price_evidence_method"}):
             raise ValueError("Unexpected marketplace lead fields")
         url = normalized_product_url(entry.get("url"))
         if url == normalized_product_url(clean["merchant_url"]) or url in seen:
@@ -79,6 +81,19 @@ def add_marketplace_leads(report, selected, observations):
         condition = entry.get("condition", "UNKNOWN")
         if condition not in CONDITIONS:
             raise ValueError("Invalid condition claim")
+        title = entry.get("observed_title")
+        capture_method = entry.get("observation_method")
+        price_evidence = entry.get("price_evidence_method")
+        if origin == "USER_BROWSER_ACTIVE_TAB_NOT_SERVER_VERIFIED":
+            if (type(title) is not str or not 3 <= len(title) <= 180
+                    or capture_method not in (
+                        "ACTIVE_TAB_SINGLE_PRODUCT_JSONLD",
+                        "USER_SELECTED_VISIBLE_PRICE")
+                    or price_evidence not in (
+                        "UNIQUE_PRODUCT_JSONLD", "SELECTED_VISIBLE_TEXT")):
+                raise ValueError("Browser observation provenance incomplete")
+        elif any(value is not None for value in (title, capture_method, price_evidence)):
+            raise ValueError("Source capture metadata must match observation origin")
         observed_at = entry.get("observed_at")
         if observed_at is not None:
             if type(observed_at) is not str or len(observed_at) > 45:
@@ -103,6 +118,12 @@ def add_marketplace_leads(report, selected, observations):
             comparison = ("OBSERVED_LOWER_LISTED_PRICE_NOT_VERIFIED" if difference > 0
                           else "NOT_LOWER_THAN_SELECTED_LISTING")
             gap = str(difference.quantize(Decimal("0.01")))
+        # Do not treat an observed cheap listing with a different *valid*
+        # GTIN as a same-product price lead. An absent or invalid GTIN remains
+        # unresolved; neither establishes identity.
+        if normal_gtin and selected_gtin and normal_gtin != selected_gtin:
+            comparison = "DIFFERENT_GTIN_OBSERVATION_NOT_COMPARABLE"
+            gap = None
         # If the same URL was independently fetched as a current seller page,
         # reconcile it with the observation instead of showing two apparent
         # offers. Contradictory browser/index prices are not lower-price leads.
@@ -136,6 +157,9 @@ def add_marketplace_leads(report, selected, observations):
             "origin": origin,
             "recorded_at": now,
             "observed_at_unverified": observed_at,
+            "observed_title_unverified": title,
+            "observation_method": capture_method,
+            "price_evidence_method": price_evidence,
             "observed_price": str(price),
             "currency": currency,
             "condition_claim": condition,
