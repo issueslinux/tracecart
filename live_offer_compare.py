@@ -13,7 +13,8 @@ from urllib.parse import urlsplit
 from cart_research import classify_product, validate_cart
 from decision_tree import _node
 from product_intake import (extract_product_page, normalized_product_url,
-                            SourceAccessDenied, SourceRedirect, SourceHTTPFailure)
+                            normalized_gtin, SourceAccessDenied, SourceRedirect,
+                            SourceHTTPFailure)
 from unit_economics import unit_cost
 
 
@@ -26,8 +27,13 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     extractor = extractor or extract_product_page
     report = deepcopy(base_report)
     source = report.get("source_intake") or {}
-    base_is_retrieved = (source.get("intake_status") != "URL_ONLY_UNVERIFIED"
-                         and bool(source.get("page_sha256")))
+    source_url = source.get("source_url")
+    base_is_retrieved = (
+        source.get("intake_status") != "URL_ONLY_UNVERIFIED"
+        and bool(source.get("page_sha256"))
+        and source_url == selected["merchant_url"]
+        and report.get("root", {}).get("details", {}).get(
+            "selected_cart_item", selected) == selected)
     category = classify_product(selected["title"])
     competitor = None
     metadata = None
@@ -49,13 +55,21 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         competitor = None
         metadata = {"source_url": candidate_url, "page_sha256": None,
                     "retrieved_at": None, "access_status": error or "NO_SOURCE"}
-    same_host = (urlsplit(selected["merchant_url"]).hostname ==
-                 urlsplit(candidate_url).hostname)
-    ean_match = bool(competitor and selected["barcode"] and
-                     competitor["barcode"] and
-                     selected["barcode"] == competitor["barcode"])
-    ean_conflict = bool(competitor and selected["barcode"] and
-                        competitor["barcode"] and not ean_match)
+    def merchant_host(url):
+        host = urlsplit(url).hostname or ""
+        return host[4:] if host.startswith("www.") else host
+
+    same_host = (merchant_host(selected["merchant_url"]) ==
+                 merchant_host(candidate_url))
+    selected_gtin = normalized_gtin(selected["barcode"])
+    alternative_gtin = normalized_gtin(competitor["barcode"]) if competitor else None
+    invalid_gtin = bool((selected["barcode"] and not selected_gtin) or
+                        (competitor and competitor["barcode"] and
+                         not alternative_gtin))
+    ean_match = bool(competitor and selected_gtin and alternative_gtin
+                     and selected_gtin == alternative_gtin)
+    ean_conflict = bool(competitor and selected_gtin and alternative_gtin
+                        and not ean_match)
     base_unit = unit_cost(selected, category)
     other_unit = (unit_cost(competitor, category) if competitor else
                   {"status": "NOT_RETRIEVED", "cost_per_wash": None})
@@ -72,8 +86,12 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     availability = str(metadata.get("availability_claim") or "").casefold()
     unavailable = any(word in availability for word in (
         "outofstock", "discontinued", "soldout"))
+    selected_availability = str(source.get("availability_claim") or "").casefold()
+    selected_unavailable = any(word in selected_availability for word in (
+        "outofstock", "discontinued", "soldout"))
     compared = bool(base_is_retrieved and selected_price_sourced
-                    and ean_match and not dose_conflict and not unavailable
+                    and ean_match and not dose_conflict
+                    and not unavailable and not selected_unavailable
                     and independent_store and valid_seller_price
                     and selected["price"] is not None
                     and selected["currency"] == competitor["currency"])
@@ -83,12 +101,16 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         status = "SAME_STORE_NOT_COMPETITOR"
     elif not base_is_retrieved:
         status = "SELECTED_PAGE_NOT_RETRIEVED"
+    elif invalid_gtin:
+        status = "INVALID_GTIN_CLAIM"
     elif ean_conflict:
         status = "DIFFERENT_GTIN_NOT_EQUIVALENT"
     elif not ean_match:
         status = "GTIN_IDENTITY_NOT_ESTABLISHED"
     elif dose_conflict:
         status = "CONFLICTING_WASH_COUNT"
+    elif selected_unavailable:
+        status = "SELECTED_OFFER_NOT_AVAILABLE"
     elif unavailable:
         status = "SECOND_OFFER_NOT_AVAILABLE"
     elif not valid_seller_price or not selected_price_sourced or selected["price"] is None:
@@ -115,9 +137,12 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "different_store": independent_store,
         "same_gtin_claimed": ean_match,
         "different_gtin_claimed": ean_conflict,
+        "invalid_gtin_claim": invalid_gtin,
+        "gtin_checksum_checked": True,
         "wash_count_conflict": dose_conflict,
         "second_offer_availability_claim": metadata.get("availability_claim"),
         "second_offer_not_available": unavailable,
+        "selected_offer_not_available": selected_unavailable,
         "selected_cost_per_wash": base_unit,
         "alternative_cost_per_wash": other_unit,
         "seller_listed_price_delta_pct_vs_selected": delta,
@@ -142,6 +167,7 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     summary["current_competitor_offers_verified"] = int(
         independent_store and valid_seller_price and base_is_retrieved
         and ean_match and not dose_conflict and not unavailable
+        and not selected_unavailable
         and selected_price_sourced)
     summary["second_retailer_listed_price_observed"] = bool(
         independent_store and valid_seller_price)

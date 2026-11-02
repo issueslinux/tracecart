@@ -73,10 +73,29 @@ class LiveSecondOfferTests(unittest.TestCase):
         self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
 
     def test_conflicting_gtin_not_equivalent(self):
-        second = {**SECOND, "barcode": "1234567890123"}
+        second = {**SECOND, "barcode": "8700216908856"}
         c = self.compare(second=second)["live_competitor_comparison"]
         self.assertEqual(c["status"], "DIFFERENT_GTIN_NOT_EQUIVALENT")
         self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+
+    def test_invalid_gtin_claim_blocks_price_comparison(self):
+        second = {**SECOND, "barcode": "1234567890123"}
+        c = self.compare(second=second)["live_competitor_comparison"]
+        self.assertEqual(c["status"], "INVALID_GTIN_CLAIM")
+        self.assertTrue(c["invalid_gtin_claim"])
+        self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+
+    def test_equivalent_upc_and_ean_leading_zero_match(self):
+        selected = {**SELECTED, "barcode": "036000291452"}
+        second = {**SECOND, "barcode": "0036000291452"}
+        base = copy.deepcopy(BASE)
+        base["root"]["details"]["selected_cart_item"] = selected
+        report = compare_live_offer(
+            base, selected, second["merchant_url"],
+            extractor=lambda _: (second, META))
+        self.assertEqual(report["live_competitor_comparison"]["status"],
+                         "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON")
+        self.assertTrue(report["live_competitor_comparison"]["same_gtin_claimed"])
 
     def test_conflicting_washes_same_ean_block_price_delta(self):
         second = {**SECOND, "title": "Persil Color 90 prań"}
@@ -134,6 +153,37 @@ class LiveSecondOfferTests(unittest.TestCase):
         c = self.compare(meta=meta)["live_competitor_comparison"]
         self.assertEqual(c["status"], "SECOND_OFFER_NOT_AVAILABLE")
         self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+
+    def test_selected_out_of_stock_is_not_a_comparable_offer(self):
+        original = copy.deepcopy(BASE)
+        original["source_intake"]["availability_claim"] = "https://schema.org/OutOfStock"
+        c = compare_live_offer(original, SELECTED, SECOND["merchant_url"],
+                               extractor=lambda _: (SECOND, META))[
+                                   "live_competitor_comparison"]
+        self.assertEqual(c["status"], "SELECTED_OFFER_NOT_AVAILABLE")
+        self.assertTrue(c["selected_offer_not_available"])
+        self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+
+    def test_selected_report_provenance_mismatch_blocks_price_delta(self):
+        original = copy.deepcopy(BASE)
+        original["source_intake"]["source_url"] = "https://other.example.org/p"
+        c = compare_live_offer(original, SELECTED, SECOND["merchant_url"],
+                               extractor=lambda _: (SECOND, META))[
+                                   "live_competitor_comparison"]
+        self.assertEqual(c["status"], "SELECTED_PAGE_NOT_RETRIEVED")
+        self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+
+    def test_www_same_store_not_independent_retailer(self):
+        selected = {**SELECTED, "merchant_url": "https://www.shop.example.org/a"}
+        second = {**SECOND, "merchant_url": "https://shop.example.org/b"}
+        original = copy.deepcopy(BASE)
+        original["source_intake"]["source_url"] = selected["merchant_url"]
+        original["root"]["details"]["selected_cart_item"] = selected
+        meta = {**META, "source_url": second["merchant_url"]}
+        c = compare_live_offer(original, selected, second["merchant_url"],
+                               extractor=lambda _: (second, meta))[
+                                   "live_competitor_comparison"]
+        self.assertEqual(c["status"], "SAME_STORE_NOT_COMPETITOR")
 
     def test_no_cross_currency_without_fx_source(self):
         other = {**SECOND, "price": "20.00", "currency": "EUR"}
