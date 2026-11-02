@@ -588,8 +588,20 @@ class CartResearchJobs:
                 job_id TEXT NOT NULL, offer_idx INTEGER NOT NULL,
                 status TEXT NOT NULL, questions_json TEXT,
                 PRIMARY KEY(job_id,offer_idx))""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_offer_evidence (
+                job_id TEXT NOT NULL, offer_idx INTEGER NOT NULL,
+                status TEXT NOT NULL, result_json TEXT NOT NULL,
+                PRIMARY KEY(job_id,offer_idx))""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_evidence_runs (
+                job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+                processed INTEGER NOT NULL DEFAULT 0,
+                planned INTEGER NOT NULL DEFAULT 0)""")
+            db.execute("UPDATE cart_evidence_runs SET status='INTERRUPTED' "
+                       "WHERE status='RUNNING'")
             db.execute("UPDATE cart_research_jobs SET state='INTERRUPTED' "
                        "WHERE state IN ('QUEUED','RUNNING')")
+        self.evidence_pool = ThreadPoolExecutor(max_workers=1)
+        self.evidence_stop = threading.Event()
         self.model_pool = ThreadPoolExecutor(max_workers=1)
         self.model_stop = threading.Event()
         self.lock = threading.Lock()
@@ -609,6 +621,57 @@ class CartResearchJobs:
                 revision=revision+1,
                 preview=COALESCE(excluded.preview,cart_research_progress.preview)""",
                        (job_id, stage, snapshot))
+
+    def _execute_source_evidence(self, job_id, record):
+        """Bounded real source retrieval; never mutates the original audit.
+
+        Deduplicate HTML documents across indexed variants, and progress
+        independently from slow local LLM questions and existing READY jobs.
+        """
+        from offer_question_bank import offer_summaries
+        from evidence_execution import execute_reference_checks
+        from product_intake import _read
+        from similar_tier import category_of
+        item=record.get("item") or {}
+        category=category_of(item.get("title") or item.get("merchant_url") or "")
+        offers=offer_summaries(record,category)
+        cache={}
+        def cached_fetch(url,max_bytes,mimes,timeout=10):
+            if url not in cache:
+                try:
+                    cache[url]=_read(url,max_bytes,mimes,timeout=timeout)
+                except (ValueError,OSError) as exc:
+                    cache[url]=exc
+            cached=cache[url]
+            if isinstance(cached,Exception):
+                raise cached
+            return cached
+        with self._db() as db:
+            db.execute("""INSERT OR REPLACE INTO cart_evidence_runs
+                (job_id,status,processed,planned) VALUES (?,?,0,?)""",
+                (job_id,"RUNNING",len(offers)))
+        for index, offer in enumerate(offers):
+            if self.evidence_stop.is_set():
+                break
+            # Source errors are persisted explicitly; no infinite attempts,
+            # credential exposure, or silent substitution of index snippets.
+            try:
+                result=execute_reference_checks(offer,category,fetch=cached_fetch)
+            except (ValueError,TypeError,KeyError,OSError) as exc:
+                result={"status":"SOURCE_NOT_VERIFIED_"+type(exc).__name__,
+                        "sources_checked":0,"reference_answers":[],
+                        "verified_for_exact_offer":0}
+            with self._db() as db:
+                db.execute("""INSERT OR REPLACE INTO cart_offer_evidence
+                    (job_id,offer_idx,status,result_json) VALUES (?,?,?,?)""",
+                    (job_id,index,result["status"],
+                     json.dumps(result,ensure_ascii=False)))
+                db.execute("""UPDATE cart_evidence_runs SET processed=?
+                    WHERE job_id=?""",(index+1,job_id))
+        with self._db() as db:
+            db.execute("""UPDATE cart_evidence_runs SET status=? WHERE job_id=?""",
+                       ("INTERRUPTED" if self.evidence_stop.is_set()
+                        else "COMPLETE",job_id))
 
     def _generate_offer_questions(self, job_id, record):
         """Detached from user latency and from payment authorization logic."""
@@ -750,6 +813,10 @@ class CartResearchJobs:
             db.execute("UPDATE cart_research_jobs SET state=?,result=?,error_type=? WHERE id=?",
                        (state, result, error, job_id))
         if state == "READY" and self.runner is research_cart:
+            # Actual evidence retrieval must NOT wait for all local model
+            # questions. Both workers are independent of original READY.
+            self.evidence_pool.submit(self._execute_source_evidence, job_id,
+                                      {"item":clean,"report":report})
             self._progress(job_id, "PER_OFFER_MODEL_QUEUED")
             # Never block the status page, job READY state or another research
             # worker while local Qwen proposes per-offer follow-up questions.
@@ -795,16 +862,30 @@ class CartResearchJobs:
             model_rows = db.execute(
                 "SELECT offer_idx,status,questions_json FROM cart_offer_model_questions WHERE job_id=?",
                 (job_id,)).fetchall()
+            evidence_rows=db.execute(
+                "SELECT offer_idx,result_json FROM cart_offer_evidence WHERE job_id=?",
+                (job_id,)).fetchall()
+            evidence_run=db.execute(
+                "SELECT status,processed,planned FROM cart_evidence_runs WHERE job_id=?",
+                (job_id,)).fetchone()
         model_offers = {
             "offer-{}".format(i): {"state": status,
                 "questions": json.loads(data) if data else []}
             for i,status,data in model_rows
         }
+        evidence_offers={"offer-{}".format(i):json.loads(raw)
+                         for i,raw in evidence_rows}
+        evidence_progress={
+            "status":evidence_run[0],"processed":evidence_run[1],
+            "planned":evidence_run[2]
+        } if evidence_run else {"status":"NOT_STARTED","processed":0,"planned":0}
         return {"item": json.loads(row[0]), "state": row[1],
                 "created": row[2],
                 "report": json.loads(row[3]) if row[3] else None,
                 "error_type": row[4],
                 "model_offers": model_offers,
+                "evidence_offers":evidence_offers,
+                "evidence_progress":evidence_progress,
                 "progress_stage": progress[0] if progress else row[1],
                 "progress_revision": progress[1] if progress else 0,
                 "preview_report": json.loads(progress[2]) if progress and
@@ -812,5 +893,7 @@ class CartResearchJobs:
 
     def close(self):
         self.model_stop.set()
+        self.evidence_stop.set()
         self.pool.shutdown(wait=True)
         self.model_pool.shutdown(wait=True)
+        self.evidence_pool.shutdown(wait=True)

@@ -537,6 +537,54 @@ class WebFlowTests(unittest.TestCase):
         self.assertFalse(report["root"]["children"][-1]
                          ["details"]["payment_authorized"])
 
+    def test_fetched_reference_answers_visible_only_as_non_sku_evidence(self):
+        """Readonly review findings carry URL+SHA, not an exact checkout claim."""
+        from evidence_execution import execute_reference_checks
+        from tests.test_evidence_execution import RECORD,SAMPLE_HTML,ROBOTS,SOURCE
+        offer={"id":"offer-0","title":"Lenovo IdeaPad Slim 3 15Q8X10 OLED"}
+        evidence=execute_reference_checks(offer,"LAPTOP",fetch=lambda url,*a,**k:
+                             ROBOTS if url.endswith("/robots.txt") else SAMPLE_HTML)
+        jid="Z"*24
+        database=self.server.cart_jobs
+        with database._db() as db:
+            db.execute("""INSERT INTO cart_research_jobs
+                    (id,item,state,created,result,error_type)
+                    VALUES (?,?,?,?,?,NULL)""",
+                    (jid,json.dumps(RECORD["item"]),"READY","2026-11-02T00:00:00Z",
+                     json.dumps(RECORD["report"])))
+            db.execute("""INSERT INTO cart_offer_evidence
+                    (job_id,offer_idx,status,result_json) VALUES (?,?,?,?)""",
+                    (jid,0,evidence["status"],json.dumps(evidence)))
+            db.execute("""INSERT INTO cart_evidence_runs
+                    (job_id,status,processed,planned) VALUES (?,?,?,?)""",
+                    (jid,"COMPLETE",16,16))
+        status,body=self.request("GET","/cart/status/"+jid+".decision.json")
+        self.assertEqual(status,200)
+        d=json.loads(body)
+        self.assertEqual(d["evidence_progress"]["status"],"COMPLETE")
+        self.assertEqual(d["evidence_offers"]["offer-0"]["variant_match"],
+                         "MISMATCH_LISTED_OLED_REVIEWED_IPS")
+        self.assertFalse(d["payment_authorized"])
+        status,body=self.request("GET","/cart/status/"+jid+
+                                 "/questions.json?offer=0&offset=24&limit=12")
+        self.assertEqual(status,200)
+        q=json.loads(body)
+        reference=[x for x in q["questions"] if x["id"]=="offer-0-28"][0]
+        self.assertEqual(reference["status"],
+                         "REFERENCE_EVIDENCE_ONLY_EXACT_SKU_UNVERIFIED")
+        self.assertEqual(reference["evidence"]["source_url"],SOURCE["url"])
+        self.assertFalse(reference["evidence"]["verified_for_exact_offer"])
+        self.assertEqual(q["verified_answers"],0)
+        status,body=self.request("GET","/cart/status/"+jid+
+                                 "/questions.json?offer=0&offset=120&limit=12")
+        self.assertEqual(status,200)
+        q=json.loads(body)
+        self.assertIn("19 h 1 min",
+            next(x for x in q["questions"] if x["id"]=="offer-0-124")["finding"])
+        status,raw=self.request("GET","/cart/status/"+jid+".json")
+        self.assertEqual(status,200)
+        self.assertEqual(json.loads(raw)["report"],RECORD["report"])
+
     def test_url_only_cart_form_extracts_before_research(self):
         import time
         from unittest.mock import patch

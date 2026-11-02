@@ -246,3 +246,18 @@ h1 em,h2 em{font-weight:400;font-style:italic;color:var(--accent)}
 .offer-llm-questions h4 {margin: 2px 0 8px; font-size: .78rem;}
 .offer-llm-questions ol {padding-left: 22px; margin: 0;}
 .offer-llm-questions li {padding-bottom: 5px;}
+
+.offer-evidence-findings {
+  margin: 11px 0 0; padding: 12px 15px;
+  background: #eef8f4; border: 1px solid #c7dfd3;
+  border-radius: 8px; color: #214f42; font-size: .84rem;
+}
+.offer-evidence-findings h4 {margin: 0 0 9px; font-size: .88rem;}
+.evidence-observation-list {margin: 0; padding-left: 17px;}
+.evidence-observation-list li {margin-bottom: 12px;}
+.evidence-observation-list p {margin: 0 0 5px;}
+.evidence-observation-list small {
+  display: block; color: #456b5e; overflow-wrap: anywhere;
+  padding-bottom: 5px;
+}
+.reference-observation {color: #245b48; font-weight: 600;}

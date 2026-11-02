@@ -73,3 +73,13 @@ test("no-click rendering supports immediate pre-result stage and paginated offer
  assert.ok(source.includes('polls<12?450:POLL_MS'));
  assert.equal(source.includes("choice-btn"),false);
 });
+
+
+test("real source observations remain reference-scoped and cannot authorize purchase",()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,"../assets/decision-flow.js"),"utf8");
+ assert.ok(source.includes("refreshDocumentedEvidence(data)"));
+ assert.ok(source.includes("NOT verified for the offered SKU"));
+ assert.ok(source.includes("verified exact-SKU answers"));
+ assert.ok(source.includes("SHA-256"));
+ assert.equal(source.includes("purchaseAuthorized=true"),false);
+});
