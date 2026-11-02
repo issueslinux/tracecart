@@ -1,0 +1,490 @@
+{
+  "dataset_id": "SHOPPING_SEARCH_20_RESEARCH_2026-11",
+  "origin": "ACTUAL_SERPAPI_GOOGLE_SHOPPING_API_NORMALIZED_SNAPSHOTS",
+  "audit_created_at": "2026-11-02T18:55:11.953799+00:00",
+  "sample_method": "PURPOSIVE_20_NOT_RANDOM_OR_COMPLETE_MARKET",
+  "case_count": 20,
+  "counts": {
+    "executed": 20,
+    "provider_calls": 40,
+    "with_allegro_direct_index_link": 12,
+    "with_priced_store_rows": 17,
+    "with_allegro_search_cards": 17,
+    "source_indexed_price_records": 58,
+    "flagged_extreme_low_index_prices": 3,
+    "source_or_variant_rejected": 11,
+    "provider_errors": 2
+  },
+  "provider_calls_attempted_including_failed_retries": 42,
+  "failed_retry_attempts": [
+    {
+      "id": "P02",
+      "original_failure_status": "FAILED_ValueError",
+      "original_provider_calls": 1
+    },
+    {
+      "id": "P03",
+      "original_failure_status": "FAILED_ValueError",
+      "original_provider_calls": 1
+    }
+  ],
+  "cases": [
+    {
+      "id": "P01",
+      "title": "Stanley Air Kit OL 195 kompresor bezolejowy 8215190STN595",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:45:54.036597+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [
+        {
+          "seller": "OBI.pl",
+          "price": "320.52",
+          "reason": "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW"
+        }
+      ],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "260.00",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/kompresor-bezolejowy-1100-w-stanley-air-kit-1-5km-8-bar-sprezarka-zestaw-e4cae746-3f65-411f-a748-e715e2d02305?offerId=17659387772",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P02",
+      "title": "Raspberry Pi 5 8GB",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:48:09.068741+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 2,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [
+        {
+          "seller": "Net-s.pl",
+          "price": "1278.39",
+          "reason": "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW"
+        },
+        {
+          "seller": "Kaufland.pl - NordElettronics",
+          "price": "1336.99",
+          "reason": "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW"
+        }
+      ],
+      "lowest_remaining_index_candidate": null,
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P03",
+      "title": "Apple iPhone 16 128GB",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:48:10.360957+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 5,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [
+        {
+          "seller": "Media Expert",
+          "price": "349.90",
+          "currency": "PLN",
+          "reason": "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED"
+        },
+        {
+          "seller": "RTV Euro AGD",
+          "price": "399.90",
+          "currency": "PLN",
+          "reason": "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED"
+        }
+      ],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "abfoto.pl",
+        "price": "3469.00",
+        "currency": "PLN",
+        "merchant_url": "https://abfoto.pl/apple-iphone-16-128-gb-berylowa-zielen",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P04",
+      "title": "Logitech MX Master 3S",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:48:36.101456+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "RTV Euro AGD",
+        "price": "339.99",
+        "currency": "PLN",
+        "merchant_url": "https://www.euro.com.pl/myszy/logitech-mysz-mx-master-3s-grafit.bhtml",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P05",
+      "title": "Samsung SSD 990 PRO 2TB",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:48:38.326624+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Morele.net",
+        "price": "1973.69",
+        "currency": "PLN",
+        "merchant_url": "https://www.morele.net/dysk-ssd-samsung-990-pro-2tb-m-2-2280-pci-e-x4-gen4-nvme-mz-v9p2t0gw-12945875",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P06",
+      "title": "Sony WH-1000XM5",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:48:40.553380+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "939.00",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/sluchawki-bezprzewodowe-wokoluszne-sony-wh-1000xm5-anc-e120b95a-1e21-4fac-8c84-fead7a8769ba?offerId=19047665808",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P07",
+      "title": "Bosch GSR 12V-15 wiertarko-wkretarka",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:48:48.545855+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 4,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Kaufland.pl - DINOTECH",
+        "price": "309.99",
+        "currency": "PLN",
+        "merchant_url": "https://www.kaufland.pl/product/52329821",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P08",
+      "title": "Makita DDF482 wiertarko-wkretarka",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:48:53.156834+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [
+        {
+          "seller": "sklep-narzedzia.pl",
+          "price": "1448.00",
+          "reason": "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"
+        },
+        {
+          "seller": "Lozar",
+          "price": "1499.00",
+          "reason": "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW"
+        },
+        {
+          "seller": "makita.sklep.pl",
+          "price": "2090.00",
+          "reason": "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW"
+        }
+      ],
+      "lowest_remaining_index_candidate": null,
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P09",
+      "title": "Garmin Forerunner 265",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:06.391478+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 5,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [
+        {
+          "seller": "RTV Euro AGD",
+          "price": "48.79",
+          "currency": "PLN",
+          "reason": "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED"
+        }
+      ],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Komputronik.pl",
+        "price": "1455.00",
+        "currency": "PLN",
+        "merchant_url": "https://www.komputronik.pl/product/1000903/garmin-forerunner-265-46mm-bialy.html",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P10",
+      "title": "Nintendo Switch OLED",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:08.388672+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 5,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [
+        {
+          "seller": "E-Katalog",
+          "price": "999.00",
+          "reason": "AGGREGATOR_INDEX_NOT_DIRECT_MERCHANT"
+        },
+        {
+          "seller": "LobiCom",
+          "price": "1099.00",
+          "reason": "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW"
+        }
+      ],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "1449.00",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/konsola-nintendo-switch-oled-wielokolorowy-heg-001-768e315d-3d89-4002-a1c9-bb7e40aa2de6?offerId=18835759762",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P11",
+      "title": "WD Black SN850X 2TB",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:10.717674+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 4,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": false,
+      "price_anomalies": [],
+      "not_comparable_listings": [
+        {
+          "seller": "Media Expert",
+          "price": "2055.16",
+          "reason": "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"
+        }
+      ],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "1987.36",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/western-digital-dysk-ssd-black-2tb-sn850x-nvme-m-2-pcie-radiator-fcf1d402-cf42-4013-976a-42c5d349d497?offerId=18926073120",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P12",
+      "title": "Dyson V15 Detect",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:13.828677+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "2600.56",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/odkurzacz-pionowy-dyson-v15-detect-absolute-2026-srebrny-szary-e2427326-d154-4ef9-a817-c1aa19f84db5?offerId=19003651313",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P13",
+      "title": "Philips OneBlade QP2724",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:17.311800+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "84.96",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/golarka-philips-oneblade-qp2724-10-45-min-do-zarostu-brody-nasadki-24a99d28-6a87-4b71-ba55-0746d279bcd9?offerId=19045614573",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P14",
+      "title": "Kindle Paperwhite 12 generacja 16 GB",
+      "provider_status": "FAILED_ValueError",
+      "queried_at": "2026-11-02T18:49:19.589279+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 0,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": false,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": null,
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P15",
+      "title": "Xiaomi Redmi Note 13 Pro 8GB 256GB",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:22.723471+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 2,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "499.00",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/smartfon-xiaomi-redmi-note-13-pro-4g-8-gb-256-gb-4g-lte-fioletowy-316cf837-154d-42d2-b10b-221205b7be1b?offerId=19050825617",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P16",
+      "title": "LG 27GP850-B 27 cali",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:30.551007+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 2,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [
+        {
+          "seller": "Morele.net",
+          "price": "1082.92",
+          "reason": "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"
+        },
+        {
+          "seller": "Allegro",
+          "price": "1272.26",
+          "reason": "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"
+        }
+      ],
+      "lowest_remaining_index_candidate": null,
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P17",
+      "title": "Samsung T7 Shield 1TB",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:33.257941+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 3,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Foto - Plus",
+        "price": "1099.00",
+        "currency": "PLN",
+        "merchant_url": "https://fotoplus.pl/dysk-ssd-samsung-t7-shield-2-tb-usb-3-2-gen-2-bezowy-mu-pe1t0k-eu",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P18",
+      "title": "DeWalt DCD796 wiertarko-wkretarka",
+      "provider_status": "FAILED_ValueError",
+      "queried_at": "2026-11-02T18:49:35.216487+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 0,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": false,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": null,
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P19",
+      "title": "ASUS TUF Gaming A15 FA507 laptop",
+      "provider_status": "ONLY_GOOGLE_SHOPPING_SEARCH_INDEX_PRICES",
+      "queried_at": "2026-11-02T18:49:39.581079+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 0,
+      "index_allegro_link_seen": false,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": null,
+      "price_index_accuracy": "NOT_VERIFIED"
+    },
+    {
+      "id": "P20",
+      "title": "Oral-B iO Series 6 szczoteczka",
+      "provider_status": "INDEXED_STORES_WITHOUT_SELLER_VERIFICATION",
+      "queried_at": "2026-11-02T18:49:47.224622+00:00",
+      "provider_calls": 2,
+      "indexed_priced_store_rows": 5,
+      "index_allegro_link_seen": true,
+      "index_allegro_search_card_seen": true,
+      "price_anomalies": [],
+      "not_comparable_listings": [],
+      "lowest_remaining_index_candidate": {
+        "seller": "Allegro",
+        "price": "489.99",
+        "currency": "PLN",
+        "merchant_url": "https://allegro.pl/produkt/szczoteczka-elektryczna-oral-b-io6-czarna-akumulatorowa-z-bluetooth-7639a4b8-0518-41d6-a3d5-ea37f911f9c6?offerId=19062398390",
+        "condition": "INDEX_ONLY_NOT_GTIN_OR_CHECKOUT_VERIFIED"
+      },
+      "price_index_accuracy": "NOT_VERIFIED"
+    }
+  ],
+  "no_direct_allegro_html_fetch": true,
+  "price_accuracy_independently_confirmed_for_all": false,
+  "marketplace_coverage_not_guaranteed": true,
+  "source_page_verified_prices": 0,
+  "payment_authorized": false,
+  "limitations": [
+    "Google Shopping indexed prices may be stale or poisoned; SerpApi status page reported incidents on 2026-11-02.",
+    "Model-token/capacity/bundle filters cannot prove exact SKU or GTIN match.",
+    "Extreme low prices are flagged, not claimed false or removed from recorded evidence.",
+    "Lowest remaining indexed candidate is not the globally cheapest purchase.",
+    "Source access checks must be documented separately, not counted as API price accuracy."
+  ]
+}
