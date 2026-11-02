@@ -1,5 +1,6 @@
 """Seller robots/product timeout must not kill URL-only Shopping research."""
 import os
+import socket
 from copy import deepcopy
 from pathlib import Path
 import sys
@@ -36,6 +37,30 @@ class UserURLTimeoutTests(unittest.TestCase):
                 self.assertEqual(record["item"]["price"],None)
                 self.assertFalse(record["report"]["root"]["children"][2]["details"][
                     "price_is_confirmed_checkout_total"])
+            finally:
+                jobs.close()
+
+    def test_python38_socket_timeout_keeps_real_allegro_url_researchable(self):
+        # On hexagony-01 Python 3.8.10 socket.timeout is NOT TimeoutError.
+        self.assertTrue(issubclass(socket.timeout, OSError))
+        with tempfile.TemporaryDirectory() as folder:
+            jobs=CartResearchJobs(str(Path(folder)/"socket.sqlite"),
+                                  runner=lambda item:deepcopy(BASE))
+            try:
+                with patch("product_intake.extract_product_page",
+                           side_effect=socket.timeout("HTTPS source timed out")),patch.dict(
+                           os.environ,{"SERPAPI_API_KEY":""}):
+                    jid=jobs.submit_url(BIKE_URL)
+                    for _ in range(150):
+                        record=jobs.read(jid)
+                        if record["state"] not in ("QUEUED","RUNNING"):
+                            break
+                        time.sleep(0.02)
+                self.assertEqual(record["state"],"READY",record["error_type"])
+                self.assertEqual(record["report"]["source_intake"]["intake_status"],
+                                 "URL_ONLY_UNVERIFIED")
+                self.assertEqual(record["report"]["source_intake"]["access_problem"],
+                                 "SOURCE_TIMEOUT")
             finally:
                 jobs.close()
 
