@@ -19,6 +19,7 @@ from unit_economics import unit_cost
 from product_variant import check_variant_consistency
 from purchase_dimensions import purchase_questions, fulfillment_assessment
 from shipping_comparison import conditional_shipping_comparison
+from delivery_comparison import compare_delivery_windows
 
 
 def _stock_evidence(claim):
@@ -227,6 +228,8 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None, buy
         "delivery_break_even": delivery,
         "conditional_shipping_comparison": conditional_shipping_comparison(
             selected, competitor, source, metadata, compared, country=buyer_country) if competitor else None,
+        "conditional_delivery_comparison": compare_delivery_windows(
+            source, metadata, compared, country=buyer_country),
         "purchase_question_groups": purchase_questions(),
         "selected_fulfillment": fulfillment_assessment(selected["price"], selected["currency"]),
         "alternative_fulfillment": fulfillment_assessment(competitor["price"], competitor["currency"]) if competitor else None,
