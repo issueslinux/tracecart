@@ -50,3 +50,42 @@ def delivery_window_claim(offer):
             "max_days": handling[1] + transit[1],
             "source_field": "offers.shippingDetails.deliveryTime",
             "includes_handling": True}
+
+
+def delivery_windows_by_country(offer):
+    """Extract destination-scoped delivery windows from generic JSON-LD.
+
+    Multiple shipping methods for the same country are ambiguous, even when
+    their timing happens to agree. No language or store-specific rules.
+    """
+    from structured_shipping import _countries
+    if not isinstance(offer, dict):
+        return {}
+    details = offer.get('shippingDetails')
+    if isinstance(details, dict):
+        details = [details]
+    if not isinstance(details, list) or not (1 <= len(details) <= 20):
+        return {}
+    windows, ambiguous = {}, set()
+    for detail in details:
+        if not isinstance(detail, dict):
+            return {}
+        destination = detail.get('shippingDestination')
+        countries = _countries(destination.get('addressCountry')) if isinstance(destination, dict) else None
+        timing = detail.get('deliveryTime')
+        if not countries or not isinstance(timing, dict):
+            return {}
+        handling = _days(timing.get('handlingTime'))
+        transit = _days(timing.get('transitTime'))
+        for country in countries:
+            if country in windows:
+                ambiguous.add(country)
+            if handling is None or transit is None:
+                ambiguous.add(country)
+                continue
+            windows[country] = {'status': 'SELLER_DECLARED_HANDLING_PLUS_TRANSIT_DAYS',
+                                'min_days': handling[0] + transit[0],
+                                'max_days': handling[1] + transit[1],
+                                'source_field': 'offers.shippingDetails.deliveryTime',
+                                'includes_handling': True}
+    return {country: window for country, window in windows.items() if country not in ambiguous}
