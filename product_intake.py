@@ -17,6 +17,7 @@ import socket
 import ssl
 from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote, urljoin, parse_qsl, urlencode
 from urllib.robotparser import RobotFileParser
+from visible_offer import parse_primary_offer
 
 USER_AGENT = "TraceCartResearchBot/0.5 (+https://github.com/issueslinux/tracecart)"
 MAX_URL_LEN = 1200
@@ -322,7 +323,12 @@ def _barcode_evidence(product, parser):
                   "product:gtin8", "product:gtin"):
         if parser.meta.get(field):
             claims.append((str(parser.meta[field]), "PRODUCT_META_" + field.upper()))
-    for label, value in parser.specification_rows[:150] if product else []:
+    # Without Product JSON-LD, only accept EAN rows within the primary
+    # Product microdata or WooCommerce single-product root. Related-product
+    # tables must never establish the selected product's GTIN.
+    rows = (parser.specification_rows if product else
+            parser.primary_specification_rows)
+    for label, value in rows[:150]:
         if _is_gtin_label(label):
             claims.append((value, "HTML_EXPLICIT_EAN_TABLE_ROW"))
     if not claims:
@@ -352,14 +358,22 @@ class _ProductTags(HTMLParser):
         self.title = []
         self.meta = {}
         self.specification_rows = []
+        self.primary_specification_rows = []
+        self._scope_stack = []
         self._row = None
         self._cell_type = None
         self._cell_data = []
 
     def handle_starttag(self, tag, attrs):
         a = dict((str(k).lower(), v) for k, v in attrs)
+        classes = set((a.get("class") or "").split())
+        itemtype = (a.get("itemtype") or "").lower().rstrip("/")
+        primary = ("itemscope" in a and itemtype in
+                   ("http://schema.org/product", "https://schema.org/product"))
+        primary = primary or ("product" in classes and "type-product" in classes)
+        in_primary = primary or any(flag for _, flag in self._scope_stack)
         if tag == "tr" and len(self.specification_rows) < 150:
-            self._row = {}
+            self._row = {"primary": in_primary}
         elif tag in ("th", "td") and self._row is not None:
             self._cell_type = tag
             self._cell_data = []
@@ -373,6 +387,9 @@ class _ProductTags(HTMLParser):
             value = a.get("content") or ""
             if key and value and key not in self.meta and len(value) < 400:
                 self.meta[key] = value
+        if tag not in ("area", "base", "br", "col", "embed", "hr", "img",
+                       "input", "link", "meta", "param", "source", "track", "wbr"):
+            self._scope_stack.append((tag, primary))
 
     def handle_data(self, text):
         if self.in_script and self.structured:
@@ -389,13 +406,19 @@ class _ProductTags(HTMLParser):
             self._cell_data = []
         elif tag == "tr" and self._row is not None:
             if self._row.get("th") and self._row.get("td"):
-                self.specification_rows.append(
-                    (self._row["th"], self._row["td"]))
+                pair = (self._row["th"], self._row["td"])
+                self.specification_rows.append(pair)
+                if self._row.get("primary"):
+                    self.primary_specification_rows.append(pair)
             self._row = None
         if tag == "script":
             self.in_script = False
         if tag == "title":
             self.in_title = False
+        for idx in range(len(self._scope_stack) - 1, -1, -1):
+            if self._scope_stack[idx][0] == tag:
+                del self._scope_stack[idx:]
+                break
 
 
 def _products_from_html(parser):
@@ -514,16 +537,29 @@ def extract_from_html(url, raw):
     if len(title) < 3:
         raise ValueError("No reliable product name can be extracted from this page")
     price, currency, price_method, list_price = _offer_price_evidence(offers)
+    # A primary product widget or explicit schema.org Offer microdata can
+    # provide the price when JSON-LD is absent. Never use minicart totals,
+    # unrelated products, crossed-out regular prices or unlabeled numbers.
+    visible_price, visible_currency, visible_method, visible_stock = (
+        parse_primary_offer(raw.decode("utf-8", "replace")))
     if price_method.startswith("CONFLICTING_"):
         price = currency = None
     elif price is None:
-        # OpenGraph is a separate product-level seller claim. It cannot
-        # validate a list/regular price as an active checkout offer.
-        og_currency = parser.meta.get("product:price:currency")
-        og_price = _price(parser.meta.get("product:price:amount"))
-        if og_price is not None and og_currency in ("PLN", "EUR", "USD"):
-            price, currency = og_price, og_currency
-            price_method = "PRODUCT_OPENGRAPH_PRICE"
+        if visible_method.startswith("CONFLICTING_"):
+            price_method = visible_method
+        elif visible_price is not None:
+            normalized = _price(visible_price)
+            if normalized is not None and visible_currency in ("PLN", "EUR", "USD"):
+                price, currency = normalized, visible_currency
+                price_method = visible_method
+        else:
+            # OpenGraph is a product-level claim but may be stale. Never
+            # substitute it when the primary visible price is contradictory.
+            og_currency = parser.meta.get("product:price:currency")
+            og_price = _price(parser.meta.get("product:price:amount"))
+            if og_price is not None and og_currency in ("PLN", "EUR", "USD"):
+                price, currency = og_price, og_currency
+                price_method = "PRODUCT_OPENGRAPH_PRICE"
     if price is None:
         currency = None
     code, code_status, code_sources = _barcode_evidence(product, parser)
@@ -531,6 +567,8 @@ def extract_from_html(url, raw):
     if isinstance(brand, dict):
         brand = brand.get("name", "")
     availability = _clean(offers.get("availability", ""), 100)
+    if not availability:
+        availability = _clean(visible_stock, 100)
     item = {
         "title": title, "price": price, "currency": currency,
         "barcode": code, "merchant_url": url,
