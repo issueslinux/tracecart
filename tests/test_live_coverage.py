@@ -29,3 +29,19 @@ class LiveCoverageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             probe(['https://127.0.0.1/private'], lambda url: calls.append(url))
         self.assertEqual(calls, [])
+
+class EvidenceDiagnosticsTests(unittest.TestCase):
+    def test_missing_extraction_not_claimed_missing_from_page(self):
+        result = probe(['https://example.org/item'], lambda url: (
+            {'title': 'Example', 'price': '2'},
+            {'structured_shipping_claims_by_country': {},
+             'structured_delivery_windows_by_country': {}}))
+        row = result['cases'][0]
+        self.assertEqual(row['shipping_diagnosis'], 'UNDETERMINED_ABSENT_OR_UNRECOGNIZED')
+        self.assertEqual(row['delivery_diagnosis'], 'UNDETERMINED_ABSENT_OR_UNRECOGNIZED')
+
+    def test_unavailable_not_misclassified(self):
+        def blocked(url):
+            raise ValueError('Access denied')
+        row = probe(['https://example.org/item'], blocked)['cases'][0]
+        self.assertEqual(row['shipping_diagnosis'], 'NOT_ASSESSED_PAGE_UNAVAILABLE')
