@@ -111,3 +111,13 @@ indexed search observations but are neither SerpApi nor DataForSEO executions.
 P0 issue https://github.com/issueslinux/tracecart/issues/38 remains OPEN
 until real marketplace coverage, correctness, pricing and licensing are
 measured. Shipping/ETA parser work remains paused.
+
+## Offline quality replay of provider JSON (no API credentials needed)
+
+For genuine previously downloaded SerpApi and DataForSEO raw responses,
+[the separate offline replay benchmark](../benchmarks/SEARCH_FIRST_OFFLINE_AUDIT.md)
+checks the shared 20-product model tokens, rejects malformed URLs and prices,
+retains pending-task status and audits how many actual marketplace price
+observations each source delivered. This does not initiate billable requests,
+and a missing response is never reported as zero market coverage. The first
+complete 20×2 real provider-response set is still pending credentials.
