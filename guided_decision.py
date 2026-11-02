@@ -306,6 +306,9 @@ def build_decision_projection(record):
         "offers":offer_summaries(record,category),
         "model_offers":record.get("model_offers") or {},
         "model_progress_stage":record.get("progress_stage") or "NOT_SCHEDULED",
+        "evidence_offers":record.get("evidence_offers") or {},
+        "evidence_progress":record.get("evidence_progress") or {
+            "status":"NOT_STARTED","processed":0,"planned":0},
         "questions":[],  # Deprecated buyer questionnaire; no clicks required.
         "research":build_research_path(report, selected, candidates[:MAX_CANDIDATES], evidence),
         "candidates":candidates[:MAX_CANDIDATES],

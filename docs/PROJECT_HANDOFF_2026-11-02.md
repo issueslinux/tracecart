@@ -1,3 +1,11 @@
+> **LATEST RESEARCH EVIDENCE (2026-11-02):** A separate robots-aware
+> independent-source execution worker now verifies fetched page identity,
+> methods and results. On the saved Lenovo case it found **2 distinct
+> independent test observations** (708 Cinebench 2024 and 19h01 WiFi)
+> relevant to 15Q8X10 **IPS reference** only; no exact x-kom OLED MTM or
+> seller checkout price is verified. Results are separately stored; original
+> audit is unchanged. See [EVIDENCE_EXECUTION_2026-11-02](EVIDENCE_EXECUTION_2026-11-02.md).
+>
 > **LATEST CHANGE (2026-11-02):** The no-click research tree now appears
 > immediately while source retrieval or Qwen is running. For the saved Lenovo
 > example: 16 listing leads, 288 *planned* source checks per offer, 4608 total.

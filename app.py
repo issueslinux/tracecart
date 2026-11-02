@@ -514,6 +514,24 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                     if not 0 <= number < len(offers):
                         raise ValueError("Invalid offer")
                     output = questions_for_offer(offers[number], category, offset, limit)
+                    saved_evidence=(result.get("evidence_offers") or {}).get(
+                        "offer-{}".format(number)) or {}
+                    documented={x.get("question_id"):x for x in
+                                saved_evidence.get("reference_answers",[])}
+                    for question in output["questions"]:
+                        observation=documented.get(question["id"])
+                        if observation and observation.get("source_sha256"):
+                            question["status"]=observation["status"]
+                            question["finding"]=observation["finding"]
+                            question["evidence"]={
+                                "source_url":observation["source_url"],
+                                "source_sha256":observation["source_sha256"],
+                                "publisher":observation["publisher"],
+                                "retrieved_at":observation["retrieved_at"],
+                                "reviewed_variant":observation["reviewed_variant"],
+                                "verified_for_exact_offer":False}
+                    output["reference_only_answers"]=len(documented)
+                    output["verified_answers"]=0  # no exact MTM match
                     payload = json.dumps(output, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json; charset=utf-8")

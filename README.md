@@ -5,6 +5,21 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: actual independent-source checks, not just question lists
+
+**2026-11-02 evidence execution:** A separate nonblocking source worker now
+retrieves independently published test pages through robots-aware, public-IP
+pinned HTTPS; checks test identity and recorded values; and saves source URL,
+SHA-256, retrieval timestamp and **variant scope** per offer. It updates
+the matching queued questions without rewriting the original report. First
+real supported family: **Lenovo IdeaPad Slim 3 15Q8X10**. Live replay of
+the 16-offer Lenovo case produced **2 distinct source measurements**
+(708 Cinebench 2024 multi-core; 19h01 WiFi on the reviewed IPS) attached
+to two index listings (4 offer-linked references); **zero exact-SKU
+verified results**. Intel 16IPH11 and unverified x-kom OLED cannot inherit
+those figures. This is a limited first source adapter, not general coverage.
+[Source execution, scope limitations and checks](docs/EVIDENCE_EXECUTION_2026-11-02.md).
+
 ## NEW: immediate research tree, hundreds of planned source checks per offer
 
 **2026-11-02 later update:** no more blank 10–45 second "Building the research

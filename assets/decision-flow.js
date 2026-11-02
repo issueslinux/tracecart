@@ -267,6 +267,10 @@
       const sentinel=node("p","offer-pagination-status","Loading first questions…");
       list.appendChild(questions); list.appendChild(sentinel);
       card.appendChild(list);
+      const evidenceBox = node("section","offer-evidence-findings");
+      evidenceBox.appendChild(node("small","",
+        "Independent-source checks: pending. No exact-SKU result verified."));
+      card.appendChild(evidenceBox);
       const modelBox = node("section","offer-llm-questions");
       modelBox.appendChild(node("small","",
         "Local LLM follow-up: not yet available. Questions do not count as evidence."));
@@ -291,6 +295,11 @@
             const li=node("li","offer-question-item");
             li.appendChild(node("span","question-priority",q.priority+" · "+q.status));
             li.appendChild(node("p","",q.question));
+            if(q.finding) {
+              li.appendChild(node("p","reference-observation",q.finding));
+              if(q.evidence && q.evidence.source_url)
+                li.appendChild(anchor("Verified page ↗",q.evidence.source_url));
+            }
             questions.appendChild(li);
           });
           next=page.next_offset;
@@ -315,6 +324,64 @@
       }
       loadBatch();
     });
+  }
+
+  function refreshDocumentedEvidence(data) {
+    const cards=document.getElementById("offer-research-cards").children;
+    const found=data.evidence_offers || {};
+    const progress=data.evidence_progress || {};
+    let total=0, exact=0;
+    const distinct=new Set();
+    Object.keys(found).forEach(id=>{
+      const items=found[id].reference_answers||[];
+      total+=items.length;
+      items.forEach(item=>distinct.add((item.source_sha256||"")+
+        ":"+(item.source_method||"")+":"+(item.value||"")));
+      exact+=found[id].verified_for_exact_offer||0;
+    });
+    const totalPlanned=(data.offers||[]).reduce((n,o)=>n+(o.question_count||0),0);
+    document.getElementById("offer-plan-count").textContent=
+      (data.offers||[]).length+" offers · "+
+      new Intl.NumberFormat("en-GB").format(totalPlanned)+" planned checks · "+
+      distinct.size+" distinct independent measurements ("+
+      total+" offer-linked references) · "+exact+" verified exact-SKU answers";
+    for(let i=0;i<cards.length;i++) {
+      const target=cards[i].querySelector(".offer-evidence-findings");
+      if(!target) continue;
+      const result=found["offer-"+i];
+      if(!result) {
+        target.textContent="Independent-source checks: "+
+          (progress.status||"NOT_STARTED").replace(/_/g," ").toLowerCase();
+        continue;
+      }
+      const signature=JSON.stringify([result.status,result.reference_answers]);
+      if(target.dataset.signature===signature) continue;
+      target.dataset.signature=signature;
+      target.replaceChildren();
+      const observations=result.reference_answers||[];
+      const message=observations.length ?
+        observations.length+" independent reference observations · NOT verified for the offered SKU" :
+        "No independently matched document collected for this exact model";
+      target.appendChild(node("h4","",message));
+      if(observations.length) {
+        const ul=node("ul","evidence-observation-list");
+        observations.forEach(e=>{
+          const li=node("li");
+          li.appendChild(node("p","",e.finding));
+          li.appendChild(node("small","",
+            "Offer-to-review match: "+e.variant_match.replace(/_/g," ")));
+          li.appendChild(node("small","",
+            e.reviewed_variant+" · Retrieved "+e.retrieved_at+
+            " · SHA-256 "+e.source_sha256.slice(0,16)+"…"));
+          li.appendChild(anchor(e.publisher+" — independently fetched ↗",
+            e.source_url,"action-link secondary"));
+          ul.appendChild(li);
+        });
+        target.appendChild(ul);
+      } else {
+        target.appendChild(node("small","",result.status.replace(/_/g," ")));
+      }
+    }
   }
 
   function refreshModelQuestions(data) {
@@ -395,9 +462,11 @@
         renderGraph(data);
         renderOfferQueue(data,app.dataset.source);
         refreshModelQuestions(data);
-        if(data.model_progress_stage==="PER_OFFER_MODEL_QUEUED") {
+        refreshDocumentedEvidence(data);
+        if(data.model_progress_stage==="PER_OFFER_MODEL_QUEUED" ||
+           (data.evidence_progress||{}).status==="RUNNING") {
           let followups=0;
-          const updateModel=async()=>{
+          const updateSources=async()=>{
             if(++followups>130) return;
             try {
               const res=await fetch(app.dataset.source,{
@@ -405,13 +474,14 @@
               if(res.ok) {
                 const latest=await res.json();
                 refreshModelQuestions(latest);
-                if(latest.model_progress_stage==="PER_OFFER_MODEL_COMPLETE")
-                  return;
+                refreshDocumentedEvidence(latest);
+                if(latest.model_progress_stage!=="PER_OFFER_MODEL_QUEUED" &&
+                   (latest.evidence_progress||{}).status!=="RUNNING") return;
               }
             } catch(_) {}
-            setTimeout(updateModel,2400);
+            setTimeout(updateSources,2400);
           };
-          setTimeout(updateModel,2400);
+          setTimeout(updateSources,2400);
         }
       } catch(_) {
         status.textContent="Source connection retry";
