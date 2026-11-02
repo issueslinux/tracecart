@@ -19,7 +19,7 @@ from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote, urljoin, parse
 from urllib.robotparser import RobotFileParser
 from visible_offer import parse_primary_offer
 from structured_shipping import shipping_claim, shipping_claims
-from structured_delivery import delivery_window_claim
+from structured_delivery import delivery_window_claim, delivery_windows_by_country
 from product_variant import check_page_identity_consistency
 from visible_gtin import visible_gtin_claims
 
@@ -641,6 +641,7 @@ def extract_from_html(url, raw):
         "structured_shipping_claim": shipping_claim(offers) if not identity_blocked else shipping_claim({}),
         "structured_shipping_claims_by_country": shipping_claims(offers) if not identity_blocked else {},
         "structured_delivery_window_claim": delivery_window_claim(offers) if not identity_blocked else delivery_window_claim({}),
+        "structured_delivery_windows_by_country": delivery_windows_by_country(offers) if not identity_blocked else {},
         "barcode_status": code_status,
         "barcode_evidence_methods": code_sources,
     }

@@ -18,7 +18,8 @@ def compare_delivery_windows(first, second, equivalent, country=None):
         if claim.get('status') != 'SELLER_DECLARED_DESTINATION_CONDITIONAL' or claim.get('destination_country') != country:
             result['status'] = 'DESTINATION_NOT_ESTABLISHED_FOR_BOTH'
             return result
-    windows = [source.get('structured_delivery_window_claim') or {} for source in sources]
+    windows = [(source.get('structured_delivery_windows_by_country') or {}).get(country)
+               or source.get('structured_delivery_window_claim') or {} for source in sources]
     if any(w.get('status') != 'SELLER_DECLARED_HANDLING_PLUS_TRANSIT_DAYS' for w in windows):
         result['status'] = 'COMPLETE_DELIVERY_WINDOWS_UNKNOWN'
         return result
