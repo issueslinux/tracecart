@@ -346,6 +346,8 @@ https://www.adafruit.com/product/3400</textarea></label>
                 <p>Method: {} · Retrieved: {}</p>
                 <p>Price extraction: <strong>{}</strong>. EAN: <strong>{}</strong>.
                 Seller availability statement: {}.</p>
+                <p>Current price metadata: {}. Reference/list price:
+                {} (NOT the active offer price).</p>
                 <p>Page SHA-256: <code>{}</code></p>
                 <p class="warning">{}</p>
                 {}
@@ -357,6 +359,8 @@ https://www.adafruit.com/product/3400</textarea></label>
                     h(intake.get("retrieved_at") or "NOT DOWNLOADED"),
                     h(intake["price_status"]), h(intake["barcode_status"]),
                     h(intake.get("availability_claim") or "NOT VERIFIED"),
+                    h(intake.get("price_evidence_method") or "NOT PROVIDED"),
+                    h(intake.get("reference_list_price") or "NOT PROVIDED"),
                     h(intake.get("page_sha256") or "NOT AVAILABLE"),
                     ("This retailer did not provide usable product page content "
                      "({}). The displayed product label was inferred ONLY from "
@@ -514,6 +518,8 @@ https://www.adafruit.com/product/3400</textarea></label>
                 <p>Second source: <a href="{}" target="_blank"
                 rel="noopener noreferrer">{}</a></p>
                 <p>Retrieved: {} · Page SHA-256: <code>{}</code></p>
+                <p>Second seller current price evidence: {}.
+                Reference/list price (NOT payable price): {}.</p>
                 <p>GTIN equality claimed: {} · Listed price change vs selected: {}.</p>
                 <p class="warning">Seller assertions only, not verified
                 checkout totals. No automatic purchase. Missing or conflicting
@@ -527,6 +533,8 @@ https://www.adafruit.com/product/3400</textarea></label>
                     h(live["alternative_requested_url"]), h(live["alternative_requested_url"]),
                     h(source.get("retrieved_at") or "NOT DOWNLOADED"),
                     h(source.get("page_sha256") or "NOT AVAILABLE"),
+                    h(source.get("price_evidence_method") or "NOT PROVIDED"),
+                    h(source.get("reference_list_price") or "NOT PROVIDED"),
                     h(live["same_gtin_claimed"]),
                     h(delta + "%" if delta is not None else "NOT COMPARABLE")))
             body = table + body

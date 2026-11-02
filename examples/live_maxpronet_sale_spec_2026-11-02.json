@@ -1,0 +1,50 @@
+{
+  "observation_type": "actual_public_seller_page_not_checkout",
+  "observed_at": "2026-11-02T00:07:49.863568+00:00",
+  "item": {
+    "title": "Proszek do prania Persil Color - 75 prań, 4,5 kg",
+    "price": "78.90",
+    "currency": "PLN",
+    "barcode": "",
+    "merchant_url": "https://maxpronet.pl/product-pol-84304-Proszek-do-prania-Persil-Color-75-pran-4-5-kg.html"
+  },
+  "source": {
+    "source_url": "https://maxpronet.pl/product-pol-84304-Proszek-do-prania-Persil-Color-75-pran-4-5-kg.html",
+    "retrieved_at": "2026-11-02T00:07:49.863568+00:00",
+    "page_sha256": "3836671d74329af846740697f28a3b1cc9558a5d234e36ee81d42da3405ceafd",
+    "robots_url": "https://maxpronet.pl/robots.txt",
+    "source_type": "seller_page_NOT_independent_test",
+    "extraction_method": "Product JSON-LD",
+    "price_status": "SELLER_DECLARED",
+    "price_evidence_method": "EXPLICIT_SALE_PRICE_SPECIFICATION",
+    "reference_list_price": "153.99",
+    "barcode_status": "NOT_FOUND",
+    "availability_claim": "http://schema.org/InStock"
+  },
+  "unit_economics": {
+    "status": "CALCULATED_FROM_SELLER_CLAIMS",
+    "washes_declared_in_title": 75,
+    "currency": "PLN",
+    "seller_listed_price": "78.90",
+    "cost_per_wash": "1.0520",
+    "does_not_include": [
+      "delivery",
+      "discount eligibility",
+      "actual dose",
+      "stain-removal performance",
+      "water hardness"
+    ],
+    "price_evidence": "current selected offer input, NOT confirmed checkout amount",
+    "dose_evidence": "product title claim, NOT independently verified"
+  },
+  "same_gtin_comparison_available": false,
+  "delivery_price_verified": false,
+  "stock_independently_verified": false,
+  "payment_authorized": false,
+  "limitations": [
+    "Price and availability are seller metadata, not independently verified.",
+    "ListPrice 153.99 PLN is reference, not current seller offer.",
+    "No GTIN extracted from supported Product metadata.",
+    "No cross-retailer savings claim without matching GTIN and verified offers."
+  ]
+}

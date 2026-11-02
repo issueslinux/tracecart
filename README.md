@@ -5,6 +5,20 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## Source-qualified sale prices: live MAXPRONET Persil result (2 Nov 2026)
+
+TraceCart now understands an individual Product JSON-LD Offer with both
+`ListPrice` and `SalePrice`: it chooses the **seller-declared sale price**,
+never the crossed-out reference price. On the actual MAXPRONET Persil Color
+4.5 kg / 75 washes product page, the public HTML declared **78.90 PLN
+SalePrice** and **153.99 PLN ListPrice**. The source-qualified unit cost is
+**1.0520 PLN per declared wash**. The source was fetched after robots.txt
+preflight, and its timestamp, page SHA-256 and method are preserved. GTIN,
+delivery and final checkout amount remain unverified, so no cross-store
+savings are asserted. See
+[method and limitations](docs/LIVE_SALE_PRICE_SPEC.md) and
+[actual source snapshot](examples/live_maxpronet_sale_spec_2026-11-02.json).
+
 ## NEW: check a second real store offer before checkout
 
 After submitting the selected product URL in `/cart` and receiving the
