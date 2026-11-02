@@ -11,6 +11,7 @@ import json
 from urllib.parse import urlsplit
 
 from live_offer_compare import compare_live_offer
+from offer_research_critic import critique_competing_offers, critic_tree_branch
 from product_intake import normalized_product_url
 
 
@@ -45,13 +46,16 @@ def compare_live_offers(base_report, selected, candidate_urls, extractor=None, b
     for index, url in enumerate(urls):
         single = compare_live_offer(base_report, selected, url, extractor=extractor, buyer_country=buyer_country)
         comparison = single["live_competitor_comparison"]
-        branch = single["root"]["children"][-2]
+        branch = next(x for x in single["root"]["children"]
+                      if x.get("kind") == "live_competitor")
         branch["id"] = "cart-live-competitor-{}".format(index + 1)
         branch["title"] = "Independent seller page {}: {}".format(index + 1, url)
         branches.append(branch)
         comparisons.append(comparison)
 
-    result["root"]["children"][-1:-1] = branches
+    review = critique_competing_offers(comparisons)
+    result['root']['children'][-1:-1] = branches + [critic_tree_branch(review)]
+    result['multi_offer_research_critic'] = review
     verified = sum(c["status"] == "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON"
                    for c in comparisons)
     fetched = sum(c["alternative_retrieved"] for c in comparisons)
@@ -79,6 +83,8 @@ def compare_live_offers(base_report, selected, candidate_urls, extractor=None, b
         "payment_authorized": False,
         "statuses": [{"url": c["alternative_requested_url"], "status": c["status"]}
                      for c in comparisons],
+        "research_questions_open": review['open_question_count'],
+        "lower_listed_price_research_leads": review['lower_listed_price_leads'],
     }
     result["generated_at"] = datetime.now(timezone.utc).isoformat()
     result["limitations"] = list(result.get("limitations", [])) + [

@@ -1,0 +1,64 @@
+{
+  "observation": "LIVE_SELLER_PAGES_NOT_CHECKOUT_VERIFIED",
+  "selected": {
+    "title": "KOMPRESOR BEZOLEJOWY AIR KIT 1.5KM 8BAR",
+    "price": "490.14",
+    "currency": "PLN",
+    "gtin": "8016738753899",
+    "source_url": "https://xdom.eu/KOMPRESOR-BEZOLEJOWY-AIR-KIT-1-5KM-8BAR-p30069",
+    "sha256": "501c68a36c0747ac88159f4b2d6c65da2d0f6bf90d6693141d7feb83dce27c75",
+    "retrieved_at": "2026-11-02T15:58:07.633165+00:00"
+  },
+  "alternative": {
+    "source_url": "https://fabryka-narzedzi.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar-p-70017.html",
+    "status": "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON",
+    "observed_seller_listed_price": "382.28",
+    "currency": "PLN",
+    "gtin": "8016738753899",
+    "source_page_sha256": "017fee19d1b0227d76a4232cca2fa853249ab2bd85072d9525516ef130df7863",
+    "retrieved_at": "2026-11-02T15:58:08.037167+00:00"
+  },
+  "critic": {
+    "status": "RESEARCH_GAPS_NOT_PURCHASE_RECOMMENDATION",
+    "method": "DETERMINISTIC_EVIDENCE_CRITIC_NO_AI_SOURCE_FABRICATION",
+    "research_budget": 3,
+    "candidate_count": 1,
+    "open_question_count": 1,
+    "lower_listed_price_leads": 1,
+    "assessments": [
+      {
+        "candidate_index": 1,
+        "url": "https://fabryka-narzedzi.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar-p-70017.html",
+        "comparison_status": "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON",
+        "source_retrieved_at": "2026-11-02T15:58:08.037167+00:00",
+        "source_page_sha256": "017fee19d1b0227d76a4232cca2fa853249ab2bd85072d9525516ef130df7863",
+        "source_scope": "SELLER_DECLARATION_NOT_INDEPENDENT_PRODUCT_TEST",
+        "listed_price_advantage": "107.86",
+        "currency": "PLN",
+        "independent_product_tests_found": 0,
+        "payment_authorized": false,
+        "finding": "LOWER_SELLER_LISTED_PRICE_ONLY",
+        "research_question": "Do independent product tests, condition evidence and seller policies support considering this lower-listed-price equivalent offer?",
+        "priority": 0,
+        "research_selection": "OPEN"
+      }
+    ],
+    "prioritized_questions": [
+      {
+        "candidate_index": 1,
+        "url": "https://fabryka-narzedzi.pl/stanley-kompresor-sprezarka-bezolejowa-air-kit-ol-195-1-1kw-8-bar-p-70017.html",
+        "question": "Do independent product tests, condition evidence and seller policies support considering this lower-listed-price equivalent offer?",
+        "finding": "LOWER_SELLER_LISTED_PRICE_ONLY",
+        "selection": "OPEN"
+      }
+    ],
+    "limitations": [
+      "Evidence is retailer-declared, not independent laboratory testing or verified reviews.",
+      "Equal seller-declared GTINs do not independently prove product quality or equivalence.",
+      "Seller-listed price differences are research leads, not all-in savings or a winner.",
+      "No automatic payment or checkout action."
+    ],
+    "payment_authorized": false
+  },
+  "report_sha256": "b4388057601da3029259188c358e3439facf50808f72a24a8a704ba65e5dd10a"
+}
