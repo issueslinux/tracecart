@@ -45,3 +45,24 @@ class EvidenceDiagnosticsTests(unittest.TestCase):
             raise ValueError('Access denied')
         row = probe(['https://example.org/item'], blocked)['cases'][0]
         self.assertEqual(row['shipping_diagnosis'], 'NOT_ASSESSED_PAGE_UNAVAILABLE')
+
+class MerchantDiversityTests(unittest.TestCase):
+    def test_single_merchant_is_not_market_coverage(self):
+        result = probe(['https://example.org/a', 'https://example.org/b'],
+                       lambda url: ({'title': 'Product'}, {}))
+        self.assertEqual(result['merchant_count'], 1)
+        self.assertEqual(result['merchant_sample_sizes'], {'example.org': 2})
+        self.assertEqual(result['sample_warning'], 'SINGLE_MERCHANT_NOT_MARKET_COVERAGE')
+
+    def test_multiple_hosts_still_nonrandom(self):
+        result = probe(['https://example.org/a', 'https://example.com/b'],
+                       lambda url: ({'title': 'Product'}, {}))
+        self.assertEqual(result['merchant_count'], 2)
+        self.assertEqual(result['sample_warning'], 'NON_RANDOM_SAMPLE_NOT_MARKET_COVERAGE')
+
+    def test_http_denial_status_is_preserved(self):
+        from product_intake import SourceAccessDenied
+        def denied(url):
+            raise SourceAccessDenied(403)
+        result = probe(['https://example.org/a'], denied)
+        self.assertEqual(result['cases'][0]['status'], 'HTTP_403')
