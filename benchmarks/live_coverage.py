@@ -4,16 +4,19 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import sys
+from collections import Counter
+from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from product_intake import extract_product_page, validate_product_url
+from product_intake import extract_product_page, validate_product_url, SourceAccessDenied, SourceHTTPFailure
 
 
 def probe(urls, extractor=extract_product_page):
     rows = []
     for url in urls:
         safe = validate_product_url(url)
-        row = {'url': safe, 'status': 'UNKNOWN', 'product': False,
+        row = {'url': safe, 'merchant_host': urlsplit(safe).hostname,
+               'status': 'UNKNOWN', 'product': False,
                'price': False, 'shipping': False, 'delivery': False}
         try:
             item, meta = extractor(safe)
@@ -23,6 +26,8 @@ def probe(urls, extractor=extract_product_page):
                        delivery=bool(meta.get('structured_delivery_windows_by_country')),
                        page_sha256=meta.get('page_sha256'),
                        retrieved_at=meta.get('retrieved_at'))
+        except (SourceAccessDenied, SourceHTTPFailure) as exc:
+            row['status'] = 'HTTP_' + str(exc.status)
         except Exception as exc:
             # No arbitrary exception text: it may contain remote content.
             row['status'] = 'UNAVAILABLE_' + type(exc).__name__
@@ -35,7 +40,14 @@ def probe(urls, extractor=extract_product_page):
             row['shipping_diagnosis'] = 'NOT_ASSESSED_PAGE_UNAVAILABLE'
             row['delivery_diagnosis'] = 'NOT_ASSESSED_PAGE_UNAVAILABLE'
         rows.append(row)
+    merchants = sorted(set(r['merchant_host'] for r in rows))
+    merchant_counts = Counter(r['merchant_host'] for r in rows)
     return {'dataset': 'LIVE_URLS_ROBOTS_RESPECTED',
+            'merchant_count': len(merchants),
+            'merchant_hosts': merchants,
+            'sample_warning': ('SINGLE_MERCHANT_NOT_MARKET_COVERAGE' if len(merchants) == 1
+                               else 'NON_RANDOM_SAMPLE_NOT_MARKET_COVERAGE'),
+            'merchant_sample_sizes': dict(sorted(merchant_counts.items())),
             'generated_at': datetime.now(timezone.utc).isoformat(),
             'total': len(rows),
             'fetched': sum(r['status'] == 'FETCHED' for r in rows),
