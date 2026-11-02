@@ -12,6 +12,7 @@ import json
 import os
 import re
 import secrets
+import socket
 import sqlite3
 import threading
 from urllib.parse import quote, urlencode, urlsplit
@@ -622,8 +623,10 @@ class CartResearchJobs:
             except (SourceAccessDenied, SourceRedirect, SourceHTTPFailure) as exc:
                 item, source = generic_url_identity(
                     url, "HTTP_" + str(exc.status))
-            except (TimeoutError, ConnectionError) as exc:
-                # HTTPS source timeouts and resets are connectivity failures,
+            except (TimeoutError, socket.timeout, ConnectionError) as exc:
+                # Python 3.8 socket.timeout is a separate OSError subclass,
+                # not a built-in TimeoutError. HTTPS source timeouts and
+                # resets are connectivity failures,
                 # not evidence that the item cannot be researched. Continue
                 # with the URL-only (unverified) product identity and Search-First.
                 # Do not catch arbitrary ValueError / unsafe private DNS errors.
