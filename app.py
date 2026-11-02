@@ -66,6 +66,100 @@ def h(text):
     return escape(str(text), quote=True)
 
 
+def shopping_alternatives_panel(shopping):
+    """Rank functional substitutes; never label index prices as verified."""
+    data = shopping.get("functional_alternatives")
+    if not data:
+        return ""
+    statuses = {
+        "SIMILAR_TECHNICAL_TIER_INDEX_ONLY": "Zbliżone parametry",
+        "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK": "Możliwa alternatywa — sprawdź parametry",
+    }
+    bands = {
+        "SIMILAR_INDEX_PRICE_BAND": "Podobny przedział cenowy",
+        "LOWER_INDEX_PRICE_BAND": "Niższy przedział cenowy",
+        "HIGHER_INDEX_PRICE_BAND": "Wyższy przedział cenowy",
+        "PRICE_BAND_UNDETERMINED": "Przedział cenowy nieustalony",
+    }
+    rows = []
+    for offer in data.get("ranked_alternatives", []):
+        assessment = offer["comparison"]
+        link = offer.get("merchant_url") or offer.get("shopping_lookup_url")
+        label = ("przejdź do sklepu" if offer.get("merchant_url")
+                 else "wyszukaj w Google Shopping")
+        link_html = ('<a href="{}" target="_blank" rel="noopener noreferrer">'
+                     '{}</a>'.format(h(link), h(label))) if link else "Brak odnośnika"
+        qualities = assessment.get("matched_features", [])
+        differences = assessment.get("different_features", [])
+        missing = assessment.get("unconfirmed_features", [])
+        description = (
+            "<b>Podobne:</b> " +
+            (", ".join(h(x) for x in qualities[:5]) or "brak wystarczających danych")
+        )
+        if differences:
+            description += "<br><b>Różnice:</b> " + ", ".join(
+                h(x) for x in differences[:3])
+        if missing:
+            description += "<br><b>Nieznane:</b> " + ", ".join(
+                h(x) for x in missing[:4])
+        if assessment.get("condition_difference"):
+            description += "<br><b>Stan:</b> " + h(assessment["condition_difference"])
+        anomaly = offer.get("index_price_anomaly")
+        if anomaly == "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED":
+            description += "<br><strong>UWAGA: podejrzanie niska cena w indeksie!</strong>"
+        score = assessment.get("technical_score")
+        score_text = (str(score) + "/100 – tylko zgodność opisów"
+                      if score is not None else "brak danych")
+        rows.append(
+            '<tr><td><b>{}</b><br>{}<br>{}</td>'
+            '<td><strong>{} {}</strong><br>{}</td>'
+            '<td>{}<br>{}</td>'
+            '<td>{}</td></tr>'.format(
+                h(offer["source"]), h(offer["title"]), link_html,
+                h(offer.get("indexed_price") or "brak"), h(offer.get("currency") or ""),
+                h(bands.get(assessment.get("price_band"), "Nieustalone")),
+                h(statuses.get(assessment["status"], assessment["status"])),
+                h(score_text), description))
+    selected_specs = data.get("selected_declared_specs", {})
+    from similar_tier import PUBLIC_SPEC_NAMES, _display_spec
+    basics = ", ".join("{} {}".format(PUBLIC_SPEC_NAMES.get(key, key),
+                                      _display_spec(key, value))
+                       for key, value in selected_specs.items()) or "niewystarczające dane"
+    price_info = (
+        "Punkt odniesienia: {} {} ({})".format(
+            h(data["price_reference"]), h(data.get("price_reference_currency") or ""),
+            "cena zadeklarowana na stronie wejściowej" if
+            data["price_reference_provenance"] == "INPUT_SELLER_DECLARED_NOT_CHECKOUT"
+            else "szacowana mediana cen podobnych ofert z indeksu")
+        if data.get("price_reference") is not None
+        else "Nieustalony punkt odniesienia dla cen – brak wiarygodnej ceny wejściowej i danych o porównywalnych ofertach")
+    if not rows:
+        table = ("<p>Nie ma dość danych, aby wskazać alternatywy o podobnych "
+                 "parametrach. Wszystkie wyniki wyszukiwania są poniżej.</p>")
+    else:
+        table = (
+            "<table><tr><th>Produkt i źródło</th><th>Indeksowana cena i segment</th>"
+            "<th>Ocena podobieństwa</th><th>Porównane parametry</th></tr>{}</table>"
+        ).format("".join(rows))
+    counts = data.get("status_counts", {})
+    return (
+        '<section><div class="tag">PODOBNA PÓŁKA · NIE TYLKO TEN SAM MODEL</div>'
+        '<h2>Alternatywne produkty o zbliżonych możliwościach</h2>'
+        '<p>Produkt wejściowy: {}. Parametry znalezione w nazwie: {}.</p>'
+        '<p>{}. Podobne technicznie: <b>{}</b>, możliwe alternatywy '
+        'z brakującymi parametrami: <b>{}</b>.</p>{}'
+        '<p class="warning">To orientacyjna zgodność danych w tytułach ofert, '
+        '<strong>nie niezależna ocena jakości</strong> i nie potwierdzenie '
+        'ceny konkretnego sprzedawcy. Inny model lub marka są dozwolone. '
+        'Zasięg roweru i akumulator mogą być deklaracjami marketingowymi. '
+        'Półka cenowa z indeksu Google nie jest ceną w koszyku.</p></section>'
+    ).format(
+        h(data.get("category_label")), h(basics), price_info,
+        h(counts.get("SIMILAR_TECHNICAL_TIER_INDEX_ONLY", 0)),
+        h(counts.get("POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK", 0)),
+        table)
+
+
 def shopping_search_panel(report):
     """Expose indexed marketplace prices without disguising them as seller checks."""
     data = report.get("indexed_shopping")
@@ -109,7 +203,7 @@ def shopping_search_panel(report):
         '<section><div class="tag">GOOGLE SHOPPING · INDEXED SELLER PRICES</div>'
         '<h2>Marketplace and store prices without fetching blocked seller pages</h2>'
         '<p>Provider: {} · status: {} · searched: {} · API calls: {}. '
-        'Market: Poland. Indexed prices may be delayed or mismatched.</p>{}'
+        'Market: Poland. Indexed prices may be delayed or mismatched.</p>{}{}'
         '<p class="warning">A Google Shopping result is a search hint; '
         'its link may reopen Google Shopping, not the same seller offer. '
         'Product details may be inaccessible even when Shopping results exist.</p>'
@@ -123,7 +217,8 @@ def shopping_search_panel(report):
         'availability, checkout total, universal cheapest-offer claim or '
         'purchase authorization. Exact product/GTIN may differ.</p></section>'
     ).format(h(data["provider"]), h(data["status"]), h(data["queried_at"]),
-             h(data["provider_calls"]), best_html, ''.join(rows),
+             h(data["provider_calls"]), shopping_alternatives_panel(data), best_html,
+             ''.join(rows),
              ''.join(group_rows))
 
 
