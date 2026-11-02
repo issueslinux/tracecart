@@ -470,7 +470,7 @@ def to_html_tree(report):
         details = node.get("details", {})
         rows = []
         for name, value in details.items():
-            if name == "source_url":
+            if name == "source_url" and value is not None:
                 url = _safe_url(value)
                 rows.append('<div><strong>source_url:</strong> <a rel="noopener noreferrer" target="_blank" href="{}">{}</a></div>'.format(
                     esc(url), esc(url)))

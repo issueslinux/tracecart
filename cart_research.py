@@ -108,6 +108,43 @@ CATEGORY_QUESTIONS = {
 }
 
 
+# Evidence questions are for sources and sellers, not a buyer questionnaire.
+# They are grouped for audit and prioritization; unanswered is not a negative verdict.
+PURCHASE_GROUP_QUESTIONS = {
+    "product": ("Does the exact model/EAN and included accessory set match across offers?",),
+    "offer": ("Is this offer currently available, and do promotions require eligibility?",),
+    "seller": ("Who is the legal seller and what independent evidence supports reliability?",
+               "What warranty, return and complaint terms does this seller publish?"),
+    "delivery": ("What is the source-declared shipping cost to the buyer's destination?",
+                 "What delivery window, carrier and parcel size restrictions are documented?",
+                 "For pickup, what travel distance, expense and time would be required?"),
+    "payment": ("Which payment methods and mandatory processing fees are documented?",
+                "Are buyer protections and refund routes documented for the payment method?"),
+    "total_cost": ("Can product, shipping, mandatory fees and eligible discounts be reconciled?",
+                   "Is the checkout total confirmed for the selected destination and quantity?"),
+}
+
+
+def group_purchase_questions(questions):
+    grouped = {name: [] for name in PURCHASE_GROUP_QUESTIONS}
+    for question in questions:
+        q = question.casefold()
+        if any(word in q for word in ("delivered price", "cost per wash", "prices can", "cheaper")):
+            group = "total_cost"
+        elif any(word in q for word in ("retailer", "offer", "stock", "promotion", "available")):
+            group = "offer"
+        elif any(word in q for word in ("seller", "warranty", "return")):
+            group = "seller"
+        else:
+            group = "product"
+        grouped[group].append(question)
+    for group, prompts in PURCHASE_GROUP_QUESTIONS.items():
+        for question in prompts:
+            if question not in grouped[group]:
+                grouped[group].append(question)
+    return grouped
+
+
 class _NoExternalRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         # Never forward a confidential search key to another host.
@@ -408,12 +445,21 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
                      node_id="cart-selected")
     root["children"].append(selected)
     economics = unit_cost(item, category)
+    grouped_questions = group_purchase_questions(qs)
     root["children"].append(_node("category_model",
-        "Adaptive questions for " + category, "RESEARCH_QUESTIONS",
-        {"question_count": len(qs), "questions_about": "sources_offers_reviews_not_user"},
-        [_node("question", q, "OPEN",
-               {"answer": "Not established by retrieved sources; needs product evidence"},
-               node_id="cart-q-{}".format(i)) for i, q in enumerate(qs)],
+        "Purchase-stage evidence questions for " + category, "RESEARCH_QUESTIONS",
+        {"question_count": sum(map(len, grouped_questions.values())),
+         "question_groups": {name: len(items) for name, items in grouped_questions.items()},
+         "questions_about": "sources_offers_reviews_not_user"},
+        [_node("question_group", name.replace("_", " ").title(), "OPEN",
+               {"group": name, "question_count": len(items)},
+               [_node("question", q, "OPEN",
+                      {"answer": "Unknown until documented by a permitted source",
+                       "group": name},
+                      node_id="cart-q-{}-{}".format(name, i))
+                for i, q in enumerate(items)],
+               node_id="cart-group-{}".format(name))
+         for name, items in grouped_questions.items()],
         node_id="cart-questions"))
     root["children"].append(_node(
         "unit_economics", "Cost per wash from selected seller's claims",
@@ -448,6 +494,7 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
         "core_challenges": [
             "The catalog identifies products, not offers available in a particular store.",
             "No current verified competitor shop prices; do not claim A is cheaper.",
+            "Shipping, destination, delivery time and payment fees are not established by catalog records.",
             "Unverified product label and manufacturer claims cannot establish washing performance.",
             "Do not compare powder, liquids and capsules without normalized doses."
             if category == "laundry_detergent" else
@@ -467,6 +514,7 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
             "current_competitor_offers_verified": 0,
             "cart_price": item["price"], "currency": item["currency"],
             "unit_economics": economics,
+            "transport_and_payment_fees_verified": False,
             "comparison_status": "UNPRICED_ALTERNATIVES",
             "result": ("Other catalog products found; retailer offers and price "
                        "differences remain unverified. Show questions and alternatives "

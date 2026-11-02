@@ -52,10 +52,15 @@ class CartTests(unittest.TestCase):
         self.assertEqual(len(r["source_discovery"]["catalog"]), 2)
         titles = [x["name"] for x in r["source_discovery"]["catalog"]]
         self.assertTrue(all("Poudre" in x for x in titles))
-        qs = [x["title"] for x in r["root"]["children"][1]["children"]]
+        qs = [q["title"] for group in r["root"]["children"][1]["children"] for q in group["children"]]
         self.assertTrue(any("cost per wash" in x for x in qs))
         self.assertTrue(any("latest detergent formulation" in x for x in qs))
         self.assertFalse(any("RAM" in x for x in qs))
+        groups = r["root"]["children"][1]["children"]
+        self.assertEqual({g["details"]["group"] for g in groups},
+                         {"product", "offer", "seller", "delivery", "payment", "total_cost"})
+        self.assertTrue(all(q["status"] == "OPEN" for g in groups for q in g["children"]))
+        self.assertFalse(r["root"]["children"][-1]["details"]["transport_and_payment_fees_verified"])
         self.assertEqual(r["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
         self.assertFalse(r["root"]["children"][-1]["details"]["payment_authorized"])
         self.assertEqual(r["root"]["children"][-1]["details"]["current_competitor_offers_verified"], 0)
@@ -85,7 +90,7 @@ class CartTests(unittest.TestCase):
                 "barcode": ""}
         with patch.object(c, "generate_local_ai_questions", return_value=[]):
             r = c.research_cart(item, fetch=lambda u, h, **k: {"products": []})
-        q = " ".join(x["title"] for x in r["root"]["children"][1]["children"])
+        q = " ".join(q["title"] for group in r["root"]["children"][1]["children"] for q in group["children"])
         self.assertIn("battery health", q)
         self.assertNotIn("stain removal", q)
         self.assertEqual(r["root"]["details"]["category"], "laptop")
