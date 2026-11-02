@@ -280,6 +280,69 @@ def _read(url, max_bytes, expected_mimes, timeout=12):
         con.close()
 
 
+def normalized_gtin(value):
+    """Return canonical GTIN-14 only for a valid GS1 check digit.
+
+    Zero-padding makes a UPC-A (12 digits) and its EAN-13 representation
+    comparable without changing the seller's original declared identifier.
+    SKU, MPN and vendor product codes are NOT treated as GTINs.
+    """
+    code = str(value) if value is not None else ""
+    if not re.fullmatch(r"[0-9]{8}|[0-9]{12,14}", code) or len(set(code)) == 1:
+        return None
+    digits = [int(d) for d in code]
+    total = digits[-1]
+    for i, digit in enumerate(reversed(digits[:-1])):
+        total += digit * (3 if i % 2 == 0 else 1)
+    return code.zfill(14) if total % 10 == 0 else None
+
+
+def _barcode_evidence(product, parser):
+    """Read only explicitly labelled product GTINs, never SKU/MPN/URLs.
+
+    If seller fields disagree or any explicitly claimed GTIN is malformed,
+    fail closed: no identifier is eligible for an equivalence assertion.
+    """
+    claims = []
+    for field in ("gtin13", "gtin14", "gtin12", "gtin8", "gtin"):
+        value = product.get(field)
+        if value not in (None, ""):
+            claims.append((str(value), "PRODUCT_JSON_LD_" + field.upper()))
+    additional = product.get("additionalProperty", [])
+    if isinstance(additional, dict):
+        additional = [additional]
+    if isinstance(additional, list):
+        for entry in additional[:60]:
+            if not isinstance(entry, dict):
+                continue
+            label = str(entry.get("name") or entry.get("propertyID") or "")
+            if _is_gtin_label(label) and entry.get("value") not in (None, ""):
+                claims.append((str(entry["value"]), "PRODUCT_ADDITIONAL_PROPERTY"))
+    for field in ("product:gtin13", "product:gtin14", "product:gtin12",
+                  "product:gtin8", "product:gtin"):
+        if parser.meta.get(field):
+            claims.append((str(parser.meta[field]), "PRODUCT_META_" + field.upper()))
+    for label, value in parser.specification_rows[:150] if product else []:
+        if _is_gtin_label(label):
+            claims.append((value, "HTML_EXPLICIT_EAN_TABLE_ROW"))
+    if not claims:
+        return "", "NOT_FOUND", []
+    normalized = [normalized_gtin(code) for code, _ in claims]
+    sources = sorted(set(source for _, source in claims))
+    if any(code is None for code in normalized):
+        return "", "INVALID_DECLARED_GTIN", sources
+    if len(set(normalized)) != 1:
+        return "", "CONFLICTING_DECLARED_GTINS", sources
+    return claims[0][0], "FOUND_CHECKSUM_VALID", sources
+
+
+def _is_gtin_label(value):
+    label = " ".join(str(value).strip().casefold().split())
+    return bool(re.fullmatch(
+        r"(?:ean(?:[- ]?(?:8|13))?|gtin(?:[- ]?(?:8|12|13|14))?|"
+        r"ean\s*\(gtin\)|kod\s*ean)", label))
+
+
 class _ProductTags(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -288,9 +351,18 @@ class _ProductTags(HTMLParser):
         self.structured = []
         self.title = []
         self.meta = {}
+        self.specification_rows = []
+        self._row = None
+        self._cell_type = None
+        self._cell_data = []
 
     def handle_starttag(self, tag, attrs):
         a = dict((str(k).lower(), v) for k, v in attrs)
+        if tag == "tr" and len(self.specification_rows) < 150:
+            self._row = {}
+        elif tag in ("th", "td") and self._row is not None:
+            self._cell_type = tag
+            self._cell_data = []
         if tag == "script" and (a.get("type") or "").lower() == "application/ld+json":
             self.in_script = True
             self.structured.append([])
@@ -307,8 +379,19 @@ class _ProductTags(HTMLParser):
             self.structured[-1].append(text)
         if self.in_title:
             self.title.append(text)
+        if self._cell_type is not None and sum(map(len, self._cell_data)) < 160:
+            self._cell_data.append(text)
 
     def handle_endtag(self, tag):
+        if tag == self._cell_type and self._row is not None:
+            self._row[tag] = " ".join("".join(self._cell_data).split())[:160]
+            self._cell_type = None
+            self._cell_data = []
+        elif tag == "tr" and self._row is not None:
+            if self._row.get("th") and self._row.get("td"):
+                self.specification_rows.append(
+                    (self._row["th"], self._row["td"]))
+            self._row = None
         if tag == "script":
             self.in_script = False
         if tag == "title":
@@ -443,12 +526,7 @@ def extract_from_html(url, raw):
             price_method = "PRODUCT_OPENGRAPH_PRICE"
     if price is None:
         currency = None
-    code = (product.get("gtin13") or product.get("gtin") or
-            product.get("gtin8") or product.get("gtin14") or
-            parser.meta.get("product:gtin13") or "")
-    code = str(code)
-    if not re.fullmatch(r"[0-9]{8,14}", code):
-        code = ""
+    code, code_status, code_sources = _barcode_evidence(product, parser)
     brand = product.get("brand", "")
     if isinstance(brand, dict):
         brand = brand.get("name", "")
@@ -468,7 +546,8 @@ def extract_from_html(url, raw):
                          price_method.startswith("CONFLICTING_") else "NOT_FOUND"),
         "price_evidence_method": price_method,
         "reference_list_price": list_price,
-        "barcode_status": "FOUND" if code else "NOT_FOUND",
+        "barcode_status": code_status,
+        "barcode_evidence_methods": code_sources,
     }
 
 
