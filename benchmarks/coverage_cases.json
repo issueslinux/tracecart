@@ -1,0 +1,50 @@
+[
+  {
+    "id": "jsonld-pl",
+    "locale": "pl",
+    "url": "https://example.org/product/pl",
+    "html": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"Product\", \"name\": \"Pralka automatyczna\", \"offers\": {\"@type\": \"Offer\", \"price\": \"125.00\", \"priceCurrency\": \"EUR\", \"shippingDetails\": {\"shippingDestination\": {\"addressCountry\": \"PL\"}, \"shippingRate\": {\"value\": \"7\", \"currency\": \"EUR\"}, \"deliveryTime\": {\"handlingTime\": {\"minValue\": 1, \"maxValue\": 2, \"unitCode\": \"DAY\"}, \"transitTime\": {\"minValue\": 2, \"maxValue\": 4, \"unitCode\": \"DAY\"}}}}}</script>"
+  },
+  {
+    "id": "jsonld-de",
+    "locale": "de",
+    "url": "https://example.org/product/de",
+    "html": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"Product\", \"name\": \"Waschmaschine Modell\", \"offers\": {\"@type\": \"Offer\", \"price\": \"125.00\", \"priceCurrency\": \"EUR\", \"shippingDetails\": {\"shippingDestination\": {\"addressCountry\": \"DE\"}, \"shippingRate\": {\"value\": \"7\", \"currency\": \"EUR\"}, \"deliveryTime\": {\"handlingTime\": {\"minValue\": 1, \"maxValue\": 2, \"unitCode\": \"DAY\"}, \"transitTime\": {\"minValue\": 2, \"maxValue\": 4, \"unitCode\": \"DAY\"}}}}}</script>"
+  },
+  {
+    "id": "jsonld-fr",
+    "locale": "fr",
+    "url": "https://example.org/product/fr",
+    "html": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"Product\", \"name\": \"Machine à laver\", \"offers\": {\"@type\": \"Offer\", \"price\": \"125.00\", \"priceCurrency\": \"EUR\", \"shippingDetails\": {\"shippingDestination\": {\"addressCountry\": \"FR\"}, \"shippingRate\": {\"value\": \"7\", \"currency\": \"EUR\"}, \"deliveryTime\": {\"handlingTime\": {\"minValue\": 1, \"maxValue\": 2, \"unitCode\": \"DAY\"}, \"transitTime\": {\"minValue\": 2, \"maxValue\": 4, \"unitCode\": \"DAY\"}}}}}</script>"
+  },
+  {
+    "id": "jsonld-es",
+    "locale": "es",
+    "url": "https://example.org/product/es",
+    "html": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"Product\", \"name\": \"Lavadora doméstica\", \"offers\": {\"@type\": \"Offer\", \"price\": \"125.00\", \"priceCurrency\": \"EUR\", \"shippingDetails\": {\"shippingDestination\": {\"addressCountry\": \"ES\"}, \"shippingRate\": {\"value\": \"7\", \"currency\": \"EUR\"}, \"deliveryTime\": {\"handlingTime\": {\"minValue\": 1, \"maxValue\": 2, \"unitCode\": \"DAY\"}, \"transitTime\": {\"minValue\": 2, \"maxValue\": 4, \"unitCode\": \"DAY\"}}}}}</script>"
+  },
+  {
+    "id": "jsonld-ja",
+    "locale": "ja",
+    "url": "https://example.org/product/ja",
+    "html": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"Product\", \"name\": \"洗濯機モデル\", \"offers\": {\"@type\": \"Offer\", \"price\": \"125.00\", \"priceCurrency\": \"EUR\", \"shippingDetails\": {\"shippingDestination\": {\"addressCountry\": \"JP\"}, \"shippingRate\": {\"value\": \"7\", \"currency\": \"EUR\"}, \"deliveryTime\": {\"handlingTime\": {\"minValue\": 1, \"maxValue\": 2, \"unitCode\": \"DAY\"}, \"transitTime\": {\"minValue\": 2, \"maxValue\": 4, \"unitCode\": \"DAY\"}}}}}</script>"
+  },
+  {
+    "id": "jsonld-ar",
+    "locale": "ar",
+    "url": "https://example.org/product/ar",
+    "html": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"Product\", \"name\": \"غسالة منزلية\", \"offers\": {\"@type\": \"Offer\", \"price\": \"125.00\", \"priceCurrency\": \"EUR\", \"shippingDetails\": {\"shippingDestination\": {\"addressCountry\": \"AE\"}, \"shippingRate\": {\"value\": \"7\", \"currency\": \"EUR\"}, \"deliveryTime\": {\"handlingTime\": {\"minValue\": 1, \"maxValue\": 2, \"unitCode\": \"DAY\"}, \"transitTime\": {\"minValue\": 2, \"maxValue\": 4, \"unitCode\": \"DAY\"}}}}}</script>"
+  },
+  {
+    "id": "og-only",
+    "locale": "en",
+    "url": "https://example.org/og",
+    "html": "<meta property=\"og:title\" content=\"Portable kitchen mixer\">"
+  },
+  {
+    "id": "no-identity",
+    "locale": "und",
+    "url": "https://example.org/blank",
+    "html": "<div>7 EUR</div>"
+  }
+]
