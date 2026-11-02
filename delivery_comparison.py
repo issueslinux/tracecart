@@ -14,7 +14,7 @@ def compare_delivery_windows(first, second, equivalent, country=None):
     result['buyer_country'] = country
     sources = (first, second)
     for source in sources:
-        claim = source.get('structured_shipping_claim') or {}
+        claim = (source.get('structured_shipping_claims_by_country') or {}).get(country) or source.get('structured_shipping_claim') or {}
         if claim.get('status') != 'SELLER_DECLARED_DESTINATION_CONDITIONAL' or claim.get('destination_country') != country:
             result['status'] = 'DESTINATION_NOT_ESTABLISHED_FOR_BOTH'
             return result
