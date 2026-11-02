@@ -509,6 +509,31 @@ https://www.adafruit.com/product/3400</textarea></label>
                 return ("{} {}".format(item["price"], item["currency"])
                         if item.get("price") is not None else "UNKNOWN")
             delta = live.get("seller_listed_price_delta_pct_vs_selected")
+            delivery = live.get("delivery_break_even")
+            if delivery:
+                if delivery["lower_listed_price_offer"] == "neither":
+                    delivery_note = ("""<p><strong>Delivery sensitivity (one pack):
+                        listed prices tie.</strong> Whichever seller has lower
+                        delivery and fees may be cheaper; both amounts are
+                        unknown.</p>""")
+                else:
+                    delivery_note = ("""<p><strong>Delivery break-even (one pack):
+                        {} {}.</strong> The {} listing is cheaper before
+                        delivery. It remains cheaper only if its additional
+                        delivery and fees relative to the other listing are
+                        <strong>less than {} {}</strong>. At that difference,
+                        total prices tie. Actual delivery, discount eligibility
+                        and checkout totals are UNKNOWN.</p>""".format(
+                            h(delivery["one_pack_listed_price_advantage"]),
+                            h(delivery["currency"]),
+                            h(delivery["lower_listed_price_offer"]),
+                            h(delivery["max_extra_shipping_and_fees_for_lower_listed_price_offer"]),
+                            h(delivery["currency"])))
+            else:
+                delivery_note = ("""<p class="warning">No shipping break-even:
+                    product identity, seller-declared stock, price or currency
+                    is not sufficiently established. Delivery costs remain
+                    unknown; no savings are claimed.</p>""")
             table = ("""<section><div class="tag">SECOND LIVE MERCHANT SOURCE</div>
                 <h2>Second-offer evidence · {}</h2>
                 <table><tr><th>Selected</th><th>Second seller</th></tr>
@@ -521,6 +546,8 @@ https://www.adafruit.com/product/3400</textarea></label>
                 <p>Second seller current price evidence: {}.
                 Reference/list price (NOT payable price): {}.</p>
                 <p>GTIN equality claimed: {} · Listed price change vs selected: {}.</p>
+                <p>Stock evidence: selected {} · second {}.</p>
+                {}
                 <p class="warning">Seller assertions only, not verified
                 checkout totals. No automatic purchase. Missing or conflicting
                 identity, price or currency prevents a cheaper-equivalent claim.
@@ -536,7 +563,10 @@ https://www.adafruit.com/product/3400</textarea></label>
                     h(source.get("price_evidence_method") or "NOT PROVIDED"),
                     h(source.get("reference_list_price") or "NOT PROVIDED"),
                     h(live["same_gtin_claimed"]),
-                    h(delta + "%" if delta is not None else "NOT COMPARABLE")))
+                    h(delta + "%" if delta is not None else "NOT COMPARABLE"),
+                    h(live.get("selected_stock_evidence") or "UNKNOWN"),
+                    h(live.get("alternative_stock_evidence") or "UNKNOWN"),
+                    delivery_note))
             body = table + body
         comparison = report.get("comparison_summary")
         if comparison:

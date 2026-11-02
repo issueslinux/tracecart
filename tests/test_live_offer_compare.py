@@ -23,6 +23,7 @@ META = {
     "retrieved_at": "2026-11-02T00:00:00+00:00",
     "page_sha256": "b"*64,
     "price_status": "SELLER_DECLARED",
+    "availability_claim": "https://schema.org/InStock",
 }
 BASE = {
     "schema_version": 1, "root": {
@@ -38,6 +39,7 @@ BASE = {
     "source_intake": {"page_sha256": "a"*64, "price_status": "SELLER_DECLARED",
                       "intake_status": "PAGE_RETRIEVED",
                       "retrieved_at": "2026-11-01T22:00:00+00:00",
+                      "availability_claim": "https://schema.org/InStock",
                       "source_url": SELECTED["merchant_url"]},
     "limitations": [], "sha256": "old",
 }
@@ -58,6 +60,13 @@ class LiveSecondOfferTests(unittest.TestCase):
         self.assertEqual(c["selected_cost_per_wash"]["cost_per_wash"], "0.8000")
         self.assertEqual(c["alternative_cost_per_wash"]["cost_per_wash"], "0.7200")
         self.assertEqual(c["alternative_source"]["page_sha256"], "b"*64)
+        self.assertTrue(c["both_sellers_claim_stock"])
+        self.assertEqual(c["delivery_break_even"]["status"], "CONDITIONAL_BREAK_EVEN")
+        self.assertEqual(c["delivery_break_even"]["lower_listed_price_offer"], "alternative")
+        self.assertEqual(c["delivery_break_even"]["one_pack_listed_price_advantage"], "8.00")
+        self.assertEqual(c["delivery_break_even"]["max_extra_shipping_and_fees_for_lower_listed_price_offer"], "8.00")
+        self.assertIsNone(c["delivery_break_even"]["alternative_delivery_price"])
+        self.assertEqual(c["delivery_break_even"]["actual_delivered_price_comparison"], "UNKNOWN")
         self.assertEqual(report["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
         self.assertEqual(report["root"]["children"][-1]["details"]
                          ["current_competitor_offers_verified"], 1)
@@ -190,6 +199,62 @@ class LiveSecondOfferTests(unittest.TestCase):
         c = self.compare(second=other)["live_competitor_comparison"]
         self.assertEqual(c["status"], "DIFFERENT_CURRENCY_NO_FX")
         self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+        self.assertIsNone(c["delivery_break_even"])
+
+    def test_second_stock_missing_is_unknown_not_available(self):
+        meta = {**META, "availability_claim": ""}
+        c = self.compare(meta=meta)["live_competitor_comparison"]
+        self.assertEqual(c["status"], "SECOND_STOCK_NOT_CONFIRMED")
+        self.assertEqual(c["alternative_stock_evidence"], "NOT_CONFIRMED")
+        self.assertFalse(c["both_sellers_claim_stock"])
+        self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+        self.assertIsNone(c["delivery_break_even"])
+
+    def test_selected_stock_missing_blocks_comparison(self):
+        base = copy.deepcopy(BASE)
+        base["source_intake"].pop("availability_claim")
+        c = compare_live_offer(base, SELECTED, SECOND["merchant_url"],
+                               extractor=lambda _: (SECOND, META))[
+                                   "live_competitor_comparison"]
+        self.assertEqual(c["status"], "SELECTED_STOCK_NOT_CONFIRMED")
+        self.assertIsNone(c["delivery_break_even"])
+
+    def test_preorder_backorder_and_unknown_stock_are_not_in_stock(self):
+        for claim in ("https://schema.org/PreOrder",
+                      "https://schema.org/BackOrder",
+                      "NotInStock", "https://example.org/CustomInStock"):
+            with self.subTest(claim=claim):
+                c = self.compare(meta={**META, "availability_claim": claim})[
+                    "live_competitor_comparison"]
+                self.assertEqual(c["status"], "SECOND_STOCK_NOT_CONFIRMED")
+                self.assertIsNone(c["seller_listed_price_delta_pct_vs_selected"])
+
+    def test_limited_availability_is_an_explicit_seller_claim(self):
+        c = self.compare(meta={**META, "availability_claim":
+                               "https://schema.org/LimitedAvailability"})[
+                                   "live_competitor_comparison"]
+        self.assertEqual(c["status"], "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON")
+
+    def test_selected_is_cheaper_shipping_threshold_reverses_direction(self):
+        c = self.compare(second={**SECOND, "price": "91.50"})[
+            "live_competitor_comparison"]
+        d = c["delivery_break_even"]
+        self.assertEqual(d["lower_listed_price_offer"], "selected")
+        self.assertEqual(d["one_pack_listed_price_advantage"], "11.50")
+        self.assertIsNone(d["selected_delivery_price"])
+
+    def test_equal_listed_prices_require_shipping_to_decide(self):
+        c = self.compare(second={**SECOND, "price": "80.00"})[
+            "live_competitor_comparison"]
+        d = c["delivery_break_even"]
+        self.assertEqual(d["status"], "LISTED_PRICES_EQUAL_DELIVERY_DECIDES")
+        self.assertEqual(d["one_pack_listed_price_advantage"], "0.00")
+        self.assertEqual(d["lower_listed_price_offer"], "neither")
+
+    def test_stock_gate_also_zeroes_verified_competitor_count(self):
+        report = self.compare(meta={**META, "availability_claim": None})
+        self.assertEqual(report["root"]["children"][-1]["details"]
+                         ["current_competitor_offers_verified"], 0)
 
 
 if __name__ == "__main__":

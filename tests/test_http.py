@@ -602,7 +602,7 @@ class WebFlowTests(unittest.TestCase):
                                    "price_status": "SELLER_DECLARED",
                                    "extraction_method": "Product JSON-LD",
                                    "barcode_status": "FOUND",
-                                   "availability_claim": ""}
+                                   "availability_claim": "https://schema.org/InStock"}
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             db.execute(
                 "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
@@ -622,6 +622,9 @@ class WebFlowTests(unittest.TestCase):
         self.assertIn("SECOND LIVE MERCHANT SOURCE", body)
         self.assertIn("-10.00%", body)
         self.assertIn("0.7200", body)
+        self.assertIn("Delivery break-even", body)
+        self.assertIn("8.00 PLN", body)
+        self.assertIn("SELLER_CLAIMS_IN_STOCK", body)
         self.assertIn("NO_FORCED_WINNER", body)
         extractor.assert_called_once()
         rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', body).group(1)
