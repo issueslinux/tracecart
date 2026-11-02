@@ -763,5 +763,68 @@ class WebFlowTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
 
 
+    def test_browser_extension_capture_survives_blocked_marketplace(self):
+        from datetime import datetime, timezone
+        from test_live_offer_compare import SELECTED, BASE
+        from product_intake import SourceAccessDenied
+        import sqlite3
+        import cart_research as cart
+        with patch.object(cart, "generate_local_ai_questions", return_value=[]):
+            report = cart.research_cart(SELECTED, fetch=lambda url, host, headers=None: (
+                {"items": []} if host == "prices.openfoodfacts.org"
+                else {"products": []}))
+        report["source_intake"] = {**BASE["source_intake"],
+                                   "extraction_method": "Product JSON-LD",
+                                   "barcode_status": "FOUND_CHECKSUM_VALID"}
+        jid = "X" * 24
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            db.execute(
+                "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
+                "VALUES (?,?,?,?,?,NULL)",
+                (jid, json.dumps(SELECTED), "READY",
+                 "2026-11-02T00:00:00+00:00", json.dumps(report)))
+        capture_url = "https://allegro.pl/oferta/stanley-air-kit-18637535530"
+        browser_json = json.dumps({
+            "version": 1, "method": "USER_SELECTED_VISIBLE_PRICE",
+            "url": capture_url, "title": "STANLEY AIR KIT OL195",
+            "price": "29.99", "currency": "PLN",
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "gtin_claim": None, "price_evidence": "SELECTED_VISIBLE_TEXT",
+        })
+        with patch("live_offer_compare.extract_product_page",
+                   side_effect=SourceAccessDenied(403)):
+            status, body = self.request("POST", "/cart/compare-live", {
+                "csrf": self.csrf, "job_id": jid,
+                "browser_capture_json": browser_json,
+            })
+        self.assertEqual(status, 200)
+        self.assertIn("MARKETPLACE PRICE LEADS", body)
+        self.assertIn("29.99", body)
+        rid = re.search(r"/research/report/([a-zA-Z0-9_-]+)\.json", body).group(1)
+        status, raw = self.request("GET", "/research/report/" + rid + ".json")
+        self.assertEqual(status, 200)
+        output = json.loads(raw)
+        self.assertEqual(output["live_competitor_comparison"]["status"],
+                         "SECOND_PAGE_NOT_RETRIEVED")
+        row = output["marketplace_leads"]["observations"][0]
+        self.assertEqual(row["origin"], "USER_BROWSER_ACTIVE_TAB_NOT_SERVER_VERIFIED")
+        self.assertFalse(row["source_page_downloaded_by_tracecart"])
+        self.assertEqual(output["marketplace_leads"]["source_qualified_comparisons"], 0)
+        self.assertFalse(output["marketplace_leads"]["payment_authorized"])
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
+
+    def test_browser_capture_and_manual_price_must_not_conflict(self):
+        status, _ = self.request("POST", "/cart/compare-live", {
+            "csrf": self.csrf, "job_id": "Z" * 24,
+            "browser_capture_json": "{}",
+            "marketplace_price": "12.00",
+            "marketplace_url": "https://allegro.pl/oferta/another",
+        })
+        self.assertIn(status, (400, 404))
+
+
 if __name__ == "__main__":
     unittest.main()
+
+# Single-page Chrome-extension capture via existing local UI, no checkout.

@@ -5,6 +5,24 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## P0: marketplace access is a hard product blocker (not solved)
+
+The server cannot reliably retrieve major marketplace product pages:
+Allegro returns **HTTP 403**. Allegro no longer grants new applications
+market-wide offer-search API access (see developer confirmations).
+**A price assistant that ignores Allegro cannot claim to search the market.**
+
+A *feasibility-only* Chrome/Chromium extension under
+[`browser-extension/`](browser-extension/) now lets the **user manually
+capture one open browser product tab** and paste a small price observation
+into TraceCart. This is not unattended marketplace research, not a new
+Allegro API and not yet validated against the real Allegro browser UI.
+It carries the lowest `USER_BROWSER_ACTIVE_TAB_NOT_SERVER_VERIFIED`
+evidence tier and never bypasses a HTTP 403.
+
+[Feasibility gate, installation and limits](docs/MARKETPLACE_BROWSER_CAPTURE_FEASIBILITY.md) ·
+[Blocking issue #38](https://github.com/issueslinux/tracecart/issues/38).
+
 ## NEW: automatic competing-offer source checks from authorized search
 
 With `BRAVE_API_KEY` configured, the URL-first cart job now runs two
