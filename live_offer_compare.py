@@ -17,6 +17,7 @@ from product_intake import (extract_product_page, normalized_product_url,
                             SourceHTTPFailure)
 from unit_economics import unit_cost
 from product_variant import check_variant_consistency
+from purchase_dimensions import purchase_questions, fulfillment_assessment
 
 
 def _stock_evidence(claim):
@@ -223,6 +224,9 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "alternative_cost_per_wash": other_unit,
         "seller_listed_price_delta_pct_vs_selected": delta,
         "delivery_break_even": delivery,
+        "purchase_question_groups": purchase_questions(),
+        "selected_fulfillment": fulfillment_assessment(selected["price"], selected["currency"]),
+        "alternative_fulfillment": fulfillment_assessment(competitor["price"], competitor["currency"]) if competitor else None,
         "delta_is_not_delivered_price": True,
         "independent_lab_tests": 0,
         "final_checkout_price_verified": False,
