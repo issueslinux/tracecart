@@ -611,7 +611,7 @@ class WebFlowTests(unittest.TestCase):
                  "2026-11-02T00:00:00+00:00", json.dumps(report)))
         status, original = self.request("GET", "/cart/status/" + job_id)
         self.assertEqual(status, 200)
-        self.assertIn("Check a second real store offer", original)
+        self.assertIn("Compare up to four other stores", original)
         self.assertIn("Search shopping listings", original)
         with patch("live_offer_compare.extract_product_page",
                    return_value=(SECOND, META)) as extractor:
@@ -634,6 +634,54 @@ class WebFlowTests(unittest.TestCase):
         self.assertEqual(report["live_competitor_comparison"]["status"],
                          "SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON")
         self.assertEqual(report["root"]["children"][-1]["status"], "NO_FORCED_WINNER")
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
+
+    def test_multiple_retailers_preserve_all_sources_and_no_purchase(self):
+        from test_live_offer_compare import SELECTED, SECOND, BASE, META
+        from product_intake import SourceAccessDenied
+        import sqlite3
+        job_id = "M" * 24
+        import cart_research as cart
+        with patch.object(cart, "generate_local_ai_questions", return_value=[]):
+            base = cart.research_cart(SELECTED, fetch=lambda u, host, headers=None: (
+                {"items": []} if host == "prices.openfoodfacts.org"
+                else {"products": []}))
+        base["source_intake"] = {**BASE["source_intake"],
+                                 "price_status": "SELLER_DECLARED",
+                                 "extraction_method": "Product JSON-LD",
+                                 "barcode_status": "FOUND"}
+        with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
+            db.execute(
+                "INSERT INTO cart_research_jobs(id,item,state,created,result,error_type) "
+                "VALUES (?,?,?,?,?,NULL)",
+                (job_id, json.dumps(SELECTED), "READY",
+                 "2026-11-02T06:00:00+00:00", json.dumps(base)))
+        urls = ["https://seller2.example.net/p", "https://seller3.example.net/p"]
+        def fetch(url):
+            if "seller3" in url:
+                raise SourceAccessDenied(403)
+            return ({**SECOND, "merchant_url": url},
+                    {**META, "source_url": url})
+        with patch("live_offer_compare.extract_product_page",
+                   side_effect=fetch) as extractor:
+            status, body = self.request("POST", "/cart/compare-live", {
+                "csrf": self.csrf, "job_id": job_id,
+                "competitor_urls": "\n".join(urls)})
+        self.assertEqual(status, 200)
+        self.assertIn("BOUNDED MULTI-STORE EVIDENCE", body)
+        self.assertIn("SECOND_PAGE_NOT_RETRIEVED", body)
+        self.assertIn("SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON", body)
+        self.assertIn("No delivered-price winner", body)
+        self.assertEqual(extractor.call_count, 2)
+        rid = re.search(r'/research/report/([a-zA-Z0-9_-]+)\.json', body).group(1)
+        status, raw = self.request("GET", "/research/report/" + rid + ".json")
+        self.assertEqual(status, 200)
+        report = json.loads(raw)
+        self.assertEqual(report["multi_offer_summary"]["requested"], 2)
+        self.assertEqual(report["multi_offer_summary"]["pages_retrieved"], 1)
+        self.assertEqual(report["multi_offer_summary"]["source_qualified_comparisons"], 1)
+        self.assertFalse(report["multi_offer_summary"]["payment_authorized"])
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
 
