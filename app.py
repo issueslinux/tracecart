@@ -66,6 +66,62 @@ def h(text):
     return escape(str(text), quote=True)
 
 
+def shopping_search_panel(report):
+    """Expose indexed marketplace prices without disguising them as seller checks."""
+    data = report.get("indexed_shopping")
+    if not data:
+        return ''
+    rows = []
+    for offer in data.get("indexed_offers", []):
+        rows.append(
+            '<tr><td><a href="{}" target="_blank" rel="noopener noreferrer">{}</a>'
+            '</td><td>{}</td><td><strong>{} {}</strong></td>'
+            '<td>{}</td></tr>'.format(
+                h(offer["merchant_url"]), h(offer["seller"]),
+                h(offer["title"]),
+                h(offer["current_price_indexed"]), h(offer["currency"]),
+                h(offer["identity_status"])))
+    group_rows = []
+    for group in data.get("search_result_groups", []):
+        if not group.get("indexed_price") or not group.get("indexed_currency"):
+            continue
+        link = group.get("index_product_url")
+        source = (('<a href="{}" rel="noopener noreferrer" target="_blank">{}</a>'
+                   .format(h(link), h(group["source"]))) if link else
+                  h(group["source"]))
+        group_rows.append(
+            '<tr><td>{}</td><td>{}</td><td><strong>{} {}</strong></td>'
+            '<td>{}</td></tr>'.format(
+                source, h(group["title"]), h(group["indexed_price"]),
+                h(group["indexed_currency"]), h(group["identity_status"])))
+    best = data.get("lowest_indexed_observation")
+    if best:
+        best_html = (
+            '<p>Lowest indexed price <b>in returned candidates</b>: '
+            '<strong>{} {}</strong> at {}. This is not proof of lowest market '
+            'price or same product variant; buyer must verify the actual offer.</p>'
+            .format(h(best["price"]), h(best["currency"]), h(best["seller"])))
+    else:
+        best_html = '<p>No comparable index price obtained in the selected currency.</p>'
+    return (
+        '<section><div class="tag">GOOGLE SHOPPING · INDEXED SELLER PRICES</div>'
+        '<h2>Marketplace and store prices without fetching blocked seller pages</h2>'
+        '<p>Provider: {} · status: {} · searched: {} · API calls: {}. '
+        'Market: Poland. Indexed prices may be delayed or mismatched.</p>{}'
+        '<h3>Indexed direct-store links (Google product group)</h3>'
+        '<table><tr><th>Seller/source link</th><th>Indexed listing</th>'
+        '<th>Indexed price</th><th>Product identity</th></tr>{}</table>'
+        '<h3>Google Shopping search-result cards (not direct seller links)</h3>'
+        '<table><tr><th>Source</th><th>Indexed product</th>'
+        '<th>Indexed price</th><th>Identity</th></tr>{}</table>'
+        '<p class="warning">SEARCH INDEX ONLY. No seller-page verification, '
+        'availability, checkout total, universal cheapest-offer claim or '
+        'purchase authorization. Exact product/GTIN may differ.</p></section>'
+    ).format(h(data["provider"]), h(data["status"]), h(data["queried_at"]),
+             h(data["provider_calls"]), best_html, ''.join(rows),
+             ''.join(group_rows))
+
+
 def automatic_discovery_panel(report):
     """Search discovery is visible independently of source-verified offers."""
     data = report.get("automatic_offer_discovery")
@@ -562,7 +618,8 @@ https://www.adafruit.com/product/3400</textarea></label>
             <button>Audit competing sources and compare seller claims</button>
             </form></section>""".format(
                 h(search_url), self.hidden(), h(job_id), h(country_hint)))
-        discovery_panel = automatic_discovery_panel(report)
+        discovery_panel = (shopping_search_panel(report) +
+                           automatic_discovery_panel(report))
         self.send_page(source_details + econ_html + discovery_panel + competitor_form + body)
 
     def send_json_report(self, report, rid):
@@ -747,6 +804,8 @@ https://www.adafruit.com/product/3400</textarea></label>
             body = marketplace_lead_panel(report) + body
         if report.get("automatic_offer_discovery"):
             body = automatic_discovery_panel(report) + body
+        if report.get("indexed_shopping"):
+            body = shopping_search_panel(report) + body
         comparison = report.get("comparison_summary")
         if comparison:
             rows = []

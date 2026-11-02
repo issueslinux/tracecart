@@ -651,6 +651,14 @@ class CartResearchJobs:
                 {"extracted_product": clean, "page_metadata": source,
                  "price_is_confirmed_checkout_total": False},
                 node_id="cart-source-intake"))
+            # Search-first: a contracted shopping-index provider can return
+            # merchant prices even if the selected marketplace URL is HTTP 403.
+            # No provider key -> no paid queries or invented offers. Indexed
+            # prices are separate from directly verified seller declarations.
+            if os.environ.get("SERPAPI_API_KEY"):
+                from search_first import search_serpapi_shopping, attach_shopping_evidence
+                indexed = search_serpapi_shopping(clean)
+                report = attach_shopping_evidence(report, clean, indexed)
             # Automatic offer discovery can run only on public URLs already
             # returned by an authorized search provider. Keep the background
             # cart task bounded and do not invent search results if no key.
@@ -673,6 +681,12 @@ class CartResearchJobs:
             db.execute("UPDATE cart_research_jobs SET state='RUNNING' WHERE id=?", (job_id,))
         try:
             report = self.runner(item)
+            if (os.environ.get("SERPAPI_API_KEY")
+                    and isinstance(report.get("root"), dict)
+                    and report["root"].get("children")):
+                from search_first import search_serpapi_shopping, attach_shopping_evidence
+                indexed = search_serpapi_shopping(item)
+                report = attach_shopping_evidence(report, item, indexed)
             state = "READY"
             result = json.dumps(report, ensure_ascii=False)
             error = None

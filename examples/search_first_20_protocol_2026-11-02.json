@@ -1,0 +1,14 @@
+{
+  "status": "PROTOCOL_ONLY_NO_PROVIDER_CALLS",
+  "dataset_id": "SHOPPING_SEARCH_20_RESEARCH_2026-11",
+  "sample_count": 20,
+  "creds_available": {
+    "serpapi": false,
+    "dataforseo": false
+  },
+  "products_executed": 0,
+  "live_offer_count": null,
+  "independently_verified_price_accuracy": "NOT_MEASURED",
+  "note": "Preview does not imply that 20 products were actually searched.",
+  "captured_at": "2026-11-02T18:16:18.070542+00:00"
+}

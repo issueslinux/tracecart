@@ -5,6 +5,27 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: Search-First indexed marketplace prices from Google Shopping
+
+TraceCart's URL-first cart job now supports official SerpApi Google Shopping
+and Google Product-store queries when SERPAPI_API_KEY is configured on
+the project host. Search-indexed seller prices, URLs, currencies and
+conditions are shown in the UI and evidence tree even if a marketplace's
+direct product HTML returns HTTP 403. Google-indexed prices are NOT
+verified seller-page prices, exact GTIN matches, or checkout savings.
+
+DataForSEO is available as a separate explicitly authorized, paid,
+asynchronous research adapter. The 20-product evaluation protocol is
+implemented; without keys the preview reports zero live provider calls,
+rather than fabricating coverage results.
+
+**Status on 2 November 2026: neither provider key is configured;
+0/20 live SerpApi/DataForSEO comparisons completed.** Existing test
+coverage uses injected synthetic provider JSON, not a real pricing audit.
+
+[Search-First implementation and 20-product benchmark](docs/SEARCH_FIRST_PROVIDER_FEASIBILITY_2026-11-02.md)
+· [Provider availability audit](examples/search_first_20_protocol_2026-11-02.json).
+
 ## P0: marketplace access is a hard product blocker (not solved)
 
 The server cannot reliably retrieve major marketplace product pages:
