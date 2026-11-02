@@ -65,6 +65,46 @@ def h(text):
     return escape(str(text), quote=True)
 
 
+def automatic_discovery_panel(report):
+    """Search discovery is visible independently of source-verified offers."""
+    data = report.get("automatic_offer_discovery")
+    if not data:
+        return ''
+    counts = data["counts"]
+    rows = []
+    for row in data["candidate_audit"]:
+        link = row.get("candidate_url")
+        anchor = ('<a href="{}" rel="noopener noreferrer" '
+                  'target="_blank">{}</a>'.format(h(link), h(link))
+                  if link else 'INVALID SOURCE URL')
+        rows.append(
+            '<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
+                anchor, h(row["decision"]),
+                h((row.get("source_check_status") or 'NOT CHECKED') +
+                  (' / ' + row['source_http_status']
+                   if row.get('source_http_status') else ''))))
+    return (
+        '<section><div class="tag">AUTOMATIC SOURCE DISCOVERY</div>'
+        '<h2>Additional merchant links and independent page checks</h2>'
+        '<p>Search hits: <b>{}</b>. Checked product pages: <b>{}</b>. '
+        'Downloaded seller pages: <b>{}</b>. '
+        'Qualified comparable seller-listed prices: <b>{}</b>.</p>'
+        '<p>Search provider results are discovery-only. Listings blocked '
+        'by robots or HTTP restrictions remain visible; no price is '
+        'extracted from an unverified search snippet.</p>'
+        '<table><tr><th>Candidate link</th><th>Decision</th>'
+        '<th>Source status</th></tr>{}</table>'
+        '<p class="warning">This is a bounded partial search, not proof of '
+        'the lowest market price. No checkout, automatic purchase, '
+        'independent product test or quality score.</p>'
+        '</section>').format(
+            h(counts["search_hits_seen"]),
+            h(counts["candidates_checked"]),
+            h(counts["seller_pages_retrieved"]),
+            h(counts["source_qualified_competing_offers"]),
+            ''.join(rows))
+
+
 def marketplace_lead_panel(report):
     """Show unverified marketplace observations without a false price winner."""
     data = report.get('marketplace_leads') or {}
@@ -513,7 +553,8 @@ https://www.adafruit.com/product/3400</textarea></label>
             <button>Audit competing sources and compare seller claims</button>
             </form></section>""".format(
                 h(search_url), self.hidden(), h(job_id), h(country_hint)))
-        self.send_page(source_details + econ_html + competitor_form + body)
+        discovery_panel = automatic_discovery_panel(report)
+        self.send_page(source_details + econ_html + discovery_panel + competitor_form + body)
 
     def send_json_report(self, report, rid):
         content = json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
@@ -695,6 +736,8 @@ https://www.adafruit.com/product/3400</textarea></label>
             body = research_critic_panel(report) + body
         if report.get('marketplace_leads'):
             body = marketplace_lead_panel(report) + body
+        if report.get("automatic_offer_discovery"):
+            body = automatic_discovery_panel(report) + body
         comparison = report.get("comparison_summary")
         if comparison:
             rows = []

@@ -5,6 +5,24 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: automatic competing-offer source checks from authorized search
+
+With `BRAVE_API_KEY` configured, the URL-first cart job now runs two
+bounded official Brave Web Search API queries: a general seller search and
+a specific Allegro marketplace discovery query. Search snippets remain
+UNVERIFIED. The engine chooses at most three distinct merchant URLs and
+runs the existing HTTPS/robots-aware source parser and strict equivalence
+gates against the selected product. A blocked Allegro listing is retained
+as a discovery lead in the full report; it is never silently discarded.
+
+An actual five-result Stanley Air Kit research sample was **manually seeded
+from public search results** because no Brave key was configured on the
+project host. Live source checks retrieved two seller pages, confirmed
+one comparable seller-listed price (Narzedzia.pl 367.99 PLN), and retained
+an Allegro HTTP 403 lead. This was NOT an automatic Brave search run,
+a market-wide lowest-price claim or a validated checkout total.
+[Method and live-source evidence](docs/AUTOMATIC_OFFER_DISCOVERY_2026-11-02.md).
+
 ## NEW: keep cheaper marketplace leads visible despite HTTP 403
 
 A blocked retailer URL may still represent the most interesting price lead.
