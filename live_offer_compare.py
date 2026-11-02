@@ -78,8 +78,11 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     report = deepcopy(base_report)
     source = report.get("source_intake") or {}
     source_url = source.get("source_url")
+    selected_page_identity_blocked = source.get("identity_status") in (
+        "CONFLICTING_PAGE_IDENTITY", "AMBIGUOUS_PAGE_IDENTITY")
     base_is_retrieved = (
-        source.get("intake_status") != "URL_ONLY_UNVERIFIED"
+        not selected_page_identity_blocked
+        and source.get("intake_status") != "URL_ONLY_UNVERIFIED"
         and bool(source.get("page_sha256"))
         and source_url == selected["merchant_url"]
         and report.get("root", {}).get("details", {}).get(
@@ -111,6 +114,8 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
 
     same_host = (merchant_host(selected["merchant_url"]) ==
                  merchant_host(candidate_url))
+    alternative_page_identity_blocked = metadata.get("identity_status") in (
+        "CONFLICTING_PAGE_IDENTITY", "AMBIGUOUS_PAGE_IDENTITY")
     selected_gtin = normalized_gtin(selected["barcode"])
     alternative_gtin = normalized_gtin(competitor["barcode"]) if competitor else None
     invalid_gtin = bool((selected["barcode"] and not selected_gtin) or
@@ -150,6 +155,10 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
                     and selected["currency"] == competitor["currency"])
     if error:
         status = "SECOND_PAGE_NOT_RETRIEVED"
+    elif selected_page_identity_blocked:
+        status = "SELECTED_PAGE_IDENTITY_CONFLICT"
+    elif alternative_page_identity_blocked:
+        status = "SECOND_PAGE_IDENTITY_CONFLICT"
     elif not independent_store:
         status = "SAME_STORE_NOT_COMPETITOR"
     elif not base_is_retrieved:
@@ -198,6 +207,8 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "same_gtin_claimed": ean_match,
         "different_gtin_claimed": ean_conflict,
         "invalid_gtin_claim": invalid_gtin,
+        "selected_page_identity_blocked": selected_page_identity_blocked,
+        "alternative_page_identity_blocked": alternative_page_identity_blocked,
         "gtin_checksum_checked": True,
         "wash_count_conflict": dose_conflict,
         "variant_consistency": variant,
@@ -219,6 +230,7 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "limitations": [
             "Retailer pages contain seller claims, not independently verified checkout totals.",
             "GTIN equality is a seller-declared identity match, not proof of equivalent performance.",
+            "Conflicting product-scoped identity claims within one seller page block price attribution and ranking.",
             "Explicit conflicting seller-title brand, detergent form, colour/white use or net weight blocks price ranking even with matching GTIN.",
             "Delivery and fees are unknown: break-even is a conditional threshold, not a delivered-price claim.",
             "Seller-declared in-stock status may change before checkout; missing stock evidence blocks price comparison.",

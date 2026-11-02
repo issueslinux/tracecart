@@ -18,6 +18,7 @@ import ssl
 from urllib.parse import urlsplit, urlunsplit, parse_qs, unquote, urljoin, parse_qsl, urlencode
 from urllib.robotparser import RobotFileParser
 from visible_offer import parse_primary_offer
+from product_variant import check_page_identity_consistency
 
 USER_AGENT = "TraceCartResearchBot/0.5 (+https://github.com/issueslinux/tracecart)"
 MAX_URL_LEN = 1200
@@ -542,8 +543,23 @@ def extract_from_html(url, raw):
     # unrelated products, crossed-out regular prices or unlabeled numbers.
     visible_price, visible_currency, visible_method, visible_stock = (
         parse_primary_offer(raw.decode("utf-8", "replace")))
+    price_crosscheck = "NOT_BOTH_AVAILABLE"
+    # Product JSON-LD and the primary product widget are independent seller
+    # declarations. A disagreement must not silently prefer either price.
     if price_method.startswith("CONFLICTING_"):
         price = currency = None
+    elif price is not None and visible_method.startswith("CONFLICTING_"):
+        price = currency = None
+        price_method = "CONFLICTING_JSONLD_AND_VISIBLE_PRICE"
+        price_crosscheck = "CONFLICT"
+    elif price is not None and visible_price is not None:
+        visible_normalized = _price(visible_price)
+        if visible_normalized != price or visible_currency != currency:
+            price = currency = None
+            price_method = "CONFLICTING_JSONLD_AND_VISIBLE_PRICE"
+            price_crosscheck = "CONFLICT"
+        else:
+            price_crosscheck = "AGREE"
     elif price is None:
         if visible_method.startswith("CONFLICTING_"):
             price_method = visible_method
@@ -566,9 +582,36 @@ def extract_from_html(url, raw):
     brand = product.get("brand", "")
     if isinstance(brand, dict):
         brand = brand.get("name", "")
-    availability = _clean(offers.get("availability", ""), 100)
-    if not availability:
-        availability = _clean(visible_stock, 100)
+    page_identity = check_page_identity_consistency(
+        _clean(product.get("name"), 250),
+        _clean(parser.meta.get("og:title"), 250),
+        _clean(brand, 100))
+    identity_blocked = page_identity["status"] in (
+        "CONFLICTING_PAGE_IDENTITY", "AMBIGUOUS_PAGE_IDENTITY")
+    # Contradictory seller identities make both price and barcode unusable
+    # for ranking. Preserve observed price in metadata, but do not present it
+    # as an attributable current offer for the selected SKU.
+    observed_price = price
+    if identity_blocked:
+        price = currency = None
+        code = ""
+        code_status = "BLOCKED_BY_PAGE_IDENTITY_CONFLICT"
+    structured_stock = _clean(offers.get("availability", ""), 100)
+    visible_stock = _clean(visible_stock, 100)
+    def stock_kind(value):
+        suffix = str(value).strip().rstrip("/").rsplit("/", 1)[-1].casefold()
+        if suffix in ("instock", "limitedavailability"):
+            return "IN_STOCK"
+        if suffix in ("outofstock", "soldout", "discontinued"):
+            return "UNAVAILABLE"
+        if suffix in ("preorder", "presale", "backorder"):
+            return "DELAYED"
+        return None
+    stock_conflict = bool(stock_kind(structured_stock) and
+                          stock_kind(visible_stock) and
+                          stock_kind(structured_stock) != stock_kind(visible_stock))
+    availability = "" if stock_conflict or identity_blocked else (
+        structured_stock or visible_stock)
     item = {
         "title": title, "price": price, "currency": currency,
         "barcode": code, "merchant_url": url,
@@ -579,10 +622,17 @@ def extract_from_html(url, raw):
         "brand": _clean(brand, 100),
         "sku": _clean(product.get("sku"), 100),
         "availability_claim": availability,
-        "price_status": ("SELLER_DECLARED" if price is not None else
+        "availability_crosscheck": ("CONFLICT" if stock_conflict else
+                                    "NOT_CONTRADICTED"),
+        "identity_status": page_identity["status"],
+        "identity_consistency": page_identity,
+        "observed_price_not_attributable": observed_price if identity_blocked else None,
+        "price_status": ("BLOCKED_BY_PAGE_IDENTITY_CONFLICT" if identity_blocked
+                         else "SELLER_DECLARED" if price is not None else
                          "CONFLICTING_SELLER_PRICE_METADATA" if
                          price_method.startswith("CONFLICTING_") else "NOT_FOUND"),
         "price_evidence_method": price_method,
+        "price_crosscheck": price_crosscheck,
         "reference_list_price": list_price,
         "barcode_status": code_status,
         "barcode_evidence_methods": code_sources,
