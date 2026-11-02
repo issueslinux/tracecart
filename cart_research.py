@@ -151,7 +151,11 @@ class _NoExternalRedirect(HTTPRedirectHandler):
         raise ValueError("Unexpected API redirect")
 
 
-def _get_json(url, host, headers=None, timeout=15):
+def _get_json(url, host, headers=None, timeout=15, max_bytes=200000):
+    # Larger documents are permitted only when explicitly requested by the
+    # bounded shopping-provider adapter. Legacy sources retain 200 KB cap.
+    if type(max_bytes) is not int or not 1 <= max_bytes <= 2_500_000:
+        raise ValueError("Invalid bounded JSON response limit")
     if urlsplit(url).scheme != "https" or urlsplit(url).hostname != host:
         raise ValueError("Unsupported API host")
     # Fixed host and fixed paths: no user-controlled outbound URL.
@@ -161,8 +165,8 @@ def _get_json(url, host, headers=None, timeout=15):
     with build_opener(_NoExternalRedirect()).open(req, timeout=timeout) as response:
         if response.status != 200:
             raise ValueError("Source API returned non-200")
-        buf = response.read(200001)
-        if len(buf) > 200000:
+        buf = response.read(max_bytes + 1)
+        if len(buf) > max_bytes:
             raise ValueError("Source response too large")
         return json.loads(buf.decode("utf-8"))
 

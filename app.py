@@ -76,11 +76,12 @@ def shopping_search_panel(report):
         rows.append(
             '<tr><td><a href="{}" target="_blank" rel="noopener noreferrer">{}</a>'
             '</td><td>{}</td><td><strong>{} {}</strong></td>'
-            '<td>{}</td></tr>'.format(
+            '<td>{}</td><td>{}</td></tr>'.format(
                 h(offer["merchant_url"]), h(offer["seller"]),
                 h(offer["title"]),
                 h(offer["current_price_indexed"]), h(offer["currency"]),
-                h(offer["identity_status"])))
+                h(offer["identity_status"]),
+                h(offer.get("index_price_anomaly") or "UNKNOWN")))
     group_rows = []
     for group in data.get("search_result_groups", []):
         if not group.get("indexed_price") or not group.get("indexed_currency"):
@@ -110,7 +111,7 @@ def shopping_search_panel(report):
         'Market: Poland. Indexed prices may be delayed or mismatched.</p>{}'
         '<h3>Indexed direct-store links (Google product group)</h3>'
         '<table><tr><th>Seller/source link</th><th>Indexed listing</th>'
-        '<th>Indexed price</th><th>Product identity</th></tr>{}</table>'
+        '<th>Indexed price</th><th>Product identity</th><th>Price warning</th></tr>{}</table>'
         '<h3>Google Shopping search-result cards (not direct seller links)</h3>'
         '<table><tr><th>Source</th><th>Indexed product</th>'
         '<th>Indexed price</th><th>Identity</th></tr>{}</table>'

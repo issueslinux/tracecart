@@ -1,0 +1,72 @@
+{
+  "status": "EXPLICIT_SELECTED_SOURCE_SPOT_CHECKS",
+  "dataset_id": "SHOPPING_SEARCH_20_RESEARCH_2026-11",
+  "checked_count": 5,
+  "page_fetch_success_count": 1,
+  "seller_listed_price_matches": 1,
+  "cases": [
+    {
+      "product_id": "P03",
+      "seller": "Media Expert",
+      "indexed_price": "349.90",
+      "indexed_currency": "PLN",
+      "seller_url": "https://www.mediaexpert.pl/smartfony-i-zegarki/smartfony/smartfon-apple-iphone-16-5g-teal-128gb",
+      "checked_at": "2026-11-02T18:55:12.041147+00:00",
+      "source_page_status": "HTTP_403",
+      "price_verified_match": false,
+      "source_price_check": "NOT_MEASURED_PAGE_UNAVAILABLE"
+    },
+    {
+      "product_id": "P09",
+      "seller": "RTV Euro AGD",
+      "indexed_price": "48.79",
+      "indexed_currency": "PLN",
+      "seller_url": "https://www.euro.com.pl/smartwatch/garmin-forerunner-265-m-bialy.bhtml",
+      "checked_at": "2026-11-02T18:55:12.275091+00:00",
+      "source_page_status": "HTTP_403",
+      "price_verified_match": false,
+      "source_price_check": "NOT_MEASURED_PAGE_UNAVAILABLE"
+    },
+    {
+      "product_id": "P17",
+      "seller": "Foto - Plus",
+      "indexed_price": "1099.00",
+      "indexed_currency": "PLN",
+      "seller_url": "https://fotoplus.pl/dysk-ssd-samsung-t7-shield-2-tb-usb-3-2-gen-2-bezowy-mu-pe1t0k-eu",
+      "checked_at": "2026-11-02T18:55:12.373242+00:00",
+      "source_page_status": "FETCHED",
+      "price_verified_match": true,
+      "source_price_check": "INDEX_MATCHES_SELLER_DECLARATION",
+      "seller_page_listed_price": "1099.00",
+      "seller_page_currency": "PLN",
+      "seller_page_gtin_claim": "8806092968455",
+      "seller_page_title": "Dysk SSD Samsung T7 SHIELD 1 TB USB 3.2 Gen.2 BEŻOWY (MU-PE1T0K/EU)",
+      "seller_page_sha256": "9fc4107c88168d8e5ee4c49c7b011e07b6987f9546638a71536028fddd5098cc",
+      "seller_page_retrieved_at": "2026-11-02T18:55:13.236072+00:00"
+    },
+    {
+      "product_id": "P01",
+      "seller": "OBI.pl",
+      "indexed_price": "320.52",
+      "indexed_currency": "PLN",
+      "seller_url": "https://www.obi.pl/p/6615462/stanley-kompresor-bezolejowy-bez-zbiornika-8-bar",
+      "checked_at": "2026-11-02T18:55:13.237131+00:00",
+      "source_page_status": "HTTP_404",
+      "price_verified_match": false,
+      "source_price_check": "NOT_MEASURED_PAGE_UNAVAILABLE"
+    },
+    {
+      "product_id": "P10",
+      "seller": "E-Katalog",
+      "indexed_price": "999.00",
+      "indexed_currency": "PLN",
+      "seller_url": "https://e-katalog.pl/ek-item.php",
+      "checked_at": "2026-11-02T18:55:13.782435+00:00",
+      "source_page_status": "HTTP_404",
+      "price_verified_match": false,
+      "source_price_check": "NOT_MEASURED_PAGE_UNAVAILABLE"
+    }
+  ],
+  "payment_authorized": false,
+  "limitations": "A source-page price match is not a market-wide checkout accuracy guarantee."
+}

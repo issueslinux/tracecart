@@ -5,6 +5,25 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## Real Google Shopping Search-First test: 20 products (2026-11-02)
+
+Using a locally configured SerpApi Free-plan key, the project completed a
+**genuine 20-product Google Shopping test**. Search index data returned
+58 seller price records across 17 products; direct Allegro-indexed links were
+found for **12/20** cases. Two product queries failed at the provider level
+and one additional case had only search-card prices. Neither a clickable link
+nor a low indexed price proves seller availability or checkout cost.
+
+Important quality finding: iPhone 16 at **349.90 PLN** and Garmin Forerunner
+265 at **48.79 PLN** are highly anomalous compared with other indexed prices.
+The comparator now flags extreme low outliers and model/capacity/bundle conflicts
+and excludes them from its provisional minimum without deleting evidence.
+Five direct retailer spot checks retrieved only one page, whose price matched
+the index; the other four returned HTTP 403/404.
+
+**SerpApi reported degraded/poisoned Shopping results on this same date.**
+[Full results, limitations, source checks and reproduction](docs/SERPAPI_LIVE_20_RESULTS_2026-11-02.md).
+
 ## NEW: Search-First indexed marketplace prices from Google Shopping
 
 TraceCart's URL-first cart job now supports official SerpApi Google Shopping

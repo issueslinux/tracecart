@@ -11,6 +11,7 @@ import json
 import os
 import re
 import unicodedata
+from statistics import median
 from urllib.parse import urlencode, urlsplit
 
 from product_intake import normalized_product_url
@@ -64,18 +65,122 @@ def _stable_url(value):
         return None
 
 
+# Prices for household goods and hardware often mention power, pressure,
+# storage capacity or package size; none of these is a product model code.
+# A different strong model ID is a negative signal, but a missing model ID
+# is UNKNOWN, not a contradiction. EAN equivalence is not established here.
+_SPEC_SUFFIXES = (
+    "w", "kw", "v", "kv", "bar", "kg", "g", "mg", "gb", "tb", "mah",
+    "hz", "rpm", "mm", "cm", "ml", "km", "l", "mp", "mpa",
+)
+
+
 def _model_tokens(value):
-    words = re.findall(r"[a-z0-9]+", unicodedata.normalize("NFKC", value).casefold())
-    return {w for w in words if len(w) >= 4 and any(c.isdigit() for c in w)}
+    if not isinstance(value, str):
+        return set()
+    tokens = re.findall(r"[a-z0-9]+", unicodedata.normalize("NFKC", value).casefold())
+    results = set()
+    for word in tokens:
+        if len(word) < 5 or not any(c.isdigit() for c in word):
+            continue
+        if word.isdigit():
+            # 1100 W, 8 bar, 128 GB are not standalone model identifiers.
+            # Numeric model IDs with 5+ digits can be meaningful (e.g. LEGO).
+            results.add(word)
+            continue
+        # Common units are specs: "1100w", "8bar", "128gb", "4000mah".
+        if any(word.endswith(unit) and word[:-len(unit)].isdigit()
+               for unit in _SPEC_SUFFIXES):
+            continue
+        # Keep explicit alpha-numeric model codes (e.g. 1000xm5,
+        # 8215190stn595), without assuming they're present in both listings.
+        if any(ch.isalpha() for ch in word):
+            results.add(word)
+    return results
+
+
+_CAPACITY_RE = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*(tb|gb)\b", flags=re.I)
+_BUNDLE_RE = re.compile(r"\b(?:full\s+kit|kit|zestaw|bundle|komplet|pakiet|2x|3x)\b", flags=re.I)
+
+
+def _capacity_tokens(text):
+    if not isinstance(text,str):
+        return set()
+    return {(amount.replace(",", "."), unit.lower())
+            for amount, unit in _CAPACITY_RE.findall(text)}
+
+
+def _bundle_indicator(title):
+    return bool(isinstance(title,str) and _BUNDLE_RE.search(title))
 
 
 def _variant_assessment(selected_title, candidate_title):
-    """A conflicting model ID is explicit negative evidence, not proof of identity."""
+    """Reject provable variant contradictions, leave unsupported claims UNKNOWN."""
     a = _model_tokens(selected_title)
     b = _model_tokens(candidate_title)
     if a and b and a.isdisjoint(b):
         return "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"
+    capacities_a = _capacity_tokens(selected_title)
+    capacities_b = _capacity_tokens(candidate_title)
+    if capacities_a and capacities_b and capacities_a.isdisjoint(capacities_b):
+        return "CAPACITY_VARIANT_CONFLICT_NEEDS_REVIEW"
+    # Full kits and bare products cannot silently share a lowest-price claim.
+    if _bundle_indicator(selected_title) != _bundle_indicator(candidate_title):
+        return "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW"
     return "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX"
+
+
+def _variant_conflict(status):
+    return status in (
+        "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW",
+        "CAPACITY_VARIANT_CONFLICT_NEEDS_REVIEW",
+        "BUNDLE_VARIANT_CONFLICT_NEEDS_REVIEW",
+    )
+
+
+def _flag_price_outliers(entries):
+    """Mark implausibly low indexed prices; never remove the observed listing.
+
+    Requires at least three same-currency non-conflicting store observations.
+    Cheap promotions can be genuine, so this is a triage warning, not proof of
+    an incorrect price. A flagged entry is excluded only from the provisional
+    minimum, never from the research/evidence list.
+    """
+    for entry in entries:
+        entry["index_price_anomaly"] = "NONE_DETECTED"
+    by_currency = {}
+    for entry in entries:
+        if not _variant_conflict(entry["identity_status"]):
+            by_currency.setdefault(entry["currency"],[]).append(entry)
+    for group in by_currency.values():
+        if len(group) < 3:
+            continue
+        center = median(Decimal(e["current_price_indexed"]) for e in group)
+        if center <= 0:
+            continue
+        for entry in group:
+            if Decimal(entry["current_price_indexed"]) < center * Decimal("0.40"):
+                entry["index_price_anomaly"] = "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED"
+    return entries
+
+
+def _rankable_indexed_offer(entry):
+    return (not _variant_conflict(entry["identity_status"])
+            and entry.get("index_price_anomaly") !=
+                "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED")
+
+
+def _index_product_url(url):
+    safe = _stable_url(url)
+    if safe is None:
+        return None
+    parts = urlsplit(safe)
+    host = (parts.hostname or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    if host in ("google.com","google.pl") and not parts.path.startswith("/shopping/product/"):
+        return None
+    return safe
 
 
 def _search_query(item):
@@ -127,7 +232,7 @@ def parse_serpapi_google_product(raw, selected, max_stores=MAX_STORES):
         host = p.hostname[4:] if p.hostname.startswith("www.") else p.hostname
         # A Google/SerpApi redirect is NOT a direct seller-page URL.
         if host in ("google.com", "google.pl", "googleadservices.com",
-                    "serpapi.com", "ceneo.pl"):
+                    "serpapi.com", "ceneo.pl", "e-katalog.pl"):
             continue
         if link in seen:
             continue
@@ -138,10 +243,7 @@ def parse_serpapi_google_product(raw, selected, max_stores=MAX_STORES):
             continue
         title = _clean_text(row.get("title") or candidate_title, 180)
         item_variant = _variant_assessment(selected["title"], title)
-        if variant.startswith("MODEL_TOKEN_CONFLICT") or item_variant.startswith("MODEL_TOKEN_CONFLICT"):
-            identity = "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"
-        else:
-            identity = "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX"
+        identity = (variant if _variant_conflict(variant) else item_variant)
         entries.append({
             "seller": _clean_text(row.get("name") or host, 100),
             "merchant_host": host,
@@ -161,6 +263,7 @@ def parse_serpapi_google_product(raw, selected, max_stores=MAX_STORES):
         })
     entries.sort(key=lambda entry: (entry["currency"], Decimal(entry["current_price_indexed"]),
                                     entry["merchant_host"]))
+    _flag_price_outliers(entries)
     return {
         "product_title": candidate_title,
         "offers": entries,
@@ -207,7 +310,11 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
         return _empty("SKIPPED_NO_SERPAPI_API_KEY", stamp)
     if fetch is None:
         from cart_research import _get_json
-        fetch = _get_json
+        # Google's full Shopping results may exceed the generic 200 KB
+        # catalog-reader limit (observed 355668 bytes on 2026-11-02).
+        # Keep fixed-provider HTTPS, no redirects, and a strict 2.5 MB bound.
+        fetch = lambda url, host: _get_json(
+            url, host, timeout=25, max_bytes=2_500_000)
     attempts = 0
     output = _empty("NO_SEARCH_RESULTS", stamp)
     try:
@@ -231,7 +338,7 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
                 "source_price_display": _clean_text(entry.get("price"), 70),
                 "indexed_price": _amount(entry.get("extracted_price")),
                 "indexed_currency": _currency(entry.get("price")),
-                "index_product_url": _stable_url(entry.get("product_link")),
+                "index_product_url": _index_product_url(entry.get("product_link")),
                 "seller_page_retrieved": False,
                 "seller_price_verified": False,
                 "identity_status": state,
@@ -247,7 +354,7 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
         })
         candidate = next((row for row in output["search_result_groups"]
                           if row["product_id"] and
-                          row["identity_status"] != "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"), None)
+                          not _variant_conflict(row["identity_status"])), None)
         if candidate is None:
             output["status"] = "NO_CANDIDATE_GOOGLE_PRODUCT_GROUP"
         else:
@@ -265,7 +372,7 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
                 unit = "PLN"
             usable = [offer for offer in parsed["offers"] if
                       offer["currency"] == unit and
-                      offer["identity_status"] != "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"]
+                      _rankable_indexed_offer(offer)]
             if usable:
                 best = min(usable, key=lambda x: Decimal(x["current_price_indexed"]))
                 output["lowest_indexed_observation"] = {
@@ -281,7 +388,8 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
                 entry["merchant_host"] for entry in parsed["offers"]
                 if entry["merchant_host"] in MARKETPLACES
             })
-        if output["lowest_indexed_observation"] is None:
+        if (output["lowest_indexed_observation"] is None
+                and not output["indexed_offers"]):
             group_currency = selected.get("currency")
             if group_currency is None and any(x.get("indexed_currency") == "PLN"
                                               for x in output["search_result_groups"]):
@@ -290,7 +398,7 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
                 row for row in output["search_result_groups"] if
                 row.get("indexed_price") is not None and
                 row.get("indexed_currency") == group_currency and
-                row["identity_status"] != "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW"
+                not _variant_conflict(row["identity_status"])
             ]
             if eligible_groups:
                 best = min(eligible_groups, key=lambda x: Decimal(x["indexed_price"]))
