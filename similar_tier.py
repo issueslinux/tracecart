@@ -27,6 +27,10 @@ SPEC_WEIGHT = {
                "bike_style": 8},
     "COMPRESSOR": {"power_w": 45, "pressure_bar": 40, "tank_l": 15},
     "SSD": {"capacity_gb": 60, "ssd_form": 40},
+    # Laptop model codes are not required to match. ARM/x86 differences remain
+    # visible as a major compatibility difference, not a hidden disqualification.
+    "LAPTOP": {"ram_gb": 25, "capacity_gb": 23,
+               "cpu_family": 22, "display_technology": 15, "screen_in": 15},
     "SMARTPHONE": {"capacity_gb": 65},
     "E_SCOOTER": {"power_w": 40, "battery_ah": 40, "battery_wh": 40,
                    "speed_kmh": 20},
@@ -47,6 +51,8 @@ PUBLIC_SPEC_NAMES = {
     "bike_style": "typ roweru", "pressure_bar": "maksymalne ciśnienie",
     "tank_l": "zbiornik (litry)", "capacity_gb": "pojemność pamięci",
     "ssd_form": "typ/nośnik SSD",
+    "ram_gb": "pamięć RAM", "cpu_family": "rodzina procesora",
+    "display_technology": "typ matrycy", "screen_in": "przekątna ekranu",
 }
 STATUS_SIMILAR = "SIMILAR_TECHNICAL_TIER_INDEX_ONLY"
 STATUS_POSSIBLE = "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK"
@@ -96,7 +102,7 @@ def category_of(title):
         return "SMARTWATCH"
     if re.search(r"\brouter\b|\barcher (?:ax|be)\d+", text):
         return "ROUTER"
-    if re.search(r"\blaptop\b|\bnotebook\b", text):
+    if re.search(r"\blaptop\b|\bnotebook\b|\bideapad\b|\bthinkpad\b|\bvivobook\b|\bmacbook\b", text):
         return "LAPTOP"
     if re.search(r"\bwiertarka\b|\bwkretarka\b", text):
         return "POWER_TOOL"
@@ -189,6 +195,48 @@ def read_specs(title, category=None):
         liters = _first_number(text, r"(?<!\w)(\d{1,3})\s*l(?:itrow)?\b", 3, 200)
         if liters is not None:
             specs["tank_l"] = liters
+    if cat == "LAPTOP":
+        ram = _first_number(
+            text, r"(?<!\d)(4|8|12|16|24|32|48|64|96|128)\s*(?:gb|g)(?:\s*ram)?\b",
+            4, 128)
+        if ram is not None:
+            specs["ram_gb"] = ram
+        # Capacity uses explicit GB/TB when available. X-kom URL slugs
+        # sometimes use "16gb 512 win11" with omitted SSD units.
+        storage = None
+        for value, unit in re.findall(
+                r"(?<!\w)(\d{3,4}(?:[.,]\d+)?)\s*(tb|gb)\b", text):
+            size = float(value.replace(",", ".")) * (1000 if unit=="tb" else 1)
+            if 128 <= size <= 16000:
+                storage = size
+                break
+        if storage is None:
+            raw = re.search(
+                r"\b(?:ssd[- ]?)?(256|512|1024|2048)\b(?=\s*(?:ssd|win(?:dows)?"
+                r"|oled|ips|w11|$))", text)
+            if raw:
+                storage = float(raw.group(1))
+        if storage is not None:
+            specs["capacity_gb"] = storage
+        if re.search(r"\bsnapdragon\b|\bqualcomm\b", text):
+            specs["cpu_family"] = "Snapdragon ARM"
+        elif re.search(r"\b(?:intel|core i[3579]|core ultra|ultra [3579] \d{3}|i[3579][- ]?\d{4,5}[a-z]{0,3})\b", text):
+            specs["cpu_family"] = "Intel x86"
+        elif re.search(r"\b(?:ryzen|amd)\b", text):
+            specs["cpu_family"] = "AMD x86"
+        elif re.search(r"\bapple m[1-5]\b", text):
+            specs["cpu_family"] = "Apple ARM"
+        if re.search(r"\boled\b", text):
+            specs["display_technology"] = "OLED"
+        elif re.search(r"\bips\b", text):
+            specs["display_technology"] = "IPS"
+        elif re.search(r"\btn\b", text):
+            specs["display_technology"] = "TN"
+        size = _first_number(
+            text, r"(?<!\d)(1[034567](?:[.,]\d)?)\s*(?:[\"″]|cal(?:e|i)?\b|inch\b)",
+            10, 18)
+        if size is not None:
+            specs["screen_in"] = size
     if cat in ("SSD", "SMARTPHONE"):
         size = _capacity_gb(text)
         if size is not None:
@@ -209,8 +257,10 @@ def _fit(name, baseline, candidate):
     if b <= 0:
         return 0.0
     relative = abs(c - b) / b
-    if name in ("power_w", "battery_ah", "battery_wh", "capacity_gb"):
+    if name in ("power_w", "battery_ah", "battery_wh", "capacity_gb", "ram_gb"):
         return 1.0 if relative <= 0.20 else (0.45 if relative <= 0.40 else 0.0)
+    if name == "screen_in":
+        return 1.0 if abs(c - b) <= 0.7 else (0.45 if abs(c - b) <= 1.5 else 0.0)
     if name == "wheel_in":
         return 1.0 if abs(c - b) <= 1.5 else (0.45 if abs(c - b) <= 2.5 else 0.0)
     if name == "gears":
@@ -228,7 +278,8 @@ def _display_spec(name, number):
     suffix = {"power_w": "W", "battery_ah": "Ah", "wheel_in": '"',
               "battery_wh": "Wh", "battery_voltage_v": "V", "gears": "", "speed_kmh": "km/h",
               "claimed_range_km": "km",
-              "pressure_bar": "bar", "tank_l": "l", "capacity_gb": "GB"}
+              "pressure_bar": "bar", "tank_l": "l", "capacity_gb": "GB",
+              "ram_gb": "GB", "screen_in": '"'}
     return "{:g}{}".format(number, suffix.get(name, ""))
 
 
@@ -307,9 +358,9 @@ def evaluate_alternative(selected_title, candidate_title):
         result["status"] = STATUS_DIFFERENT
     elif category == "E_BIKE" and not core_partial and covered >= 2 and matches >= 2 and score >= 65:
         result["status"] = STATUS_SIMILAR
-    elif category in ("COMPRESSOR", "SSD", "E_SCOOTER", "BICYCLE") and not core_partial and covered >= 2 and matches >= 2 and score >= 70:
+    elif category in ("COMPRESSOR", "SSD", "LAPTOP", "E_SCOOTER", "BICYCLE") and not core_partial and covered >= 2 and matches >= 2 and score >= 70:
         result["status"] = STATUS_SIMILAR
-    elif score >= 45 and matches:
+    elif score >= 35 and matches:
         result["status"] = STATUS_POSSIBLE
     else:
         result["status"] = STATUS_INSUFFICIENT
@@ -391,7 +442,8 @@ def enrich_alternatives(selected, indexed_offers, shopping_cards):
         peers = {}
         for entry, kind, price, unit in all_rows:
             comparison = entry["functional_alternative"]
-            if (comparison["status"] != STATUS_SIMILAR or unit != "PLN" or
+            if (comparison["status"] not in (STATUS_SIMILAR, STATUS_POSSIBLE)
+                    or unit != "PLN" or
                     price is None or
                     entry.get("index_price_anomaly") ==
                     "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED"):
@@ -425,7 +477,8 @@ def enrich_alternatives(selected, indexed_offers, shopping_cards):
     if origin == "ESTIMATE_FROM_SIMILAR_INDEX_LISTINGS":
         peers = {}
         for entry, kind, price, unit in all_rows:
-            if (entry["functional_alternative"]["status"] != STATUS_SIMILAR
+            if (entry["functional_alternative"]["status"] not in
+                    (STATUS_SIMILAR, STATUS_POSSIBLE)
                     or unit != "PLN" or price is None
                     or entry.get("index_price_anomaly") ==
                     "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED"):
