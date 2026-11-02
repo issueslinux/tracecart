@@ -16,6 +16,7 @@ from product_intake import (extract_product_page, normalized_product_url,
                             normalized_gtin, SourceAccessDenied, SourceRedirect,
                             SourceHTTPFailure)
 from unit_economics import unit_cost
+from product_variant import check_variant_consistency
 
 
 def _stock_evidence(claim):
@@ -122,6 +123,10 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     base_unit = unit_cost(selected, category)
     other_unit = (unit_cost(competitor, category) if competitor else
                   {"status": "NOT_RETRIEVED", "cost_per_wash": None})
+    variant = check_variant_consistency(
+        selected["title"], competitor["title"] if competitor else "", category)
+    variant_blocked = variant["status"] in (
+        "CONFLICTING_VARIANT_CLAIMS", "AMBIGUOUS_TITLE_VARIANT")
     dose_conflict = bool(ean_match and
         base_unit.get("washes_declared_in_title") and
         other_unit.get("washes_declared_in_title") and
@@ -139,7 +144,7 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
     stock_confirmed = (selected_stock == "SELLER_CLAIMS_IN_STOCK" and
                        alternative_stock == "SELLER_CLAIMS_IN_STOCK")
     compared = bool(base_is_retrieved and selected_price_sourced
-                    and ean_match and not dose_conflict
+                    and ean_match and not dose_conflict and not variant_blocked
                     and stock_confirmed and independent_store
                     and valid_seller_price and selected["price"] is not None
                     and selected["currency"] == competitor["currency"])
@@ -157,6 +162,8 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         status = "GTIN_IDENTITY_NOT_ESTABLISHED"
     elif dose_conflict:
         status = "CONFLICTING_WASH_COUNT"
+    elif ean_match and variant_blocked:
+        status = variant["status"]
     elif selected_unavailable:
         status = "SELECTED_OFFER_NOT_AVAILABLE"
     elif unavailable:
@@ -193,6 +200,8 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "invalid_gtin_claim": invalid_gtin,
         "gtin_checksum_checked": True,
         "wash_count_conflict": dose_conflict,
+        "variant_consistency": variant,
+        "seller_title_variant_conflict": variant_blocked,
         "second_offer_availability_claim": metadata.get("availability_claim"),
         "second_offer_not_available": unavailable,
         "selected_offer_not_available": selected_unavailable,
@@ -210,6 +219,7 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None):
         "limitations": [
             "Retailer pages contain seller claims, not independently verified checkout totals.",
             "GTIN equality is a seller-declared identity match, not proof of equivalent performance.",
+            "Explicit conflicting seller-title brand, detergent form, colour/white use or net weight blocks price ranking even with matching GTIN.",
             "Delivery and fees are unknown: break-even is a conditional threshold, not a delivered-price claim.",
             "Seller-declared in-stock status may change before checkout; missing stock evidence blocks price comparison.",
             "Discounts, pack formulation and dosing may change total value.",
