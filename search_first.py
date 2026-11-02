@@ -183,6 +183,22 @@ def _index_product_url(url):
     return safe
 
 
+def _google_shopping_lookup_url(title, source):
+    """Safe public Google Shopping search link, NOT a direct merchant offer.
+
+    Some SerpApi cards do not contain any shop link, and Google's returned
+    product_link may be a long search URL with transient internal tokens.
+    Construct a short, user-facing search instead of inventing offer URLs.
+    """
+    terms = " ".join(part for part in (
+        _clean_text(title, 120), _clean_text(source, 60)) if part)
+    if not terms:
+        return None
+    return "https://www.google.com/search?" + urlencode({
+        "tbm": "shop", "q": terms[:175], "gl": "pl", "hl": "pl",
+    })
+
+
 def _search_query(item):
     title = _clean_text(item["title"], 140)
     code = item.get("barcode", "")
@@ -339,6 +355,8 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
                 "indexed_price": _amount(entry.get("extracted_price")),
                 "indexed_currency": _currency(entry.get("price")),
                 "index_product_url": _index_product_url(entry.get("product_link")),
+                "index_search_url": _google_shopping_lookup_url(title, entry.get("source")),
+                "search_card_only_not_direct_offer": True,
                 "seller_page_retrieved": False,
                 "seller_price_verified": False,
                 "identity_status": state,
@@ -359,8 +377,21 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
             output["status"] = "NO_CANDIDATE_GOOGLE_PRODUCT_GROUP"
         else:
             attempts += 1
-            detail = _api_json("google_product", key, fetch, product_id=candidate["product_id"])
-            parsed = parse_serpapi_google_product(detail, selected, max_stores)
+            try:
+                detail = _api_json("google_product", key, fetch,
+                                   product_id=candidate["product_id"])
+                parsed = parse_serpapi_google_product(detail, selected, max_stores)
+            except (OSError, ValueError, TypeError, KeyError) as exc:
+                # One failed Google Product follow-up must NOT erase the
+                # successfully indexed Shopping result cards. This is common
+                # on marketplace items whose group/product token is stale.
+                # The search cards remain explicitly NOT source-verified.
+                parsed = {"offers": [], "source_status": "DETAIL_UNAVAILABLE",
+                          "product_title": candidate["title"]}
+                output["product_detail_failure_type"] = type(exc).__name__
+                output["limitations"].append(
+                    "Google Product details request failed; original Google Shopping "
+                    "cards are retained without seller-page or checkout verification.")
             output["indexed_offers"] = parsed["offers"]
             output["status"] = parsed["source_status"]
             output["selected_product_group_title"] = parsed["product_title"]
@@ -413,7 +444,12 @@ def search_serpapi_shopping(selected, fetch=None, api_key=None, max_stores=MAX_S
                     "checkout_price_unverified": True,
                 }
                 if not output["indexed_offers"]:
-                    output["status"] = "ONLY_GOOGLE_SHOPPING_SEARCH_INDEX_PRICES"
+                    output["status"] = (
+                        "ONLY_GOOGLE_SHOPPING_CARDS_DETAIL_FAILED"
+                        if output.get("product_detail_failure_type")
+                        else "ONLY_GOOGLE_SHOPPING_SEARCH_INDEX_PRICES")
+        if output.get("product_detail_failure_type") and not output["indexed_offers"]:
+            output["status"] = "ONLY_GOOGLE_SHOPPING_CARDS_DETAIL_FAILED"
     except (OSError, ValueError, TypeError, KeyError) as exc:
         output = _empty("FAILED_" + type(exc).__name__, stamp)
         # Do not disclose provider keys or raw network exception strings.
@@ -440,9 +476,12 @@ def attach_shopping_evidence(report, selected, search_result):
                         "source_qualified_seller_offers": 0,
                         "payment_authorized": False,
                     },
-                    [_node("indexed_store", offer["seller"], offer["identity_status"],
-                           offer, node_id="indexed-store-{}".format(i))
-                     for i, offer in enumerate(data["indexed_offers"])],
+                    ([_node("indexed_store", offer["seller"], offer["identity_status"],
+                            offer, node_id="indexed-store-{}".format(i))
+                      for i, offer in enumerate(data["indexed_offers"])] +
+                     [_node("indexed_search_card", group["source"], group["identity_status"],
+                            group, node_id="indexed-shopping-card-{}".format(i))
+                      for i, group in enumerate(data["search_result_groups"])]),
                     node_id="cart-indexed-shopping")
     output["root"]["children"].insert(-1, summary)
     output["indexed_shopping"] = data

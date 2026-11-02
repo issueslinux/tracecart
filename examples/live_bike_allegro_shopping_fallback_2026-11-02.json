@@ -1,0 +1,162 @@
+{
+  "study_date": "2026-11-02",
+  "input": "USER_SUPPLIED_PUBLIC_ALLEGRO_PRODUCT_URL",
+  "product_url": "https://allegro.pl/produkt/rower-elektryczny-meski-damski-250w-15ah-100km-27-5-ebike-shimano-7s-25kmh-d0481fa2-8a35-4009-871d-108ca1cc1d78?offerId=18482612668",
+  "intake_status": "URL_ONLY_UNVERIFIED",
+  "access_problem": "HTTP_403",
+  "url_only_title_unverified": "rower elektryczny meski damski 250w 15ah 100km 27 5 ebike shimano 7s 25kmh",
+  "provider": "SERPAPI_GOOGLE_SHOPPING",
+  "search_status": "ONLY_GOOGLE_SHOPPING_CARDS_DETAIL_FAILED",
+  "provider_calls": 2,
+  "google_product_detail_failure": "ValueError",
+  "source_of_cards": "REAL_GOOGLE_SHOPPING_SERPAPI_RESPONSE_INDEXED_NOT_SELLER_VERIFIED",
+  "cards": [
+    {
+      "title": "Rower elektryczny Męski/Damski 250W 15AH 100KM 27,5\" Ebike Shimano-7S 25KMH",
+      "source": "Allegro",
+      "indexed_price": "2469.05",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+M%C4%99ski%2FDamski+250W+15AH+100KM+27%2C5%22+Ebike+Shimano-7S+25KMH+Allegro&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Nowy Rower elektryczny Męski/Damski 250W 15AH 100KM 27,5\" Ebike Shimano-7S",
+      "source": "Allegro",
+      "indexed_price": "2469.00",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Nowy+Rower+elektryczny+M%C4%99ski%2FDamski+250W+15AH+100KM+27%2C5%22+Ebike+Shimano-7S+Allegro&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower Elektryczny Damski Męski Górski Koła 27,5\" Mtb Full Amory 250 W LCD",
+      "source": "iwobike.pl",
+      "indexed_price": "4507.00",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+Elektryczny+Damski+M%C4%99ski+G%C3%B3rski+Ko%C5%82a+27%2C5%22+Mtb+Full+Amory+250+W+LCD+iwobike.pl&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower elektryczny Męski/Damski Allgobike AM27 250W 36V 15AH 100KM 27.5\" Pl",
+      "source": "Allegro",
+      "indexed_price": "2599.00",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+M%C4%99ski%2FDamski+Allgobike+AM27+250W+36V+15AH+100KM+27.5%22+Pl+Allegro&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Evercross Rower elektryczny Ek15 27,5\" Mtb 250W 36V 25 km/h amortyzacja + hamulce",
+      "source": "Decathlon",
+      "indexed_price": "3028.99",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Evercross+Rower+elektryczny+Ek15+27%2C5%22+Mtb+250W+36V+25+km%2Fh+amortyzacja+%2B+hamulce+Decathlon&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower Elektryczny Damski 250W 15AH 100KM 27.5\" E-bike Shimano 7 Biegowa Pl",
+      "source": "Allegro",
+      "indexed_price": "2599.00",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+Elektryczny+Damski+250W+15AH+100KM+27.5%22+E-bike+Shimano+7+Biegowa+Pl+Allegro&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower Elektryczny Męski Damski Górski 27,5\" MTB Shimano Alivio 250 W LCD",
+      "source": "iwobike.pl",
+      "indexed_price": "3919.00",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+Elektryczny+M%C4%99ski+Damski+G%C3%B3rski+27%2C5%22+MTB+Shimano+Alivio+250+W+LCD+iwobike.pl&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Orzel C27 Rower Elektryczny 27,5\" 250W 15Ah 25km/h 100km Męski Damski Ebike",
+      "source": "Allegro",
+      "indexed_price": "3399.00",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Orzel+C27+Rower+Elektryczny+27%2C5%22+250W+15Ah+25km%2Fh+100km+M%C4%99ski+Damski+Ebike+Allegro&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower elektryczny Denver E2300 Czarny",
+      "source": "Media Expert",
+      "indexed_price": "2699.99",
+      "indexed_currency": "PLN",
+      "identity_status": "MODEL_TOKEN_CONFLICT_NEEDS_REVIEW",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+Denver+E2300+Czarny+Media+Expert&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower elektryczny EK15 27,5\" MTB 250W 36V 25 km/h amortyzacja + hamulce",
+      "source": "Decathlon",
+      "indexed_price": "3028.99",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+EK15+27%2C5%22+MTB+250W+36V+25+km%2Fh+amortyzacja+%2B+hamulce+Decathlon&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower elektryczny miejski Allgobike AM27 250W 15Ah 100KM Ebike Shimano 45Nm",
+      "source": "Allegro",
+      "indexed_price": "2469.05",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+miejski+Allgobike+AM27+250W+15Ah+100KM+Ebike+Shimano+45Nm+Allegro&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    },
+    {
+      "title": "Rower elektryczny BATAVUS Finez E-go Power",
+      "source": "CentrumRowerowe.pl",
+      "indexed_price": "4999.00",
+      "indexed_currency": "PLN",
+      "identity_status": "PRODUCT_IDENTITY_NOT_PROVEN_BY_SHOPPING_INDEX",
+      "index_search_url": "https://www.google.com/search?tbm=shop&q=Rower+elektryczny+BATAVUS+Finez+E-go+Power+CentrumRowerowe.pl&gl=pl&hl=pl",
+      "search_card_only_not_direct_offer": true,
+      "seller_page_retrieved": false,
+      "seller_price_verified": false
+    }
+  ],
+  "seller_pages_retrieved": 0,
+  "seller_verified_checkout_prices": 0,
+  "product_ean_proven_by_provider": null,
+  "lowest_indexed_observation": {
+    "price": "2469.00",
+    "currency": "PLN",
+    "seller": "Allegro",
+    "merchant_url": null,
+    "index_product_url": null,
+    "meaning": "MINIMUM_OF_INDEXED_SEARCH_RESULTS_NO_DIRECT_SELLER_LINK",
+    "product_identity_unverified": true,
+    "checkout_price_unverified": true
+  },
+  "caveat": "No assertion that the lowest index price is for offerId 18482612668; third-party public Allegro page has previously shown 2649 PLN for that offer.",
+  "payment_authorized": false
+}

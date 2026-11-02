@@ -5,6 +5,24 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## FIX: Allegro bicycle Shopping cards survive Google Product detail errors
+
+On **2 November 2026**, the user submitted a specific Allegro 250W/15Ah
+electric-bike link (offer 18482612668). The original Shopping query
+returned 40 actual indexed search cards, but the follow-up Product
+details API failed. Previously, one detail failure erased all results.
+The UI now preserves 12 bounded Shopping card prices and Google
+Shopping search links in the full tree, explicitly marked **unverified**.
+
+In an actual URL-first app test, **12 cards appeared** (including Allegro
+indexed leads at **2469.00–2469.05 PLN**), despite the original Allegro
+HTTP 403 and detail-API failure. These cards are **not the same as**
+a confirmed price for the submitted listing: its independently indexed
+public Allegro offer page showed **2649 PLN**, with EAN 0746121153095.
+No product-equivalence or checkout savings claim is made.
+
+[Full reproducible case and real Shopping result snapshot](docs/ALLEGRO_BIKE_SHOPPING_FALLBACK_2026-11-02.md).
+
 ## Real Google Shopping Search-First test: 20 products (2026-11-02)
 
 Using a locally configured SerpApi Free-plan key, the project completed a

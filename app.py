@@ -86,9 +86,10 @@ def shopping_search_panel(report):
     for group in data.get("search_result_groups", []):
         if not group.get("indexed_price") or not group.get("indexed_currency"):
             continue
-        link = group.get("index_product_url")
-        source = (('<a href="{}" rel="noopener noreferrer" target="_blank">{}</a>'
-                   .format(h(link), h(group["source"]))) if link else
+        link = group.get("index_product_url") or group.get("index_search_url")
+        source = (('{} <a href="{}" rel="noopener noreferrer" target="_blank">'
+                   '(szukaj w Google Shopping)</a>'.format(
+                       h(group["source"]), h(link))) if link else
                   h(group["source"]))
         group_rows.append(
             '<tr><td>{}</td><td>{}</td><td><strong>{} {}</strong></td>'
@@ -109,6 +110,9 @@ def shopping_search_panel(report):
         '<h2>Marketplace and store prices without fetching blocked seller pages</h2>'
         '<p>Provider: {} · status: {} · searched: {} · API calls: {}. '
         'Market: Poland. Indexed prices may be delayed or mismatched.</p>{}'
+        '<p class="warning">A Google Shopping result is a search hint; '
+        'its link may reopen Google Shopping, not the same seller offer. '
+        'Product details may be inaccessible even when Shopping results exist.</p>'
         '<h3>Indexed direct-store links (Google product group)</h3>'
         '<table><tr><th>Seller/source link</th><th>Indexed listing</th>'
         '<th>Indexed price</th><th>Product identity</th><th>Price warning</th></tr>{}</table>'
