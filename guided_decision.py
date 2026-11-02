@@ -10,6 +10,7 @@ from statistics import median
 from urllib.parse import urlsplit
 import re
 
+from offer_question_bank import offer_summaries
 from autonomous_research import build_research_path
 from similar_tier import (
     category_of, read_specs, enrich_alternatives, STATUS_SIMILAR, STATUS_POSSIBLE,
@@ -145,6 +146,26 @@ def build_decision_projection(record):
     """
     state=record.get("state")
     if state != "READY":
+        if state in ("QUEUED", "RUNNING"):
+            preview = record.get("preview_report")
+            current = {**record, "report": preview} if preview else record
+            item = current.get("item") or {}
+            title = item.get("title") or item.get("merchant_url") or "Submitted product URL"
+            from similar_tier import category_of as classify
+            category = classify(title)
+            return {
+                "state": state, "title": title[:200], "category": category,
+                "selected_url": _public_link(item.get("merchant_url")),
+                "progress_stage": record.get("progress_stage") or "QUEUED",
+                "progress_revision": record.get("progress_revision") or 0,
+                "offers": offer_summaries(current, category),
+                "questions": [],
+                "payment_authorized": False,
+                "evidence": {"google_shopping_cards": len(
+                    ((preview or {}).get("indexed_shopping") or {}).get("search_result_groups") or []),
+                    "indexed_store_links": len(
+                    ((preview or {}).get("indexed_shopping") or {}).get("indexed_offers") or [])},
+            }
         return {"state":state,"error_type":record.get("error_type"),
                 "payment_authorized":False}
     report=record.get("report") or {}
@@ -282,6 +303,9 @@ def build_decision_projection(record):
         "source_provenance":"URL-derived, unverified title" if source.get("intake_status")=="URL_ONLY_UNVERIFIED"
                             else "Retailer page claims",
         "evidence":evidence,
+        "offers":offer_summaries(record,category),
+        "model_offers":record.get("model_offers") or {},
+        "model_progress_stage":record.get("progress_stage") or "NOT_SCHEDULED",
         "questions":[],  # Deprecated buyer questionnaire; no clicks required.
         "research":build_research_path(report, selected, candidates[:MAX_CANDIDATES], evidence),
         "candidates":candidates[:MAX_CANDIDATES],

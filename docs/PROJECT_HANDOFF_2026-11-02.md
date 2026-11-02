@@ -1,3 +1,12 @@
+> **LATEST CHANGE (2026-11-02):** The no-click research tree now appears
+> immediately while source retrieval or Qwen is running. For the saved Lenovo
+> example: 16 listing leads, 288 *planned* source checks per offer, 4608 total.
+> Qwen separately proposes further questions per offer **after READY**, without
+> blocking the page. These are open plans, **not verified answers**. See
+> [PROGRESSIVE_OFFER_RESEARCH_2026-11-02](PROGRESSIVE_OFFER_RESEARCH_2026-11-02.md).
+>
+> This historic handoff predates that change.
+
 # AKTUALIZACJA PO HANDOFF — 2 listopada 2026, etap autonomicznych pytań
 
 **Ten handoff opisuje bazowy stan przed kolejnym etapem.**

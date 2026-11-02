@@ -204,3 +204,45 @@ h1 em,h2 em{font-weight:400;font-style:italic;color:var(--accent)}
  .entry-content h1{font-size:63px}
  .entry-flow-map{grid-template-columns:repeat(2,1fr)}
 }
+
+/* Bounded, automatically expanding investigation queue; no buyer-choice UI. */
+.offer-research-card {
+  margin: 12px 0 22px; padding: 18px 20px;
+  background: #fff; border: 1px solid #d8e2de; border-radius: 12px;
+  box-shadow: 0 3px 14px rgba(12, 41, 33, .045);
+}
+.offer-research-heading {
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 10px;
+}
+.offer-research-heading strong {font-size: 1.03rem; overflow-wrap: anywhere;}
+.offer-question-count {
+  font-size: .82rem; font-weight: 700; color: #276c5c;
+  white-space: nowrap;
+}
+.offer-question-scroll {
+  max-height: 310px; overflow-y: auto; overscroll-behavior: contain;
+  margin-top: 13px; border-top: 1px solid #e0e9e6;
+  scrollbar-color: #9cbfb4 #f6faf8;
+}
+.offer-question-list {padding: 0 0 0 29px; margin: 0;}
+.offer-question-item {
+  padding: 10px 4px 9px; line-height: 1.4;
+  border-bottom: 1px solid #eef3f1;
+}
+.offer-question-item p {margin: 3px 0 0; overflow-wrap: anywhere; font-size: .92rem;}
+.question-priority {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+  font-weight: 700; color: #55776e;
+}
+.offer-pagination-status {font-size: .77rem; color: #58746c; padding: 8px 0;}
+
+
+.offer-llm-questions {
+  background: #f3f8f6; border: 1px solid #dbe9e3;
+  border-radius: 8px; margin-top: 12px; padding: 10px 14px;
+  font-size: .84rem; color: #204b3f;
+}
+.offer-llm-questions h4 {margin: 2px 0 8px; font-size: .78rem;}
+.offer-llm-questions ol {padding-left: 22px; margin: 0;}
+.offer-llm-questions li {padding-bottom: 5px;}

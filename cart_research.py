@@ -581,14 +581,59 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_research_jobs (
                 id TEXT PRIMARY KEY, item TEXT NOT NULL, state TEXT NOT NULL,
                 created TEXT NOT NULL, result TEXT, error_type TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_research_progress (
+                job_id TEXT PRIMARY KEY, stage TEXT NOT NULL,
+                revision INTEGER NOT NULL DEFAULT 0, preview TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_offer_model_questions (
+                job_id TEXT NOT NULL, offer_idx INTEGER NOT NULL,
+                status TEXT NOT NULL, questions_json TEXT,
+                PRIMARY KEY(job_id,offer_idx))""")
             db.execute("UPDATE cart_research_jobs SET state='INTERRUPTED' "
                        "WHERE state IN ('QUEUED','RUNNING')")
+        self.model_pool = ThreadPoolExecutor(max_workers=1)
+        self.model_stop = threading.Event()
         self.lock = threading.Lock()
 
     def _db(self):
         db = sqlite3.connect(self.db_path, timeout=8)
         db.execute("PRAGMA busy_timeout=8000")
         return db
+
+    def _progress(self, job_id, stage, report=None):
+        """Cheap committed snapshot; visible while a slow provider/LLM runs."""
+        snapshot = json.dumps(report, ensure_ascii=False) if report else None
+        with self._db() as db:
+            db.execute("""INSERT INTO cart_research_progress(job_id,stage,revision,preview)
+                VALUES (?,?,1,?)
+                ON CONFLICT(job_id) DO UPDATE SET stage=excluded.stage,
+                revision=revision+1,
+                preview=COALESCE(excluded.preview,cart_research_progress.preview)""",
+                       (job_id, stage, snapshot))
+
+    def _generate_offer_questions(self, job_id, record):
+        """Detached from user latency and from payment authorization logic."""
+        from offer_question_bank import (offer_summaries,
+                                         propose_offer_model_questions)
+        from similar_tier import category_of
+        category = category_of((record.get("item") or {}).get("title") or "")
+        offers = offer_summaries(record, category)
+        for index, offer in enumerate(offers):
+            if self.model_stop.is_set():
+                break
+            with self._db() as db:
+                db.execute("""INSERT OR REPLACE INTO cart_offer_model_questions
+                    (job_id,offer_idx,status,questions_json) VALUES (?,?,?,NULL)""",
+                    (job_id,index,"RUNNING"))
+            try:
+                questions = propose_offer_model_questions(offer, category)
+                status = "OK" if questions else "EMPTY"
+            except (OSError,ValueError,TypeError,KeyError,RuntimeError) as exc:
+                questions, status = [], "UNAVAILABLE_" + type(exc).__name__
+            with self._db() as db:
+                db.execute("""UPDATE cart_offer_model_questions
+                    SET status=?,questions_json=? WHERE job_id=? AND offer_idx=?""",
+                    (status,json.dumps(questions,ensure_ascii=False),job_id,index))
+        self._progress(job_id, "PER_OFFER_MODEL_COMPLETE")
 
     def submit(self, item):
         clean = validate_cart(item)
@@ -597,6 +642,7 @@ class CartResearchJobs:
             db.execute("INSERT INTO cart_research_jobs(id,item,state,created) VALUES (?,?,?,?)",
                        (job_id, json.dumps(clean), "QUEUED",
                         datetime.now(timezone.utc).isoformat()))
+        self._progress(job_id, "QUEUED")
         self.pool.submit(self._work, job_id, clean)
         return job_id
 
@@ -609,10 +655,12 @@ class CartResearchJobs:
                        (job_id, json.dumps({"merchant_url": url,
                                              "intake": "URL_EXTRACTION_PENDING"}),
                         "QUEUED", datetime.now(timezone.utc).isoformat()))
+        self._progress(job_id, "QUEUED")
         self.pool.submit(self._work_url, job_id, url)
         return job_id
 
     def _work_url(self, job_id, url):
+        self._progress(job_id, "SOURCE_FETCH")
         from product_intake import (
             extract_product_page, generic_url_identity,
             SourceAccessDenied, SourceRedirect, SourceHTTPFailure)
@@ -652,6 +700,7 @@ class CartResearchJobs:
             with self._db() as db:
                 db.execute("UPDATE cart_research_jobs SET item=? WHERE id=?",
                            (json.dumps(clean), job_id))
+            self._progress(job_id, "CATALOG_AND_BASE_RESEARCH")
             report = self.runner(clean)
             report["source_intake"] = source
             report["root"]["details"]["source_intake"] = {
@@ -666,6 +715,7 @@ class CartResearchJobs:
                 {"extracted_product": clean, "page_metadata": source,
                  "price_is_confirmed_checkout_total": False},
                 node_id="cart-source-intake"))
+            self._progress(job_id, "BASE_RESEARCH_AVAILABLE", report)
             # Search-first: a contracted shopping-index provider can return
             # merchant prices even if the selected marketplace URL is HTTP 403.
             # No provider key -> no paid queries or invented offers. Indexed
@@ -677,6 +727,7 @@ class CartResearchJobs:
             # Automatic offer discovery can run only on public URLs already
             # returned by an authorized search provider. Keep the background
             # cart task bounded and do not invent search results if no key.
+            self._progress(job_id, "SHOPPING_EVIDENCE_AVAILABLE", report)
             if report.get("source_discovery", {}).get("web_hits"):
                 from automatic_offer_discovery import enrich_with_discovered_offers
                 report = enrich_with_discovered_offers(report, clean, max_checks=3)
@@ -684,30 +735,41 @@ class CartResearchJobs:
                 report.pop("sha256", None)
                 report["sha256"] = sha256(json.dumps(
                     report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            self._progress(job_id, "LLM_SOURCE_QUESTIONS_IN_PROGRESS", report)
             if report.get("indexed_shopping"):
                 from autonomous_research import enrich_index_research_with_llm
                 report = enrich_index_research_with_llm(report, clean)
                 report.pop("sha256", None)
                 report["sha256"] = sha256(json.dumps(
                     report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            self._progress(job_id, "RESEARCH_COMPLETE", report)
             state, result, error = "READY", json.dumps(report, ensure_ascii=False), None
         except Exception as exc:
             state, result, error = "FAILED", None, type(exc).__name__
         with self._db() as db:
             db.execute("UPDATE cart_research_jobs SET state=?,result=?,error_type=? WHERE id=?",
                        (state, result, error, job_id))
+        if state == "READY" and self.runner is research_cart:
+            self._progress(job_id, "PER_OFFER_MODEL_QUEUED")
+            # Never block the status page, job READY state or another research
+            # worker while local Qwen proposes per-offer follow-up questions.
+            self.model_pool.submit(self._generate_offer_questions, job_id,
+                                   {"item": clean, "report": report})
 
     def _work(self, job_id, item):
+        self._progress(job_id, "CATALOG_AND_BASE_RESEARCH")
         with self._db() as db:
             db.execute("UPDATE cart_research_jobs SET state='RUNNING' WHERE id=?", (job_id,))
         try:
             report = self.runner(item)
+            self._progress(job_id, "BASE_RESEARCH_AVAILABLE", report)
             if (os.environ.get("SERPAPI_API_KEY")
                     and isinstance(report.get("root"), dict)
                     and report["root"].get("children")):
                 from search_first import search_serpapi_shopping, attach_shopping_evidence
                 indexed = search_serpapi_shopping(item)
                 report = attach_shopping_evidence(report, item, indexed)
+            self._progress(job_id, "RESEARCH_COMPLETE", report)
             state = "READY"
             result = json.dumps(report, ensure_ascii=False)
             error = None
@@ -726,10 +788,29 @@ class CartResearchJobs:
                              (job_id,)).fetchone()
         if not row:
             raise ValueError("Unknown cart research job")
+        with self._db() as db:
+            progress = db.execute(
+                "SELECT stage,revision,preview FROM cart_research_progress WHERE job_id=?",
+                (job_id,)).fetchone()
+            model_rows = db.execute(
+                "SELECT offer_idx,status,questions_json FROM cart_offer_model_questions WHERE job_id=?",
+                (job_id,)).fetchall()
+        model_offers = {
+            "offer-{}".format(i): {"state": status,
+                "questions": json.loads(data) if data else []}
+            for i,status,data in model_rows
+        }
         return {"item": json.loads(row[0]), "state": row[1],
                 "created": row[2],
                 "report": json.loads(row[3]) if row[3] else None,
-                "error_type": row[4]}
+                "error_type": row[4],
+                "model_offers": model_offers,
+                "progress_stage": progress[0] if progress else row[1],
+                "progress_revision": progress[1] if progress else 0,
+                "preview_report": json.loads(progress[2]) if progress and
+                                  progress[2] and row[1] in ("QUEUED","RUNNING") else None}
 
     def close(self):
+        self.model_stop.set()
         self.pool.shutdown(wait=True)
+        self.model_pool.shutdown(wait=True)

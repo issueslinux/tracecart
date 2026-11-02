@@ -220,42 +220,202 @@
     advance();
   }
 
+  // Show an actual source-directed plan immediately, even when the worker
+  // is still fetching a slow seller page or waiting on a local LLM.
+  function renderStaged(data) {
+    const graph = document.getElementById("decision-graph");
+    graph.replaceChildren(); graph.hidden = false;
+    const product = node("section","graph-node graph-origin");
+    product.appendChild(node("span","flow-tag","SOURCE RESEARCH STARTED"));
+    product.appendChild(node("h2","",data.title || "Investigating submitted URL"));
+    if (data.selected_url) product.appendChild(anchor("Source product ↗",data.selected_url));
+    graph.appendChild(product);
+    const stage = (data.progress_stage || "QUEUED").replace(/_/g," ");
+    const intro = node("section","graph-node question-node");
+    intro.appendChild(node("h3","",stage));
+    intro.appendChild(node("p","",
+      "Research begins with questions, not a buyer questionnaire. Planned checks are not completed tests. New product and offer evidence will appear here as it becomes available."));
+    graph.appendChild(connector()); graph.appendChild(intro);
+    document.getElementById("flow-counter").textContent="LIVE";
+    document.getElementById("flow-final").hidden=true;
+  }
+
+  function renderOfferQueue(data, sourceUrl) {
+    const target = document.getElementById("offer-research-cards");
+    const offers = data.offers || [];
+    target.replaceChildren();
+    if (!offers.length) return;
+    const total = offers.reduce((n,o)=>n+(o.question_count||0),0);
+    document.getElementById("offer-plan-count").textContent =
+      offers.length+" offers · "+new Intl.NumberFormat("en-GB").format(total)+
+      " planned investigations · 0 confirmed answers from this plan";
+    const url = sourceUrl.replace(/\.decision\.json$/, "/questions.json");
+    offers.forEach((offer, index) => {
+      const card=node("article","offer-research-card");
+      const heading=node("div","offer-research-heading");
+      const label=node("strong","",offer.title);
+      heading.appendChild(label);
+      heading.appendChild(node("span","offer-question-count",offer.question_count+" source questions"));
+      card.appendChild(heading);
+      card.appendChild(node("p","alt-summary",
+        offer.source+" · "+offer.kind+" · "+
+        money(offer.indexed_price,offer.currency)+
+        " · Price unverified · Question status: PLANNED, not answered"));
+      if (offer.url) card.appendChild(anchor("View indexed source ↗",offer.url));
+      const list=node("div","offer-question-scroll");
+      const questions=node("ol","offer-question-list");
+      const sentinel=node("p","offer-pagination-status","Loading first questions…");
+      list.appendChild(questions); list.appendChild(sentinel);
+      card.appendChild(list);
+      const modelBox = node("section","offer-llm-questions");
+      modelBox.appendChild(node("small","",
+        "Local LLM follow-up: not yet available. Questions do not count as evidence."));
+      card.appendChild(modelBox);
+      target.appendChild(card);
+      let next=0, busy=false, done=false, observer;
+      async function loadBatch() {
+        if (busy || done) return;
+        busy=true; sentinel.textContent="Loading next research questions…";
+        try {
+          const query=new URLSearchParams({
+            offer:String(index), offset:String(next),limit:"24"
+          });
+          const response=await fetch(url+"?"+query,{
+            credentials:"same-origin",cache:"no-store",
+            headers:{"Accept":"application/json"}});
+          if(!response.ok) throw new Error("HTTP "+response.status);
+          const page=await response.json();
+          if(page.offer_id!==offer.id || !Array.isArray(page.questions))
+            throw new Error("Mismatched question page");
+          page.questions.forEach(q=>{
+            const li=node("li","offer-question-item");
+            li.appendChild(node("span","question-priority",q.priority+" · "+q.status));
+            li.appendChild(node("p","",q.question));
+            questions.appendChild(li);
+          });
+          next=page.next_offset;
+          done=next===null;
+          sentinel.textContent=done ?
+            "All "+page.total+" planned questions displayed. Verified answers: 0." :
+            questions.childElementCount+" / "+page.total+" questions loaded · scroll to continue";
+          if(done && observer) observer.disconnect();
+        } catch(_) {
+          sentinel.textContent="Question page unavailable; research will remain pending.";
+          done=true;
+          if(observer) observer.disconnect();
+        } finally {busy=false;}
+      }
+      // No button or user choice. Fetch in small batches, automatically
+      // continuing when the individual offer's scroll viewport reaches end.
+      if(typeof IntersectionObserver!=="undefined") {
+        observer=new IntersectionObserver(entries=>{
+          if(entries.some(e=>e.isIntersecting)) loadBatch();
+        },{root:list,threshold:0});
+        observer.observe(sentinel);
+      }
+      loadBatch();
+    });
+  }
+
+  function refreshModelQuestions(data) {
+    const cards=document.getElementById("offer-research-cards").children;
+    const found=data.model_offers || {};
+    for(let i=0;i<cards.length;i++) {
+      const target=cards[i].querySelector(".offer-llm-questions");
+      if(!target) continue;
+      const result=found["offer-"+i];
+      if(!result) continue;
+      const label=result.state==="OK" ?
+        "LOCAL LLM · "+result.questions.length+" source questions · not answered" :
+        "LOCAL LLM · "+result.state.replace(/_/g," ");
+      if(target.dataset.signature===label) continue;
+      target.dataset.signature=label;
+      target.replaceChildren(node("h4","",label));
+      if(result.state==="OK") {
+        const list=node("ol");
+        (result.questions||[]).forEach(q=>
+          list.appendChild(node("li","",q.question)));
+        target.appendChild(list);
+      }
+    }
+  }
+
   function mount() {
     const app=document.getElementById("decision-app");
     if (!app) return;
     const loading=document.getElementById("flow-loading"),
           status=document.getElementById("job-state");
-    let polls=0;
+    let polls=0, lastStage="",lastOffers=-1,finished=false;
+    renderStaged({
+      title:app.dataset.productUrl || "Product received",
+      selected_url:app.dataset.productUrl || null,
+      progress_stage:"URL_ACCEPTED"
+    });
+    loading.hidden=true;
+    // The first tree is visible before the first network response.
     async function loadOnce() {
+      if (finished) return;
       try {
         const response=await fetch(app.dataset.source,{
           credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}});
         if(!response.ok) throw new Error("HTTP "+response.status);
         const data=await response.json();
         if(data.state==="QUEUED"||data.state==="RUNNING") {
-          status.textContent=data.state==="QUEUED"?"Queued":"Research in progress";
-          if(++polls<=MAX_POLLS) setTimeout(loadOnce,POLL_MS);
+          const stage=data.progress_stage||data.state;
+          status.textContent=stage.replace(/_/g," ").toLowerCase();
+          if(stage!==lastStage) {
+            renderStaged(data); lastStage=stage;
+          }
+          const count=(data.offers||[]).length;
+          if(count!==lastOffers) {
+            renderOfferQueue(data,app.dataset.source);
+            lastOffers=count;
+          }
+          if(++polls<=MAX_POLLS) setTimeout(loadOnce,polls<12?450:POLL_MS);
           else {
-            loading.replaceChildren(node("h2","","Research still in progress"),
-              node("p","","Reload this page to check again. No duplicate purchase or request was made."));
+            status.textContent="Research continues";
+            setTimeout(()=>{polls=0;loadOnce();},4000);
           }
           return;
         }
         if(data.state!=="READY") {
+          finished=true;
           status.textContent="Unavailable";
-          loading.replaceChildren(node("h2","","Research failed"),
-            node("p","",String(data.error_type||"Unknown error")));
+          const graph=document.getElementById("decision-graph");
+          graph.appendChild(node("p","alt-warning",
+            "Research failed: "+String(data.error_type||"Unknown error")+
+            ". No evidence was invented and no purchase was made."));
           return;
         }
+        finished=true;
         status.textContent="Complete";
         document.getElementById("status-indicator").style.backgroundColor="#6faf8d";
         data.audit_url=app.dataset.audit;
-        renderEvidence(data); renderGraph(data);
-        loading.hidden=true;
+        renderEvidence(data);
+        renderGraph(data);
+        renderOfferQueue(data,app.dataset.source);
+        refreshModelQuestions(data);
+        if(data.model_progress_stage==="PER_OFFER_MODEL_QUEUED") {
+          let followups=0;
+          const updateModel=async()=>{
+            if(++followups>130) return;
+            try {
+              const res=await fetch(app.dataset.source,{
+                credentials:"same-origin",cache:"no-store"});
+              if(res.ok) {
+                const latest=await res.json();
+                refreshModelQuestions(latest);
+                if(latest.model_progress_stage==="PER_OFFER_MODEL_COMPLETE")
+                  return;
+              }
+            } catch(_) {}
+            setTimeout(updateModel,2400);
+          };
+          setTimeout(updateModel,2400);
+        }
       } catch(_) {
-        status.textContent="Connection error";
-        loading.replaceChildren(node("h2","","Cannot load saved research"),
-          node("p","","Check the local TraceCart server and refresh this page."));
+        status.textContent="Source connection retry";
+        if(++polls<=MAX_POLLS) setTimeout(loadOnce,1200);
       }
     }
     loadOnce();
