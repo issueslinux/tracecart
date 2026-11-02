@@ -22,7 +22,7 @@ def _host(url):
     return hostname[4:] if hostname.startswith("www.") else hostname
 
 
-def compare_live_offers(base_report, selected, candidate_urls, extractor=None):
+def compare_live_offers(base_report, selected, candidate_urls, extractor=None, buyer_country=None):
     """Compare 1..4 merchant URLs. Fail validation before any network calls."""
     if type(candidate_urls) is not list or not (1 <= len(candidate_urls) <= MAX_OTHER_MERCHANTS):
         raise ValueError("Provide 1 to 4 alternative product URLs")
@@ -36,14 +36,14 @@ def compare_live_offers(base_report, selected, candidate_urls, extractor=None):
     if len(set(hosts)) != len(hosts):
         raise ValueError("Use one candidate URL per retailer")
     if len(urls) == 1:
-        return compare_live_offer(base_report, selected, urls[0], extractor=extractor)
+        return compare_live_offer(base_report, selected, urls[0], extractor=extractor, buyer_country=buyer_country)
 
     result = deepcopy(base_report)
     if "root" not in result or not result["root"].get("children"):
         raise ValueError("Original cart report lacks research tree")
     comparisons, branches = [], []
     for index, url in enumerate(urls):
-        single = compare_live_offer(base_report, selected, url, extractor=extractor)
+        single = compare_live_offer(base_report, selected, url, extractor=extractor, buyer_country=buyer_country)
         comparison = single["live_competitor_comparison"]
         branch = single["root"]["children"][-2]
         branch["id"] = "cart-live-competitor-{}".format(index + 1)

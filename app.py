@@ -423,7 +423,7 @@ https://www.adafruit.com/product/3400</textarea></label>
             different retailers. TraceCart checks robots.txt and independently
             retrieves each source, preserving failures, stock, price and
             GTIN evidence in the complete tree. Search snippets never become
-            verified prices. Delivery and final checkout totals remain unknown.</p>
+            verified prices. Product-plus-shipping subtotals require explicit buyer country and seller shipping evidence; payment fees and checkout totals remain unverified.</p>
             <p><a href="{}" target="_blank" rel="noopener noreferrer">
             Search shopping listings (external)</a></p>
             <form method="post" action="/cart/compare-live">{}
@@ -431,6 +431,9 @@ https://www.adafruit.com/product/3400</textarea></label>
             <label>Alternative retailer product URLs (one per line)
             <textarea name="competitor_urls" rows="4" maxlength="4800"
             placeholder="https://other-store.example/product/..."></textarea></label>
+            <label>Destination country (ISO two-letter code, optional)
+            <input name="buyer_country" maxlength="2" pattern="[A-Za-z]{{2}}"
+            placeholder="PL" autocomplete="country"></label>
             <button>Audit competing sources and compare seller claims</button>
             </form></section>""".format(
                 h(search_url), self.hidden(), h(job_id)))
@@ -789,8 +792,12 @@ https://www.adafruit.com/product/3400</textarea></label>
                         if line.strip()]
                 if not urls and form.get("competitor_url"):
                     urls = [form["competitor_url"]]  # legacy clients
+                buyer_country = form.get("buyer_country", "").strip().upper() or None
+                if buyer_country is not None and (len(buyer_country) != 2 or
+                        not buyer_country.isascii() or not buyer_country.isalpha()):
+                    raise ValueError("Destination country must be two ASCII letters")
                 report = compare_live_offers(
-                    job["report"], job["item"], urls)
+                    job["report"], job["item"], urls, buyer_country=buyer_country)
                 rid = self.server.reports.save(report)
                 self.research_report_page(rid, report)
             elif self.path == "/propose":
