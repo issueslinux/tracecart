@@ -65,6 +65,35 @@ def h(text):
     return escape(str(text), quote=True)
 
 
+def research_critic_panel(report):
+    """Escaped, actionable summary for single- and multi-seller research."""
+    critic = (report.get('multi_offer_research_critic') or
+              report.get('single_offer_research_critic'))
+    if not critic:
+        return ''
+    rows = []
+    for question in critic.get('prioritized_questions', []):
+        rows.append(
+            '<tr><td><a href="{}" rel="noopener noreferrer" target="_blank">'
+            '{}</a></td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
+                h(question['url']), h(question['url']), h(question['finding']),
+                h(question['question']), h(question['selection'])))
+    return (
+        '<section><div class="tag">RESEARCH CRITIC</div>'
+        '<h2>Evidence gaps and next research questions</h2>'
+        '<p>{} lower seller-listed price research leads; {} open questions. '
+        'No product quality or seller reliability verdict was established '
+        'by these retailer pages.</p>'
+        '<table><tr><th>Source</th><th>Finding</th><th>Research question</th>'
+        '<th>Status</th></tr>{}</table>'
+        '<p class="warning">A lower listing price is not a buying '
+        'recommendation. Critic questions are unresolved hypotheses, '
+        'not independently collected reviews or test results.</p>'
+        '</section>'.format(
+            h(critic['lower_listed_price_leads']),
+            h(critic['open_question_count']), ''.join(rows)))
+
+
 class TraceCartHandler(BaseHTTPRequestHandler):
     server_version = "TraceCart/0.1"
 
@@ -618,6 +647,9 @@ https://www.adafruit.com/product/3400</textarea></label>
                 </section>""".format(
                     h(info["pages_retrieved"]), h(info["requested"]),
                     h(info["source_qualified_comparisons"]), "".join(rows))) + body
+        if (report.get('multi_offer_research_critic') or
+                report.get('single_offer_research_critic')):
+            body = research_critic_panel(report) + body
         comparison = report.get("comparison_summary")
         if comparison:
             rows = []

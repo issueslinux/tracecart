@@ -39,8 +39,8 @@ class MultiRetailerTests(unittest.TestCase):
         self.assertEqual([x["status"] for x in r["live_competitor_comparisons"]],
                          ["SAME_GTIN_SELLER_LISTED_PRICE_COMPARISON",
                           "SECOND_OFFER_NOT_AVAILABLE", "SECOND_PAGE_NOT_RETRIEVED"])
-        self.assertEqual(len(r["root"]["children"]), len(base["root"]["children"]) + 3)
-        self.assertEqual(len(set(x["id"] for x in r["root"]["children"] if "id" in x)), 3)
+        self.assertEqual(len(r["root"]["children"]), len(base["root"]["children"]) + 4)
+        self.assertEqual(len(set(x["id"] for x in r["root"]["children"] if "id" in x)), 4)
         self.assertEqual(r["root"]["children"][-1]["details"]
                          ["current_competitor_offers_verified"], 1)
         self.assertTrue(summary["no_shipping_inclusive_winner"])

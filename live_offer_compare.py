@@ -19,6 +19,7 @@ from unit_economics import unit_cost
 from product_variant import check_variant_consistency
 from purchase_dimensions import purchase_questions, fulfillment_assessment
 from shipping_comparison import conditional_shipping_comparison
+from offer_research_critic import critique_competing_offers, critic_tree_branch
 from delivery_comparison import compare_delivery_windows
 
 
@@ -266,6 +267,9 @@ def compare_live_offer(base_report, selected, candidate_url, extractor=None, buy
         "Second-offer evidence is incomplete or identity differs; no cheaper "
         "equivalent product is asserted.")
     report["live_competitor_comparison"] = comparison
+    review = critique_competing_offers([comparison])
+    report['single_offer_research_critic'] = review
+    report['root']['children'].insert(-1, critic_tree_branch(review))
     report["generated_at"] = datetime.now(timezone.utc).isoformat()
     report["limitations"] = list(report.get("limitations", [])) + [
         "Second-merchant comparison does not authorize a payment or verify checkout totals."]

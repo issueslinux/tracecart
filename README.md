@@ -5,6 +5,18 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## NEW: evidence-driven Offer Research Critic
+
+Once seller-page comparisons finish, TraceCart now creates an **actionable
+research critique** in both the page and complete exported decision tree.
+It identifies promising *seller-listed* price leads without forcing a purchase
+winner, records failed evidence gates, prioritizes follow-up questions and
+preserves deferred research branches. No independent review or lab test is
+invented. A new two-merchant Stanley Air Kit observation produced one
+**107.86 PLN lower-listed-product-price research lead** (xDom baseline versus
+Fabryka Narzędzi), not a verified checkout saving.
+[How it works and source evidence](docs/OFFER_RESEARCH_CRITIC.md).
+
 ## NEW: real Stanley Air Kit same-EAN offer comparison + transport evidence
 
 On **2 November 2026**, TraceCart directly retrieved two in-stock seller
