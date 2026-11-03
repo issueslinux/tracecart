@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "provenance": "synthetic_offline_cases_not_retailer_live_data",
+  "cases": [
+    {
+      "id": "jsonld_full",
+      "url": "https://shop-one.example.org/item/tb-18",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><script type='application/ld+json'>{\"@context\": \"https://schema.org\", \"@type\": \"Product\", \"name\": \"Młotowiertarka TestBrand TB-18\", \"brand\": {\"@type\": \"Brand\", \"name\": \"TestBrand\"}, \"model\": \"TB-18\", \"sku\": \"TB18-001\", \"gtin13\": \"8712561344494\", \"offers\": {\"@type\": \"Offer\", \"price\": \"134.90\", \"priceCurrency\": \"PLN\", \"availability\": \"https://schema.org/InStock\", \"itemCondition\": \"https://schema.org/NewCondition\", \"seller\": {\"@type\": \"Organization\", \"name\": \"Przykładowy Sklep\"}, \"shippingDetails\": {\"@type\": \"OfferShippingDetails\", \"shippingDestination\": {\"@type\": \"DefinedRegion\", \"addressCountry\": \"PL\"}, \"shippingRate\": {\"@type\": \"MonetaryAmount\", \"value\": \"12.99\", \"currency\": \"PLN\"}}}}</script></body></html>",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "Młotowiertarka TestBrand TB-18",
+      "price": "134.90",
+      "currency": "PLN",
+      "gtin": "08712561344494"
+    },
+    {
+      "id": "jsonld_graph_sale",
+      "url": "https://shop-two.example.org/p/sample-a1",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><script type='application/ld+json'>{\"@graph\": [{\"@type\": \"WebSite\", \"url\": \"https://example.org\"}, {\"@type\": \"https://schema.org/Product\", \"name\": \"Sample A1\", \"offers\": {\"@type\": \"Offer\", \"priceCurrency\": \"PLN\", \"priceSpecification\": [{\"@type\": \"UnitPriceSpecification\", \"priceType\": \"https://schema.org/ListPrice\", \"price\": \"199.00\", \"priceCurrency\": \"PLN\"}, {\"@type\": \"UnitPriceSpecification\", \"priceType\": \"https://schema.org/SalePrice\", \"price\": \"119.00\", \"priceCurrency\": \"PLN\"}]}}]}</script></body></html>",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "Sample A1",
+      "price": "119.00",
+      "currency": "PLN"
+    },
+    {
+      "id": "woocommerce",
+      "url": "https://woocommerce.example.org/produkt/abc",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head><meta property='og:title' content='Ceramiczny wisiorek 30 mm'></head><body><div class='elementor-widget-woocommerce-product-price'><p class='price'><del><bdi>120,00 zł</bdi></del><ins><bdi>80,00 zł</bdi></ins></p></div></body></html>",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "Ceramiczny wisiorek 30 mm",
+      "price": "80.00",
+      "currency": "PLN"
+    },
+    {
+      "id": "microdata",
+      "url": "https://micro.example.org/item/beta",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head><meta property='og:title' content='Mikroprodukt Beta'></head><body><div itemscope itemtype='https://schema.org/Product'><h1>Mikroprodukt Beta</h1><div itemprop='offers' itemscope itemtype='https://schema.org/Offer'><meta itemprop='price' content='45.90'><meta itemprop='priceCurrency' content='EUR'></div></div></body></html>",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "Mikroprodukt Beta",
+      "price": "45.90",
+      "currency": "EUR"
+    },
+    {
+      "id": "opengraph_only",
+      "url": "https://store.example.org/item/gamma",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head><meta property='og:title' content='Produkt Gamma'><meta property='product:price:amount' content='19.90'><meta property='product:price:currency' content='USD'></head><body></body></html>",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "Produkt Gamma",
+      "price": "19.90",
+      "currency": "USD"
+    },
+    {
+      "id": "rendered_dom",
+      "url": "https://js-shop.example.org/item/js",
+      "method": "RENDERED_DOM",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><div id='root'>Produkt po renderowaniu JavaScript</div><script type='application/ld+json'>{\"@type\": \"Product\", \"name\": \"Produkt po renderowaniu JS\", \"offers\": {\"@type\": \"Offer\", \"price\": \"22.00\", \"priceCurrency\": \"PLN\"}}</script></body></html>",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "Produkt po renderowaniu JS",
+      "price": "22.00",
+      "currency": "PLN"
+    },
+    {
+      "id": "api_json",
+      "url": "https://api-shop.example.org/v1/item/abc",
+      "method": "AUTHORIZED_JSON",
+      "mime": "application/json",
+      "body": "{\"product\": {\"name\": \"API Przyk\\u0142ad P2\", \"model\": \"P2\", \"offers\": {\"price\": \"15.25\", \"priceCurrency\": \"EUR\"}}}",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "API Przykład P2",
+      "price": "15.25",
+      "currency": "EUR"
+    },
+    {
+      "id": "api_root_jsonld",
+      "url": "https://api-shop.example.org/v2/item/abc",
+      "method": "AUTHORIZED_JSON",
+      "mime": "application/ld+json",
+      "body": "{\"@type\": \"Product\", \"name\": \"Wiertarka Sample A1\", \"offers\": {\"@type\": \"Offer\", \"price\": \"95.50\", \"priceCurrency\": \"EUR\"}}",
+      "status": "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+      "title": "Wiertarka Sample A1",
+      "price": "95.50",
+      "currency": "EUR"
+    },
+    {
+      "id": "multiple_products",
+      "url": "https://store.example.org/list",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><script type='application/ld+json'>[{\"@type\": \"Product\", \"name\": \"Wiertarka Sample A1\", \"offers\": {\"@type\": \"Offer\", \"price\": \"95.50\", \"priceCurrency\": \"EUR\"}}, {\"@type\": \"Product\", \"name\": \"Inny produkt poboczny\", \"offers\": {\"@type\": \"Offer\", \"price\": \"4\", \"priceCurrency\": \"PLN\"}}]</script></body></html>",
+      "status": "MULTIPLE_PRODUCTS_AMBIGUOUS"
+    },
+    {
+      "id": "jsonld_visible_conflict",
+      "url": "https://woocommerce.example.org/item/conflict",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><script type='application/ld+json'>{\"@type\": \"Product\", \"name\": \"Wiertarka Sample A1\", \"offers\": {\"@type\": \"Offer\", \"price\": \"95.50\", \"priceCurrency\": \"EUR\"}}</script><div class='elementor-widget-woocommerce-product-price'><p class='price'><bdi>99.00 EUR</bdi></p></div></body></html>",
+      "status": "PRICE_CONFLICT",
+      "title": "Wiertarka Sample A1"
+    },
+    {
+      "id": "multiple_offers",
+      "url": "https://store.example.org/item/variants",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><script type='application/ld+json'>{\"@type\": \"Product\", \"name\": \"Buty wielowariantowe\", \"offers\": [{\"@type\": \"Offer\", \"price\": \"100\", \"priceCurrency\": \"PLN\"}, {\"@type\": \"Offer\", \"price\": \"120\", \"priceCurrency\": \"PLN\"}]}</script></body></html>",
+      "status": "PRICE_CONFLICT",
+      "title": "Buty wielowariantowe"
+    },
+    {
+      "id": "index_only",
+      "url": "https://store.example.org/item/index",
+      "method": "INDEX_SNAPSHOT",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><script type='application/ld+json'>{\"@type\": \"Product\", \"name\": \"Wiertarka Sample A1\", \"offers\": {\"@type\": \"Offer\", \"price\": \"95.50\", \"priceCurrency\": \"EUR\"}}</script></body></html>",
+      "status": "INDEX_ONLY_UNVERIFIED",
+      "title": "Wiertarka Sample A1",
+      "price": "95.50",
+      "currency": "EUR"
+    },
+    {
+      "id": "captcha_200",
+      "url": "https://store.example.org/item/blocked",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<html><body>Please enable JS and disable any ad blocker</body></html>",
+      "status": "ACCESS_CHALLENGE"
+    },
+    {
+      "id": "denied_403",
+      "url": "https://store.example.org/item/denied",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "http_status": 403,
+      "body": "Forbidden",
+      "status": "ACCESS_DENIED"
+    },
+    {
+      "id": "unrelated_page",
+      "url": "https://store.example.org/about",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><h1>O nas</h1><p>Dostawa 15 zł, produkt 12 zł</p></body></html>",
+      "status": "PRODUCT_NOT_IDENTIFIED"
+    },
+    {
+      "id": "malformed_json",
+      "url": "https://api-shop.example.org/item/wrong",
+      "method": "AUTHORIZED_JSON",
+      "mime": "application/json",
+      "body": "{invalid json",
+      "status": "INVALID_JSON"
+    },
+    {
+      "id": "empty",
+      "url": "https://store.example.org/item/empty",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "",
+      "status": "CONTENT_EMPTY"
+    },
+    {
+      "id": "invalid_gtin",
+      "url": "https://store.example.org/item/ean",
+      "method": "STATIC_HTML",
+      "mime": "text/html",
+      "body": "<!doctype html><html><head></head><body><script type='application/ld+json'>{\"@type\": \"Product\", \"name\": \"Produkt z błędnym kodem\", \"gtin13\": \"1234567890123\", \"offers\": {\"@type\": \"Offer\", \"price\": \"20.00\", \"priceCurrency\": \"PLN\"}}</script></body></html>",
+      "status": "IDENTITY_CONFLICT",
+      "title": "Produkt z błędnym kodem"
+    }
+  ]
+}
