@@ -33,6 +33,17 @@ test("source rail reflects actual persisted worker statuses, not made-up verifie
   assert.equal(oldJob.state,"NO RECORDED CHECK");
   assert.match(oldJob.detail,/no per-URL fetch receipt/);
 });
+test("blocked primary HTTP 403 is explained instead of NO MATCHED SOURCE",()=>{
+  const input={...example,offer_queue:[
+    {id:"offer-0",title:"Laptop Dell",url:"https://shop.example.org/laptop"}],
+    graph:{offer_details:{"offer-0":{title:"Laptop Dell",
+      input_access_problem:"HTTP_403"}}},
+    evidence_offers:{"offer-0":{status:"NO_MATCHED_INDEPENDENT_SOURCE",
+      reference_answers:[]}}};
+  const row=live.sourceTasks(input)[0];
+  assert.equal(row.state,"HTTP 403 BLOCKED");
+  assert.match(row.detail,/cannot bypass denied access/);
+});
 test("right rail cycles unresolved checks when workers update, never converts them to answers",()=>{
   const list=live.questionTasks(example);
   assert.equal(list[0].state,"INFERENCE");

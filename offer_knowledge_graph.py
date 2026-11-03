@@ -469,6 +469,8 @@ def build_offer_knowledge_graph(projection):
                                llm.get("questions",[])[:6] if isinstance(x,dict)],
             "source_check_status":(evidence.get(oid) or {}).get("status",
                                  "NOT_STARTED"),
+            "input_access_problem":(str(intake.get("access_problem") or "")[:80]
+                                    if oid=="offer-0" else ""),
             "reference_observations":answers,
             "declared_claim_conflicts":disagreements[:12],
             "verified_exact_sku_answers":sum(x["status"]==

@@ -39,7 +39,7 @@ test("the page initializes graph after research READY without replacing saved au
 
 test("global graph keeps source contradictions visible without focusing a seller offer",()=>{
   const src=fs.readFileSync(path.join(__dirname,"../assets/offer-graph.js"),"utf8");
-  assert.ok(src.includes('graph.nodes.filter(n=>n.type==="source_disagreement").slice(0,3)'));
+  assert.ok(src.includes("layoutAllNodes(graph.nodes)"));
   assert.ok(src.includes('"DISCREPANCY_REQUIRES_SOURCE_REVIEW"'));
   assert.ok(src.includes('"UNRESOLVED PUBLISHED CLAIM"'));
   assert.ok(src.includes("Downloaded source SHA256: "));
@@ -54,7 +54,7 @@ test("focused graph displays published source facts, seller-page declarations an
   assert.ok(src.includes('"verification_gap"'));
   assert.ok(src.includes('"FACET_HAS_SOURCE_FACT"'));
   assert.ok(src.includes('"HAS_UNRESOLVED_VERIFICATION_GAP"'));
-  assert.ok(src.includes(".slice(0,32)"));
+  assert.ok(src.includes("const {layout,bounds}=layoutAllNodes(graph.nodes)"));
   assert.ok(!src.includes("slice(0,13)"));
   assert.ok(src.includes("root.dispatchEvent(new Event"));
   assert.ok(src.includes("visibleGraphNodes"));

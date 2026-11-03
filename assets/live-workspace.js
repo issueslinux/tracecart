@@ -33,7 +33,9 @@
   function sourceTasks(data){
     const g=data.graph||{},details=g.offer_details||{},result=data.evidence_offers||{};
     const offers=(data.offer_queue&&data.offer_queue.length?
-      data.offer_queue.map(o=>[o.id,{title:o.title,url:o.url}]):Object.entries(details));
+      data.offer_queue.map(o=>[o.id,{title:o.title,url:o.url,
+        input_access_problem:(details[o.id]||{}).input_access_problem}]):
+      Object.entries(details));
     const rows=[];
     const weight={RUNNING:0,QUEUED:1,REFERENCE:2,BLOCKED:3};
     offers.forEach(([id,d])=>{
@@ -53,6 +55,7 @@
         const rendered=attempts.find(a=>a.browser_status==="RENDERED_NO_MATCHED_PRODUCT_DATA");
         const capacity=attempts.find(a=>a.browser_status==="GRAPHICAL_BROWSER_CAPACITY_LIMIT");
         label=state.startsWith("INTERRUPTED")?"INTERRUPTED":
+          d.input_access_problem==="HTTP_403"?"HTTP 403 BLOCKED":
           rejected?"PAGE NOT RETRIEVED":mismatch?"MODEL NOT MATCHED":
           capacity?"BROWSER CAPACITY":rendered?"NO STRUCTURED DATA":
           attempts.length?"NO MATCHED DATA":d.url?"NO RECORDED CHECK":"NO SOURCE URL";
@@ -66,7 +69,9 @@
           (label==="REVIEW FOUND"?
            "Independent review · exact retailer variant still unproven.":
            "Real product page checked · declared specifications, not tests."):
-          mode==="BLOCKED"?(issue?
+          mode==="BLOCKED"?(label==="HTTP 403 BLOCKED"?
+            "Selected seller returned HTTP 403 to automated retrieval. The graphical renderer cannot bypass denied access.":
+            issue?
             "Robots, HTTP or network access prevented retrieval; graphical fallback cannot bypass it.":
             label==="BROWSER CAPACITY"?"Graphical renderer reached its bounded capacity; no source was invented.":
             label==="MODEL NOT MATCHED"?"Retrieved page did not identify this model; source facts were rejected.":
