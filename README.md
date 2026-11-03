@@ -729,6 +729,19 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## Fast hands-on TraceCart companion demo (2026-11-03)
+
+A separate local TraceCart staging instance at
+`http://127.0.0.1:8807/research/companion` on hexagony-01 was loaded
+with two public merchant observations by a real Chromium MV3 worker,
+using a disposable single-site test permission. This exercises the
+**running TraceCart HTTP UI and its actual research queue**, not a
+mock broker. The repeatable, explicit developer-only script is
+`benchmarks/browser_companion_running_app_demo.py`.
+For installation, pairing, own product URLs, receipts and limitations
+see [`docs/QUICKTEST_BROWSER_COMPANION_2026-11-03.md`](docs/QUICKTEST_BROWSER_COMPANION_2026-11-03.md).
+The live service on port 8781 is untouched.
+
 ## Browser companion permission controls (2026-11-03)
 
 The opt-in extension includes **Grant**, **Check permission**, and
