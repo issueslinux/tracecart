@@ -31,6 +31,7 @@ from guided_decision import build_decision_projection
 FLOW_ASSETS = {
     "/assets/decision-flow.css": ("text/css; charset=utf-8", "decision-flow.css"),
     "/assets/decision-flow.js": ("text/javascript; charset=utf-8", "decision-flow.js"),
+    "/assets/offer-graph.js": ("text/javascript; charset=utf-8", "offer-graph.js"),
 }
 
 FLOW_CSP = (
@@ -393,6 +394,21 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(output)
 
+    def send_knowledge_graph_projection(self, record):
+        """Read-only offer/claims/source graph. No paid queries or model calls."""
+        from offer_knowledge_graph import build_offer_knowledge_graph
+        graph=build_offer_knowledge_graph(build_decision_projection(record))
+        output=json.dumps(graph,ensure_ascii=False,
+                          separators=(",",":")).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type","application/json; charset=utf-8")
+        self.send_header("Cache-Control","no-store")
+        self.send_header("X-Content-Type-Options","nosniff")
+        self.send_header("Content-Security-Policy",FLOW_CSP)
+        self.send_header("Content-Length",str(len(output)))
+        self.end_headers()
+        self.wfile.write(output)
+
     def cart_status_page(self, job_id, result):
         """Read-only decision explorer, also for historical persisted jobs.
 
@@ -404,6 +420,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
               "decision-page.html").read_text(encoding="utf-8")
         substitutions={
             "{{DECISION_URL}}":"/cart/status/"+job_id+".decision.json",
+            "{{KNOWLEDGE_GRAPH_URL}}":"/cart/status/"+job_id+".knowledge-graph.json",
             "{{AUDIT_URL}}":"/cart/status/"+job_id+"/audit",
             "{{RAW_URL}}":"/cart/status/"+job_id+".json",
             "{{SHORT_ID}}":job_id[:8],
@@ -489,10 +506,12 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             question_page = suffix.endswith("/questions.json")
             audit = suffix.endswith("/audit")
             projected = suffix.endswith(".decision.json")
-            raw = suffix.endswith(".json") and not projected
+            knowledge_graph = suffix.endswith(".knowledge-graph.json")
+            raw = suffix.endswith(".json") and not (projected or knowledge_graph)
             job_id = (suffix[:-len("/questions.json")] if question_page else
                       suffix[:-len("/audit")] if audit else
                       suffix[:-len(".decision.json")] if projected else
+                      suffix[:-len(".knowledge-graph.json")] if knowledge_graph else
                       suffix[:-len(".json")] if raw else suffix)
             try:
                 result = self.server.cart_jobs.read(job_id)
@@ -545,6 +564,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                     self.send_page("<section class='error'>Invalid question page</section>", 400)
             elif projected:
                 self.send_flow_projection(result)
+            elif knowledge_graph:
+                self.send_knowledge_graph_projection(result)
             elif raw:
                 output = json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8")
                 self.send_response(200)

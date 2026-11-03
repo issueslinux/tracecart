@@ -537,6 +537,40 @@ class WebFlowTests(unittest.TestCase):
         self.assertFalse(report["root"]["children"][-1]
                          ["details"]["payment_authorized"])
 
+    def test_offer_knowledge_graph_http_distinguishes_claim_from_evidence(self):
+        from tests.test_ebike_research import sample_record
+        item=sample_record()
+        jid="G"*24
+        with self.server.cart_jobs._db() as db:
+            db.execute("""INSERT INTO cart_research_jobs
+                (id,item,state,created,result,error_type)
+                VALUES (?,?,?,?,?,NULL)""",
+                (jid,json.dumps(item["item"]),"READY",
+                 "2026-11-03T10:00:00Z",json.dumps(item["report"])))
+        status,page=self.request("GET","/cart/status/"+jid)
+        self.assertEqual(status,200)
+        self.assertIn("data-knowledge-graph=",page)
+        self.assertIn("offer-graph.js",page)
+        self.assertIn("OFFER / CLAIM / EVIDENCE GRAPH",page)
+        status,payload=self.request("GET",
+            "/cart/status/"+jid+".knowledge-graph.json")
+        self.assertEqual(status,200)
+        graph=json.loads(payload)
+        self.assertEqual(graph["schema_version"],
+                         "tracecart.offer-knowledge-graph.v1")
+        self.assertEqual(graph["stats"]["offers"],4)
+        self.assertEqual(graph["stats"]
+                         ["high_priority_unanswered_check_links"],96)
+        self.assertEqual(graph["stats"]["verified_exact_sku_answers"],0)
+        self.assertTrue(graph["provenance"]
+                        ["reference_review_proves_offer_variant"] is False)
+        self.assertTrue(all(q["relation"]!="VERIFIED_IDENTICAL_PRODUCT"
+                            for q in graph["edges"]))
+        status,script=self.request("GET","/assets/offer-graph.js")
+        self.assertEqual(status,200)
+        self.assertIn("TraceCartKnowledgeGraph",script)
+        self.assertIn("NOT a current seller checkout price",script)
+
     def test_ebike_questions_are_prioritized_and_source_claims_unverified(self):
         """The live JSON must no longer expose 12 mechanical probes per facet."""
         from tests.test_ebike_research import sample_record

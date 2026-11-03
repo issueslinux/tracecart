@@ -7,6 +7,7 @@
   <title>TraceCart — autonomous research</title>
   <link rel="stylesheet" href="/assets/decision-flow.css">
   <script defer src="/assets/decision-flow.js"></script>
+  <script defer src="/assets/offer-graph.js"></script>
 </head>
 <body class="flow-page">
   <header class="site-header"><div class="site-inner">
@@ -17,7 +18,7 @@
     <div class="site-meta">RESEARCH / <strong>EVIDENCE PATH</strong> <span class="separator">·</span> SANDBOX DEMO</div>
     <a class="site-link" href="/cart">+ New analysis <span aria-hidden="true">↗</span></a>
   </div></header>
-  <main class="workspace" id="decision-app" data-source="{{DECISION_URL}}" data-audit="{{AUDIT_URL}}" data-product-url="{{PRODUCT_URL}}">
+  <main class="workspace" id="decision-app" data-source="{{DECISION_URL}}" data-knowledge-graph="{{KNOWLEDGE_GRAPH_URL}}" data-audit="{{AUDIT_URL}}" data-product-url="{{PRODUCT_URL}}">
     <div class="workspace-topline"><span>01 / PRODUCT RESEARCH</span><span>NO BUYER QUESTIONS · NO PURCHASE</span></div>
     <section class="intro"><div class="intro-head">
       <div>
@@ -35,7 +36,7 @@
     <section class="research-layout" aria-label="Research evidence and conclusion">
       <div class="research-main">
         <div class="module-heading">
-          <span class="module-index">A / AUTOMATED EVIDENCE TREE</span>
+          <span class="module-index">A / CONNECTED EVIDENCE GRAPH &amp; RESEARCH PATH</span>
           <span id="flow-counter" class="module-counter">0 / 0</span>
         </div>
         <div id="flow-loading" class="loading-state" role="status" aria-live="polite">
@@ -43,6 +44,41 @@
           <h2>Building the research path…</h2>
           <p>Research and critic questions appear without any clicks or further input.</p>
         </div>
+        <section id="knowledge-graph-region" class="knowledge-graph-region" hidden
+          aria-label="Connected evidence graph of all offers">
+          <div class="subsection-heading">
+            <span>OFFER / CLAIM / EVIDENCE GRAPH</span>
+            <a href="{{KNOWLEDGE_GRAPH_URL}}" id="graph-export" class="fine-print"
+              target="_blank" rel="noopener noreferrer">EXPORT GRAPH JSON ↗</a>
+          </div>
+          <p class="kg-intro">All indexed offers connected by <strong>claimed</strong>
+            parameters and unresolved source checks. Shared numbers do not
+            prove identical hardware or an independent test. Select a node to
+            inspect its relationships and missing evidence.</p>
+          <div class="kg-toolbar" aria-label="Graph exploration controls">
+            <button type="button" id="kg-all" aria-pressed="false">All offers</button>
+            <button type="button" id="kg-input" aria-pressed="true">Input product</button>
+            <button type="button" id="kg-zoom-in" aria-label="Zoom in graph">+</button>
+            <button type="button" id="kg-zoom-out" aria-label="Zoom out graph">−</button>
+            <button type="button" id="kg-reset" aria-label="Reset graph zoom">Reset view</button>
+          </div>
+          <div id="kg-stats" class="kg-stats" aria-live="polite"></div>
+          <div class="kg-layout">
+            <div class="kg-viewport">
+              <svg id="kg-svg" viewBox="0 0 1000 640" role="img"
+                 aria-label="Connections between offers and unverified specifications. Click a node to inspect evidence."></svg>
+              <p class="kg-caveat">Offer → parameter: unverified title claim ·
+                Offer → question: missing evidence · Document → review result:
+                independently fetched reference, not necessarily this SKU.
+                Mouse wheel to zoom; drag to pan.</p>
+            </div>
+            <aside id="kg-details" class="kg-details" aria-live="polite">
+              <h3>Choose an offer or parameter</h3>
+              <p>The graph distinguishes declared specifications from independently
+                confirmed evidence and lists the next open research tasks.</p>
+            </aside>
+          </div>
+        </section>
         <div id="decision-graph" class="decision-graph" aria-live="polite" hidden></div>
         <div id="flow-final" hidden></div>
         <section id="offer-questions-region" class="alternatives-region" aria-live="polite">
