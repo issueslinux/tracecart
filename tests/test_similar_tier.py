@@ -45,7 +45,7 @@ class SimilarTierTests(unittest.TestCase):
         assessed=evaluate_alternative(self.title,
             "Evercross Rower elektryczny Ek15 27,5 MTB 250W 36V 25 km/h")
         self.assertEqual(assessed["status"],STATUS_POSSIBLE)
-        self.assertIn("pojemność akumulatora (Ah)",assessed["unconfirmed_features"])
+        self.assertIn("battery capacity (Ah)",assessed["unconfirmed_features"])
 
     def test_500w_and_5ah_are_other_tier(self):
         for description in (
@@ -151,11 +151,11 @@ class SimilarTierTests(unittest.TestCase):
         self.assertTrue(all("functional_alternative" in n["details"]
                             for n in node["children"] if n["kind"]=="indexed_search_card"))
         html=shopping_search_panel(report)
-        self.assertIn("PODOBNA PÓŁKA",html)
+        self.assertIn("SIMILAR SPECIFICATIONS",html)
         self.assertIn("3399.00",html)
         self.assertIn("Orzel C27",html)
-        self.assertIn("nie niezależna ocena jakości",html)
-        self.assertIn("szukaj w Google Shopping",html)
+        self.assertIn("NOT independent quality testing",html)
+        self.assertIn("Search Google Shopping",html)
 
 
 if __name__ == "__main__":
@@ -188,7 +188,7 @@ class BatteryEnergyAndConditionTests(unittest.TestCase):
         result=enrich_alternatives(a,[],c)
         self.assertEqual(result["ranked_alternatives"][0]["comparison"]["status"],
                          STATUS_POSSIBLE)
-        self.assertIn("Różny deklarowany stan",
+        self.assertIn("Different advertised condition",
                       result["ranked_alternatives"][0]["comparison"]["condition_difference"])
 
     def test_unknown_condition_never_claimed_new(self):

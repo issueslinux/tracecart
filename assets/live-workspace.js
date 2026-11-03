@@ -233,17 +233,131 @@
     return verdict==="NOT_SCHEDULED" &&
       snapshot.progress_stage==="PER_OFFER_MODEL_COMPLETE";
   }
+  // Technical link checks are NOT a merchant fraud clearance.
+  const linkSignals={
+    INVALID_OR_UNSAFE_LINK:"Unsafe or malformed URL",
+    DESTINATION_NOT_PUBLIC:"DNS returned a private or non-public destination",
+    DNS_LOOKUP_UNAVAILABLE:"DNS could not be verified",
+    TLS_CERTIFICATE_OR_CONNECTION_NOT_VERIFIED:"TLS certificate/connection could not be verified",
+    TLS_NOT_VERIFIED:"TLS certificate could not be confirmed",
+    RECENTLY_REGISTERED_DOMAIN_UNDER_90_DAYS:"Domain registered less than 90 days ago",
+    PUNYCODE_DOMAIN_REVIEW:"Internationalized domain requires visual review",
+    BRAND_NAME_IN_THIRD_PARTY_SUBDOMAIN:"Brand name appears in a third-party subdomain",
+    CHECK_NOT_COMPLETED:"Automated check was incomplete",
+    HOST_LIMIT_REACHED:"Automated host-check limit reached",
+  };
+  const linkSafetyLabels={
+    HIGH_RISK_SIGNALS:"Unsafe URL signals",
+    REVIEW_REQUIRED:"Review recommended",
+    BASIC_TECHNICAL_CHECKS_PASSED:"Basic network checks passed",
+    INCONCLUSIVE:"Not enough information",
+  };
+  function renderLinkSafety(target,snapshot) {
+    if(!target)return;
+    const report=snapshot.link_safety||{};
+    target.hidden=!report.status||report.status==="NOT_STARTED";
+    if(target.hidden)return;
+    target.replaceChildren();
+    const head=item("div","link-safety-header");
+    head.appendChild(item("strong","","Retailer link safety checks"));
+    head.appendChild(item("span","link-safety-tag",
+      report.status==="RUNNING"?"Checking domains…":
+      report.status==="COMPLETE"?"Technical signals only":"Incomplete screening"));
+    target.appendChild(head);
+    if(report.status==="RUNNING"){
+      target.appendChild(item("p","link-safety-disclaimer",
+        "Checking HTTPS, public DNS, certificate validity and available domain registration data. This does not certify a shop."));
+      return;
+    }
+    const links=Array.isArray(report.links)?report.links:[];
+    const bad=links.filter(x=>["HIGH_RISK_SIGNALS","REVIEW_REQUIRED"].includes((x.risk||{}).status));
+    const inputOnly=Number(report.index_cards_without_direct_url||0);
+    target.appendChild(item("p","link-safety-summary",
+      links.length+" unique links inspected · "+bad.length+
+      " flagged for review · "+inputOnly+
+      " search-index cards have no direct retailer URL."));
+    const disclosure=document.createElement("details");
+    disclosure.className="link-safety-disclosure";
+    disclosure.open=bad.length>0;
+    const summary=document.createElement("summary");
+    summary.textContent="Inspect all "+links.length+" URL assessments";
+    disclosure.appendChild(summary);
+    const rows=item("div","link-safety-list");
+    links.forEach(entry=>{
+      const result=entry.risk||{},reg=result.registration||{};
+      const row=item("div","link-safety-row");
+      row.appendChild(item("span","link-safety-domain",entry.domain||
+        "Invalid/unsafe URL"));
+      const kind=linkSafetyLabels[result.status]||"Not assessed";
+      row.appendChild(item("span","link-safety-rating",kind));
+      const attrs=[];
+      if(result.dns_status==="PUBLIC_ADDRESS")attrs.push("Public DNS");
+      if(result.tls_status==="VALID_CERTIFICATE")attrs.push("Valid HTTPS certificate");
+      if(reg.registered_at)attrs.push("Registered: "+reg.registered_at);
+      else attrs.push("Registration date unavailable");
+      attrs.push("Store legitimacy NOT verified");
+      if((result.signals||[]).length)attrs.push(
+        "Signals: "+result.signals.map(x=>linkSignals[x]||x).join("; "));
+      row.appendChild(item("p","link-safety-facts",attrs.join(" · ")));
+      if(entry.url_check==="PUBLIC_HTTPS_URL_SYNTAX" &&
+         result.status!=="HIGH_RISK_SIGNALS"){
+        const a=document.createElement("a");
+        a.href=entry.url;a.rel="noopener noreferrer";a.target="_blank";
+        a.textContent="Visit listing (external)";
+        row.appendChild(a);
+      }
+      rows.appendChild(row);
+    });
+    disclosure.appendChild(rows);
+    target.appendChild(disclosure);
+    target.appendChild(item("p","link-safety-disclaimer",
+      report.disclaimer||
+      "HTTPS and an older domain do not prove that a merchant is legitimate. No independent fraud database has been checked."));
+  }
+  function offerSafetyLabel(report,offerId) {
+    const entry=((report||{}).links||[]).find(x=>
+      (x.offer_ids||[]).includes(offerId));
+    if(!entry)return "Merchant identity not checked (no direct link or receipt)";
+    const result=entry.risk||{};
+    return (linkSafetyLabels[result.status]||"Link safety not confirmed")+
+      " · Merchant legitimacy not verified";
+  }
+
   function renderPurchaseAlternatives(target,snapshot,app,report){
     if(!report||typeof report!=="object")return;
     const options=Array.isArray(report.options)?report.options:[];
+    const unitMode=report.pricing_basis==="INDEXED_NORMALIZED_UNIT_RATE_NOT_CHECKOUT";
+    const moreExpensive=Array.isArray(report.higher_priced_comparables)?
+      report.higher_priced_comparables:[];
     const tradeoffs=Array.isArray(report.tradeoffs)?report.tradeoffs:[];
     const container=item("section","purchase-insights");
-    container.appendChild(item("h3","","Czy są ciekawsze lub tańsze alternatywy?"));
+    container.appendChild(item("h3","",
+      unitMode?"How do comparable pack sizes and unit prices differ?":
+      report.selected_price?"Do cheaper comparable alternatives exist?":
+      "Are there better-value or cheaper alternatives?"));
+    if(report.selected_price){
+      const note=item("div","purchase-input-baseline");
+      note.appendChild(item("strong","",
+        "Selected seller observed price: "+report.selected_price));
+      note.appendChild(item("p","",
+        "Evidence: "+String(report.selected_price_source||"NOT_VERIFIED").replace(/_/g," ")+
+        ". This is not a verified checkout total."));
+      if(report.promotion_code){
+        note.appendChild(item("p","",
+          "Promo code: "+report.promotion_code+
+          (report.promotion_valid_until?
+            " · Listed valid until: "+report.promotion_valid_until:"")+
+          " · Apply the code and check final price before purchasing."));
+      }
+      container.appendChild(note);
+    }
     container.appendChild(item("p","purchase-market-note",
+      unitMode?"Unit costs use prices and pack sizes stated only in search-index cards. "+
+        "They do not confirm the actual retailer total, stock or product equivalence.":
       report.market_reference?
-      "Mediana cen porównywalnych ofert w indeksie: "+report.market_reference+
-      " — to NIE cena wybranego sklepu ani gwarantowana oszczędność.":
-      "Brak wiarygodnej ceny porównawczej; dane ofert są niepełne."));
+      "Median of comparable indexed listings: "+report.market_reference+
+      " — not the selected store price or verified savings.":
+      "No reliable price baseline; listing data is incomplete."));
     function addGroup(rows,heading){
       if(!rows.length)return;
       container.appendChild(item("h4","",heading));
@@ -251,29 +365,33 @@
       rows.forEach(row=>{
         const card=item("article","purchase-option");
         const summary=item("div","purchase-option-heading");
-        summary.appendChild(item("strong","",row.title||"Oferta"));
+        summary.appendChild(item("strong","",row.title||"Listing"));
         summary.appendChild(item("span","purchase-price",
-          (row.price||"Cena nieznana")+" "+(row.currency||"")));
+          (row.price||"Price unavailable")+" "+(row.currency||"")));
         card.appendChild(summary);
-        if(row.vs_index_median)
+        if(row.unit_comparison_label)
+          card.appendChild(item("p","purchase-relative",
+            "Indexed unit quote: "+row.unit_comparison_label+
+            " · derived from advertised pack size"));
+        else if(row.vs_index_median)
           card.appendChild(item("p","purchase-relative",row.vs_index_median));
         if((row.matched_features||[]).length)
           card.appendChild(item("p","purchase-matches",
-            "Podobne parametry z tytułów: "+
+            "Advertised comparable specifications: "+
             row.matched_features.slice(0,4).join(" · ")));
         if((row.different_features||[]).length)
           card.appendChild(item("p","purchase-diff",
-            "Różnice: "+row.different_features.slice(0,3).join(" · ")));
+            "Differences: "+row.different_features.slice(0,3).join(" · ")));
         if((row.unconfirmed_features||[]).length)
           card.appendChild(item("p","purchase-unknown",
-            "Niepotwierdzone: "+row.unconfirmed_features.slice(0,3).join(", ")));
+            "Unconfirmed: "+row.unconfirmed_features.slice(0,3).join(", ")));
         if((row.highlights||[]).length)
           card.appendChild(item("p","purchase-highlight",
-            "Możliwa zaleta: "+row.highlights.join("; ")));
+            "Potential advantage: "+row.highlights.join("; ")));
         const actions=item("div","purchase-actions");
         const controller=app._traceCartGraphController;
         if(row.offer_id&&controller&&controller.graph.nodes.some(n=>n.id===row.offer_id)){
-          const button=item("button","","Pokaż ofertę w grafie");
+          const button=item("button","","Highlight offer in graph");
           button.type="button";
           button.addEventListener("click",()=>controller.select(row.offer_id));
           actions.appendChild(button);
@@ -284,33 +402,62 @@
             if(u.protocol==="https:"||u.protocol==="http:"){
               const a=document.createElement("a");
               a.href=u.href;a.target="_blank";a.rel="noopener noreferrer";
-              a.textContent="Otwórz stronę z indeksu ↗";
+              a.textContent="Open indexed listing ↗";
               actions.appendChild(a);
             }
           }catch(_ignore){}
         }else {
           actions.appendChild(item("small","",
-            "Brak bezpośredniego adresu sklepu w wynikach wyszukiwania."));
+            "No direct retailer URL was provided by the search index."));
         }
         card.appendChild(actions);
+        card.appendChild(item("p","purchase-link-safety",
+          offerSafetyLabel(snapshot.link_safety,row.offer_id)));
         cards.appendChild(card);
       });
       container.appendChild(cards);
     }
-    addGroup(options,"Podobna deklarowana konfiguracja");
-    addGroup(tradeoffs,"Tańsze lub inne warianty — sprawdź różnice");
+    addGroup(options,unitMode?
+      "Comparable advertised packs · ranked by indexed cost per unit":
+      "Potentially cheaper, comparable configurations");
+    addGroup(tradeoffs,unitMode?
+      "Pack or product variant not confirmed":
+      "Cheaper with specification differences");
+    if(unitMode&&(report.different_variant_listings||[]).length){
+      container.appendChild(item("p","purchase-disclaimer",
+        (report.different_variant_listings||[]).length+
+        " indexed listings have a different declared variant and were not "+
+        "treated as equivalent products."));
+    }
+    if(moreExpensive.length){
+      const disclosure=document.createElement("details");
+      disclosure.className="purchase-expensive";
+      const label=document.createElement("summary");
+      label.textContent=moreExpensive.length+
+        " higher-priced comparable listings — not recommended on price";
+      disclosure.appendChild(label);
+      const expensive=item("div","purchase-expensive-lines");
+      moreExpensive.forEach(row=>{
+        expensive.appendChild(item("p","",
+          row.title+": "+row.price+" "+row.currency+" ("+
+          (row.vs_selected_price||"no demonstrated value improvement")+
+          "). Price is only from the search index."));
+      });
+      disclosure.appendChild(expensive);
+      container.appendChild(disclosure);
+    }
     const anomalies=Array.isArray(report.suspicious_price_quotes)?
       report.suspicious_price_quotes:[];
     if(anomalies.length){
       const amounts=[...new Set(anomalies.map(x=>
         (x.indexed_price||"?")+" "+(x.currency||"")))];
       container.appendChild(item("p","purchase-anomaly",
-        "Pominięto "+anomalies.length+" podejrzanie niskie ceny z indeksu ("+
-        amounts.join(", ")+"). Nie stanowią wiarygodnej ceny sprzętu."));
+        "Excluded "+anomalies.length+" suspiciously low indexed prices ("+
+        amounts.join(", ")+"). These are not reliable purchase prices."));
     }
     container.appendChild(item("p","purchase-disclaimer",
       report.disclaimer||
-      "Tytuły i ceny z wyszukiwarki nie dowodzą zgodności konfiguracji ani ceny zakupu."));
+      "Search titles and prices do not confirm an identical configuration or checkout total."));
     target.appendChild(container);
   }
 
@@ -326,13 +473,13 @@
     if(target.hidden)return;
     target.replaceChildren();
     const head=item("div","verdict-head");
-    const title=v.status==="COMPLETE"?"Wynik porównania ofert":
-      v.status==="UNAVAILABLE"?"Wynik porównania · model niedostępny":
+    const title=v.status==="COMPLETE"?"Offer comparison results":
+      v.status==="UNAVAILABLE"?"Offer comparison · model unavailable":
       legacy?"Research result · earlier saved job":"Research interrupted";
     head.appendChild(item("strong","",title));
     const tag=item("span","verdict-tag"+(v.status==="UNAVAILABLE"?" unavailable":""),
-      v.status==="COMPLETE"?"Qwen: ocena warunkowa · ceny indeksowe":
-      v.status==="UNAVAILABLE"?"Qwen: przekroczony czas · analiza źródłowa":
+      v.status==="COMPLETE"?"Local Qwen · conditional assessment · indexed prices":
+      v.status==="UNAVAILABLE"?"Local Qwen timed out · source-based assessment":
       "Research from archived job");
     head.appendChild(tag);target.appendChild(head);
     const text=v.summary || (
@@ -344,14 +491,18 @@
     target.appendChild(item("p","verdict-summary",text));
     if(v.status==="COMPLETE")
       target.appendChild(item("p","verdict-tag",
-        v.verdict==="COMPARE_WITH_CAUTION"?"Warto porównać — niezweryfikowane ceny":
-        v.verdict==="INSUFFICIENT_EVIDENCE"?"Możliwe alternatywy, brak potwierdzenia zakupu":
-        "Brak porównywalnych ofert w dostępnych danych"));
+        v.purchase_insights?.status==="UNIT_PRICE_LEADS_NOT_CHECKOUT"?
+          "Compare unit costs · retailer price and variant unverified":
+        v.purchase_insights?.status==="SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS"?
+          "Input offer leads on observed price · verify checkout":
+        v.verdict==="COMPARE_WITH_CAUTION"?"Worth comparing — prices unverified":
+        v.verdict==="INSUFFICIENT_EVIDENCE"?"Potential alternatives; checkout not verified":
+        "No comparable listing evidence found"));
     renderPurchaseAlternatives(target,snapshot,app,v.purchase_insights);
     const findings=(v.observations||[]).filter(x=>x&&typeof x.text==="string");
     if(findings.length){
       target.appendChild(item("h4","purchase-facts-title",
-        "Istotne parametry ze znalezionych dokumentów"));
+        "Key documented product specifications"));
       const group=item("div","verdict-findings");
       findings.forEach((finding,i)=>{
         const card=item("div","verdict-finding");
@@ -373,10 +524,10 @@
       target.appendChild(group);
     }
     if(v.next_step)
-      target.appendChild(item("p","verdict-next","Co jeszcze sprawdzić: "+v.next_step));
+      target.appendChild(item("p","verdict-next","Next research step: "+v.next_step));
     target.appendChild(item("p","verdict-limits",
-      "Parametry w tytułach i deklaracje sprzedawców nie są testami. "+
-      "Ceny z indeksu nie są cenami końcowymi. Nie autoryzowano zakupu."+
+      "Search-title specifications and seller claims are not independent tests. "+
+      "Index prices are not checkout totals. No purchase was authorized."+
       (v.status==="COMPLETE" && v.coverage&&v.coverage.observations_omitted?
        " Local-model context omitted "+v.coverage.observations_omitted+
        " source observations; full audit remains available.":"")));
@@ -386,7 +537,9 @@
     const app=$("decision-app");
     if(!app||!window.TraceCartKnowledgeGraph)return;
     const status=$("job-state"),form=$("product-form"),button=form.querySelector("button");
-    const verdictBox=$("live-verdict");
+    const verdictBox=$("live-verdict"),linkSafetyBox=$("link-safety");
+    const priceCorrection=$("input-price-correction");
+    if(priceCorrection)priceCorrection.hidden=!app.dataset.live;
     function setBusy(busy) {
       button.disabled=busy;
       button.classList.toggle("is-analyzing",busy);
@@ -409,10 +562,9 @@
       const stats=graph&&graph.stats||{};
       $("live-graph-count").textContent=
         (stats.offers||0)+" offers · "+
-        (app.dataset.visibleGraphNodes||"0")+" nodes visible · "+
-        Math.max(0,(graph.nodes||[]).length-
-          Number(app.dataset.visibleGraphNodes||0))+" empty checks hidden · "+
-        (app.dataset.visibleGraphLinks||"0")+" displayed links";
+        (app.dataset.visibleGraphNodes||"0")+" evidence/offer cards · "+
+        (stats.unverified_index_quotes||0)+" indexed prices inside offer cards · "+
+        (stats.focused_verification_gaps||0)+" unresolved checks in audit";
       const activity=snapshot.evidence_progress||{};
       const pendingSource=Object.values(snapshot.evidence_offers||{})
         .filter(x=>["RUNNING","QUEUED"].includes(x.status)).length;
@@ -444,6 +596,7 @@
       const researchDone=isTerminal(snapshot);
       setBusy(!researchDone);
       renderVerdict(verdictBox,snapshot,app);
+      renderLinkSafety(linkSafetyBox,snapshot);
       const finalStatus=(snapshot.final_verdict||{}).status;
       status.textContent=snapshot.state==="FAILED"?"Research failed":
         snapshot.state==="INTERRUPTED"?"Research interrupted":
@@ -551,7 +704,7 @@
   }
   if(typeof module!=="undefined"&&module.exports)
     module.exports={sourceTasks,questionTasks,emptyGraph,
-      isTerminal,renderVerdict};
+      isTerminal,renderVerdict,renderLinkSafety,offerSafetyLabel};
   if(typeof document!=="undefined"){
     if(document.readyState==="loading")
       document.addEventListener("DOMContentLoaded",boot,{once:true});

@@ -77,11 +77,11 @@ class PurchaseInsightsTests(unittest.TestCase):
         self.assertEqual(options[0]["tier"],"SIMILAR_TITLE_SPEC_TIER")
         self.assertFalse(options[0]["identity_verified"])
         self.assertFalse(options[0]["checkout_verified"])
-        self.assertIn("ekran dotykowy",options[0]["highlights"][0])
+        self.assertIn("Touchscreen",options[0]["highlights"][0])
         self.assertEqual(options[0]["price_node_id"],"price:offer-3")
         self.assertIsNone(options[0]["source_url"])
         self.assertFalse(out["selected_price_available_in_seller_page"])
-        self.assertIn("nie da się uczciwie stwierdzić",out["headline"])
+        self.assertIn("no confirmed saving can be calculated",out["headline"])
 
     def test_139_95_not_declared_the_cheapest_new_laptop(self):
         out=build_purchase_insights(example())
@@ -104,7 +104,7 @@ class PurchaseInsightsTests(unittest.TestCase):
         self.assertEqual(result["purchase_insights"]["status"],
                          "COMPARABLE_INDEX_OFFERS_FOUND")
         self.assertTrue(result["observations"])
-        self.assertTrue(result["observations"][0]["text"].startswith("model procesora"))
+        self.assertTrue(result["observations"][0]["text"].casefold().startswith("processor"))
         self.assertFalse(any(x["text"]=="185643" for x in result["observations"]))
         self.assertIn("3399.96",result["summary"])
         self.assertFalse(result["payment_authorized"])

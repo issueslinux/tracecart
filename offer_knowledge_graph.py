@@ -10,6 +10,7 @@ import re
 
 from offer_question_bank import AXES, PROBES, questions_for_offer
 from similar_tier import PUBLIC_SPEC_NAMES, read_specs
+from title_facts import title_facts, unit_price
 
 MAX_OFFERS = 33
 MAX_CLAIMS_PER_OFFER = 20
@@ -242,6 +243,9 @@ def build_offer_knowledge_graph(projection):
                  offer_kind=kind,source=offer.get("source"),
                  url=offer.get("url"),provenance=provenance,
                  question_count=offer.get("question_count",0))
+        if oid!="offer-0":
+            add_edge("offer-0",oid,"ALTERNATIVE_INDEX_LEAD",
+                     status="SEARCH_RESULT_NOT_VERIFIED_EQUIVALENT")
         if search_lead_ids:
             from generic_source_research import product_identity
             identity=product_identity(offer.get("title",""))
@@ -259,6 +263,12 @@ def build_offer_knowledge_graph(projection):
                 add_edge(oid,family_id,"INDEX_TITLE_MATCHES_DECLARED_MODEL",
                     status="UNVERIFIED_EXACT_SKU_MATCH")
         specs=read_specs(offer.get("title",""),category)
+        # Generic quantity/pack/usage facts supplement category-specific
+        # specs across detergents, groceries, cosmetics, tools and electronics.
+        # They are title claims only, never a matched seller SKU or lab test.
+        generic_facts=title_facts(offer.get("title",""),category)
+        normalized_price=unit_price(offer.get("indexed_price"),
+                                   offer.get("currency"),generic_facts)
         # URL title can be truncated/synthetic. All fields are *claims*.
         listing_claims=[]
         spec_node_ids={}
@@ -281,6 +291,21 @@ def build_offer_knowledge_graph(projection):
                                    "value":value,"node_id":nid,
                                    "status":claim_status})
             spec_node_ids[key]=nid
+            count_titles+=1
+        for fact in generic_facts:
+            if fact["key"].startswith("spec_"):
+                continue # Already linked by the category parser above.
+            raw_value=str(fact["value"])
+            nid=add_node("spec:"+_key(("GENERIC",fact["key"],raw_value)),
+                         "title_claim",fact["label"],
+                         parameter=fact["key"],value=raw_value,unit=fact.get("unit"),
+                         claim_status="UNVERIFIED_TITLE_LABEL")
+            add_edge(oid,nid,"TITLE_MENTIONS",
+                     status="UNVERIFIED_TITLE_LABEL",provenance=provenance)
+            listing_claims.append({"parameter":fact["key"],
+                                   "label":fact["label"],
+                                   "value":raw_value,"node_id":nid,
+                                   "status":"UNVERIFIED_TITLE_LABEL"})
             count_titles+=1
         if "battery_wh" in spec_node_ids:
             for field in ("battery_ah","battery_voltage_v"):
@@ -460,6 +485,9 @@ def build_offer_knowledge_graph(projection):
             "title":offer.get("title"),"source":offer.get("source"),
             "kind":kind,"url":offer.get("url"),
             "indexed_price":price,"claim_provenance":provenance,
+            "title_facts":generic_facts,
+            "unit_price":normalized_price,
+            "input_price":(projection.get("input_price") if oid=="offer-0" else None),
             "claims":listing_claims,
             "high_impact_questions":gap_summary["open_questions"],
             "source_coverage":gap_summary,

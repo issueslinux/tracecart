@@ -451,7 +451,7 @@ class WebFlowTests(unittest.TestCase):
         status,audit=self.request("GET","/cart/status/"+jid+"/audit")
         self.assertEqual(status,200)
         self.assertIn("catalog_alternatives_found:",audit)
-        self.assertIn("Ważne: różne źródła mają osobne liczniki",audit)
+        self.assertIn("Important: evidence sources have separate counts",audit)
         self.assertIn("12",audit)
         status,raw=self.request("GET","/cart/status/"+jid+".json")
         self.assertEqual(status,200)

@@ -127,7 +127,21 @@ def _best_sourced_observations(graph,limit=5):
     for rank,node_id,key,value in candidates:
         if rank in seen_rank:continue
         seen_rank.add(rank)
-        accepted.append({"text":key+": "+value,"evidence_ids":[node_id]})
+        translated={
+            "model procesora":"Processor",
+            "zainstalowana pojemność pamięci ram":"Installed RAM",
+            "pojemność dysku podstawowego":"Storage capacity",
+            "pojemność baterii":"Battery capacity",
+            "typ matrycy":"Display panel",
+            "rozdzielczość ekranu":"Display resolution",
+            "waga":"Weight",
+            "maksymalne ciśnienie":"Maximum pressure",
+            "moc silnika":"Motor power",
+        }
+        english=translated.get(key,key if key.isascii() else
+            "Documented "+["processor","RAM","storage","battery",
+                             "display","weight","power","speed"][min(rank,7)])
+        accepted.append({"text":english+": "+value,"evidence_ids":[node_id]})
         if len(accepted)>=limit:break
     return accepted
 
@@ -153,10 +167,10 @@ def insufficient_verdict(graph,error_type="MODEL_UNAVAILABLE",projection=None):
     if comparison["status"]=="COMPARABLE_INDEX_OFFERS_FOUND":
         summary=comparison["headline"]
     else:
-        summary=(comparison["headline"]+" Zebrano "+str(documented)+
-                 " deklaracji parametrów ze źródeł, "+str(independent)+
-                 " niezależnych pomiarów i "+str(index_quotes)+
-                 " cen indeksowych.")
+        summary=(comparison["headline"]+" Source audit: "+str(documented)+
+                 " published technical declarations, "+str(independent)+
+                 " independent measurements, and "+str(index_quotes)+
+                 " unverified indexed prices.")
     observations=_best_sourced_observations(graph)
     return {
         "status":"UNAVAILABLE",
@@ -164,9 +178,9 @@ def insufficient_verdict(graph,error_type="MODEL_UNAVAILABLE",projection=None):
         "model":None,"verdict":"INSUFFICIENT_EVIDENCE",
         "summary":summary,"observations":observations,
         "purchase_insights":comparison,
-        "next_step":("Sprawdź bezpośrednie strony pierwszych porównywalnych ofert, "
-                     "różnice w ekranie, pamięci i procesorze oraz cenę z dostawą. "
-                     "Nie zakładaj, że wynik indeksu jest ceną zakupu."),
+        "next_step":( "Inspect the leading comparable retailer pages, "
+                      "screen/storage/CPU trade-offs and delivered totals. "
+                     "Do not treat an indexed quote as a checkout price."),
         "error_type":_label(error_type,75),
         "payment_authorized":False,
         "verification":"NO_VERIFIED_BEST_BUY",

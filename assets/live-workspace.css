@@ -193,3 +193,184 @@ body.live-page{font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-se
 .live-verdict{max-height:45vh}
 @media(max-width:800px){.purchase-options{grid-template-columns:1fr}
  .live-verdict{max-height:48vh}}
+
+/* Merchant link checks: diagnostic signals, never a "safe store" badge. */
+.link-safety{padding:10px 19px;border-bottom:1px solid #bcd0c3;
+ background:#f5f8f5;color:#234433;max-height:27vh;overflow-y:auto}
+.link-safety[hidden]{display:none}
+.link-safety-header{display:flex;justify-content:space-between;
+ flex-wrap:wrap;gap:8px;align-items:center}
+.link-safety-header strong{font-size:13px}
+.link-safety-tag{font:10px var(--mono);color:#587762}
+.link-safety-summary,.link-safety-disclaimer,.purchase-link-safety{
+ font:10px/1.5 var(--mono);color:#687a69;margin:6px 0}
+.purchase-link-safety{border-top:1px solid #e4eee6;padding-top:6px}
+.link-safety-disclosure{margin-top:7px}
+.link-safety-disclosure summary{cursor:pointer;color:#315f44;font:600 11px var(--mono)}
+.link-safety-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+ gap:7px;margin-top:8px}
+.link-safety-row{border:1px solid #d0dfd3;background:#fff;border-radius:5px;
+ padding:7px 9px;min-width:0}
+.link-safety-domain{font:600 11px var(--mono);overflow-wrap:anywhere}
+.link-safety-rating{display:block;font:600 10px var(--mono);margin-top:4px;color:#946224}
+.link-safety-facts{font:10px/1.45 var(--mono);color:#65796b;margin:5px 0}
+.link-safety-row a{font:10px var(--mono);color:#356c54;text-decoration:underline}
+@media(max-width:800px){.link-safety{max-height:32vh;padding:8px 12px}
+ .link-safety-list{grid-template-columns:1fr}}
+
+/* Reference price is mandatory for a meaningful cheaper-than comparison.
+   The user may supply a browser-observed price if HTTP 403 blocked intake. */
+.live-url-form input[name="observed_price"]{width:135px;min-width:115px;flex:0 1 135px}
+.live-url-form input[name="promotion_code"]{width:125px;min-width:105px;flex:0 1 125px}
+.observed-price-correction{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+ padding:8px 18px;border-bottom:1px solid #d3e3d8;background:#f5faf6;
+ font:11px/1.4 var(--mono);color:#385444}
+.observed-price-correction[hidden]{display:none}
+.observed-price-correction label{font-weight:650}
+.observed-price-correction input{border:1px solid #bfcec2;border-radius:4px;
+ padding:5px 8px;max-width:155px;background:#fff;font-size:12px;color:#1d4030}
+.observed-price-correction button{border:1px solid #b9d7c3;border-radius:4px;
+ background:#e4f2e7;color:#276044;cursor:pointer;font:600 11px var(--mono);
+ padding:6px 11px}
+.purchase-input-baseline{border-left:4px solid #278753;padding:9px 12px;
+ margin:6px 0 10px;background:#e6f5e9;color:#234d34}
+.purchase-input-baseline strong{font-size:14px}
+.purchase-input-baseline p{font:11px/1.5 var(--mono);margin:5px 0 0;color:#446452}
+.purchase-expensive{border:1px solid #e2c8a8;background:#fff8ee;
+ padding:10px;border-radius:6px;margin:12px 0}
+.purchase-expensive summary{font:600 11px var(--mono);color:#865a28;cursor:pointer}
+.purchase-expensive-lines{font:10px/1.5 var(--mono);color:#63492c}
+.purchase-expensive-lines p{margin:8px 0}
+@media(max-width:900px){.live-url-form input[name="observed_price"]{max-width:115px}
+ .live-url-form input[name="promotion_code"]{max-width:110px}}
+
+/* Category-neutral offer map. Each card carries actual indexed price,
+   declared pack/quantity and unit quote; no generic empty check bubbles. */
+.live-stage .kg-viewport{
+ background:radial-gradient(circle at 50% 0%,#f0f7ef 0%,#f9fbf8 38%,#fcfdfb 100%)
+}
+.live-stage .kg-section-title{
+ font:700 13px/1 var(--mono);letter-spacing:1.1px;fill:#708a7a
+}
+.live-stage .kg-card-node{cursor:pointer;outline:none}
+.live-stage .kg-card-node .kg-card-bg{
+ fill:#fff;stroke:#c4d5c7;stroke-width:1.45;
+ filter:drop-shadow(0px 2px 2px rgba(25,57,36,.07))
+}
+.live-stage .kg-card-node.kg-type-offer .kg-card-bg{fill:#fff}
+.live-stage .kg-card-node.kg-type-offer[data-node-id="offer-0"] .kg-card-bg{
+ fill:#e8f3eb;stroke:#39805c;stroke-width:2.5
+}
+.live-stage .kg-card-node.kg-selected .kg-card-bg,
+.live-stage .kg-card-node.kg-active .kg-card-bg{
+ stroke:#188055;stroke-width:3;fill:#f0fbf2
+}
+.live-stage .kg-card-node:hover .kg-card-bg,
+.live-stage .kg-card-node:focus-visible .kg-card-bg{
+ stroke:#1b8157;stroke-width:2.5
+}
+.live-stage .kg-card-node .kg-card-eyebrow{
+ fill:#718579;font:700 11px var(--mono);letter-spacing:.45px
+}
+.live-stage .kg-card-node[data-node-id="offer-0"] .kg-card-eyebrow{fill:#316e48}
+.live-stage .kg-card-node .kg-card-title{
+ fill:#233e2e;font:650 15px var(--text)
+}
+.live-stage .kg-card-node .kg-card-subtitle{
+ fill:#5d7868;font:11px var(--mono)
+}
+.live-stage .kg-card-node .kg-card-price{
+ fill:#1b4e34;font:750 14px var(--mono)
+}
+.live-stage .kg-card-node .kg-card-input-price{fill:#276f49}
+.live-stage .kg-card-node .kg-card-unit{
+ fill:#357a55;font:700 10px var(--mono)
+}
+.live-stage .kg-card-node .kg-card-fact{
+ fill:#3b5346;font:600 13px var(--text)
+}
+.live-stage .kg-links path.kg-link-alternative{
+ stroke:#81ad90;stroke-width:1.2;opacity:.20;fill:none
+}
+.live-stage .kg-links path.kg-link-claim{
+ stroke:#839d88;stroke-width:1.1;opacity:.23;fill:none
+}
+.live-stage .kg-links path.kg-link-provenance{
+ stroke:#79a3b1;stroke-width:1.15;opacity:.30;fill:none
+}
+.live-stage .kg-links path.kg-muted{opacity:.07}
+.live-stage .kg-card-node.kg-added .kg-card-bg{
+ animation:card-enter .25s ease-out both
+}
+@keyframes card-enter{from{opacity:.35}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .live-stage .kg-card-node.kg-added .kg-card-bg{animation:none}
+}
+
+/* Long graphs keep their natural size: mouse wheel scrolls, Ctrl+wheel zooms.
+   Final summaries and link checks cannot collapse the graph to 300px. */
+.live-stage .kg-viewport{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+ scrollbar-width:thin;min-height:0;flex:1}
+.live-stage #kg-svg{display:block;width:100%;height:auto;max-height:none;
+ min-height:0;overflow:visible;cursor:grab}
+.live-verdict{max-height:min(235px,26vh)}
+.link-safety{max-height:min(135px,16vh)}
+.live-stage .knowledge-graph-region{min-height:270px}
+.live-stage .kg-card-node .kg-card-title{font-size:17px;font-weight:650}
+.live-stage .kg-card-node .kg-card-price{font-size:17px}
+.live-stage .kg-card-node .kg-card-subtitle{font-size:13px}
+.live-stage .kg-card-node .kg-card-unit{font-size:12px}
+.live-stage .kg-card-node .kg-card-eyebrow{font-size:12px}
+.live-stage .kg-section-title{font-size:14px}
+.live-stage .kg-card-node .kg-card-fact{font-size:15px}
+@media(max-width:800px){
+ .live-verdict{max-height:215px}
+ .link-safety{max-height:125px}
+ .live-stage .knowledge-graph-region{min-height:270px}
+}
+
+/* Override the generic flex SVG viewport: flex-shrink was compressing a 1407px
+   research graph into 482px and making every card unreadable. */
+.live-stage .kg-viewport{display:block;overflow-y:auto;overflow-x:hidden}
+.live-stage #kg-svg{display:block;flex:none;max-width:100%;height:auto;min-height:0}
+
+/* Single-column SVG cards on narrow center panes and phones.
+   Font sizes are world units and compensate for SVG scaling. */
+.live-stage .kg-narrow-network .kg-card-node .kg-card-title{font-size:24px}
+.live-stage .kg-narrow-network .kg-card-node .kg-card-price{font-size:24px}
+.live-stage .kg-narrow-network .kg-card-node .kg-card-eyebrow{font-size:20px}
+.live-stage .kg-narrow-network .kg-card-node .kg-card-subtitle{font-size:19px}
+.live-stage .kg-narrow-network .kg-card-node .kg-card-unit{font-size:18px}
+.live-stage .kg-narrow-network .kg-card-node .kg-card-fact{font-size:22px}
+.live-stage .kg-narrow-network .kg-section-title{font-size:19px}
+
+/* The earlier generic .kg-type-offer text rule had higher specificity,
+   silently forcing 12px on all custom offer labels. */
+.live-stage .kg-node.kg-card-node .kg-card-title{font-size:19px;font-family:var(--text)}
+.live-stage .kg-node.kg-card-node .kg-card-price{font-size:18px}
+.live-stage .kg-node.kg-card-node .kg-card-subtitle{font-size:14px}
+.live-stage .kg-node.kg-card-node .kg-card-unit{font-size:13px}
+.live-stage .kg-node.kg-card-node .kg-card-eyebrow{font-size:12px}
+.live-stage .kg-node.kg-card-node .kg-card-fact{font-size:16px}
+@media(max-width:800px){
+ .live-stage{height:calc(100vh - 66px);min-height:690px}
+ .live-stage .kg-node.kg-card-node .kg-card-title{font-size:28px}
+ .live-stage .kg-node.kg-card-node .kg-card-price{font-size:26px}
+ .live-stage .kg-node.kg-card-node .kg-card-subtitle{font-size:25px}
+ .live-stage .kg-node.kg-card-node .kg-card-unit{font-size:22px}
+ .live-stage .kg-node.kg-card-node .kg-card-eyebrow{font-size:21px}
+}
+
+/* Card font sizes follow the actual graph pane, not just global viewport. */
+@media(max-width:800px){
+ .live-stage .kg-node.kg-card-node .kg-card-title{font-size:19px}
+ .live-stage .kg-node.kg-card-node .kg-card-price{font-size:18px}
+ .live-stage .kg-node.kg-card-node .kg-card-subtitle{font-size:14px}
+ .live-stage .kg-node.kg-card-node .kg-card-unit{font-size:13px}
+ .live-stage .kg-node.kg-card-node .kg-card-eyebrow{font-size:12px}
+}
+.live-stage .kg-narrow-network .kg-node.kg-card-node .kg-card-title{font-size:26px}
+.live-stage .kg-narrow-network .kg-node.kg-card-node .kg-card-price{font-size:25px}
+.live-stage .kg-narrow-network .kg-node.kg-card-node .kg-card-subtitle{font-size:23px}
+.live-stage .kg-narrow-network .kg-node.kg-card-node .kg-card-unit{font-size:21px}
+.live-stage .kg-narrow-network .kg-node.kg-card-node .kg-card-eyebrow{font-size:20px}
