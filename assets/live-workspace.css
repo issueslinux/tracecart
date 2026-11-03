@@ -159,3 +159,37 @@ body.live-page{font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-se
 @media(max-width:800px){.live-verdict{max-height:43vh;padding:10px 12px}}
 @media(prefers-reduced-motion:reduce){.live-url-form .analyze-spin{animation:none;
   border-style:dotted}}
+
+/* Evidence-grounded functional alternatives, not an opaque model score. */
+.purchase-insights{margin-top:12px;border-top:1px solid #c9dacc;padding-top:10px}
+.purchase-insights h3{font-size:15px;color:#20513a;margin:2px 0 7px}
+.purchase-insights h4,.purchase-facts-title{font-size:12px;color:#345a48;
+ margin:11px 0 6px}
+.purchase-market-note{font:11px/1.5 var(--mono);color:#667868;margin:0 0 6px}
+.purchase-options{display:grid;grid-template-columns:repeat(auto-fit,
+  minmax(235px,1fr));gap:9px}
+.purchase-option{border:1px solid #b9d1be;background:#fff;
+ border-radius:7px;padding:10px 11px;min-width:0;
+ box-shadow:0 1px 3px rgba(25,80,45,.05)}
+.purchase-option-heading{display:flex;gap:9px;justify-content:space-between;
+ flex-wrap:wrap;align-items:start}
+.purchase-option-heading strong{font-size:12px;line-height:1.45;color:#1d3d2b;
+ max-width:470px;overflow-wrap:anywhere}
+.purchase-price{font-size:15px;font-weight:750;white-space:nowrap;color:#1d6842}
+.purchase-relative{font-size:10px;color:#437859;margin:7px 0}
+.purchase-matches,.purchase-diff,.purchase-unknown,.purchase-highlight{
+ font-size:11px;line-height:1.55;margin:5px 0;overflow-wrap:anywhere}
+.purchase-diff{color:#92512f}
+.purchase-unknown{color:#786c4c}
+.purchase-highlight{color:#235e97}
+.purchase-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:9px}
+.purchase-actions button,.purchase-actions a{font:11px var(--mono);
+ color:#235e48;background:#eef7ef;border:1px solid #c6d9cd;
+ border-radius:4px;padding:4px 7px;text-decoration:none;cursor:pointer}
+.purchase-actions small{font-size:10px;color:#8c7164}
+.purchase-anomaly{font:11px/1.5 var(--mono);border-left:3px solid #b57438;
+ background:#fff4e6;color:#7c4b21;padding:8px;margin:10px 0}
+.purchase-disclaimer{font:10px/1.5 var(--mono);color:#64766c;margin:10px 0 0}
+.live-verdict{max-height:45vh}
+@media(max-width:800px){.purchase-options{grid-template-columns:1fr}
+ .live-verdict{max-height:48vh}}

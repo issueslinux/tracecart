@@ -30,7 +30,8 @@ SPEC_WEIGHT = {
     # Laptop model codes are not required to match. ARM/x86 differences remain
     # visible as a major compatibility difference, not a hidden disqualification.
     "LAPTOP": {"ram_gb": 25, "capacity_gb": 23,
-               "cpu_family": 22, "display_technology": 15, "screen_in": 15},
+               "cpu_family": 22, "cpu_tier": 16,
+               "display_technology": 15, "screen_in": 15},
     "SMARTPHONE": {"capacity_gb": 65},
     "E_SCOOTER": {"power_w": 40, "battery_ah": 40, "battery_wh": 40,
                    "speed_kmh": 20},
@@ -52,6 +53,7 @@ PUBLIC_SPEC_NAMES = {
     "tank_l": "zbiornik (litry)", "capacity_gb": "pojemność pamięci",
     "ssd_form": "typ/nośnik SSD",
     "ram_gb": "pamięć RAM", "cpu_family": "rodzina procesora",
+    "cpu_tier": "klasa procesora",
     "display_technology": "typ matrycy", "screen_in": "przekątna ekranu",
 }
 STATUS_SIMILAR = "SIMILAR_TECHNICAL_TIER_INDEX_ONLY"
@@ -90,6 +92,14 @@ def category_of(title):
         return "BICYCLE"
     if re.search(r"\bkompresor\b|\bsprezark", text):
         return "COMPRESSOR"
+    # A laptop listing routinely contains "SSD". Laptop identity must
+    # precede the component category or 16GB RAM becomes 16GB SSD capacity.
+    if (re.search(r"\blaptop\b|\bnotebook\b|\bideapad\b|\bthinkpad\b|"
+                  r"\bvivobook\b|\bmacbook\b", text) or
+        re.search(r"\bdell\s+(?:15|16|dc\d{5}|pro\s+15)\b",text) or
+        (re.search(r"\bi[3579][- ]?\d{4,5}\b|\bcore\s+i[3579]\b",text) and
+         re.search(r"\b(?:ram|w11|windows\s*11)\b",text))):
+        return "LAPTOP"
     if re.search(r"\bssd\b|\bdysk nvme\b", text):
         return "SSD"
     if re.search(r"\biphone\b|\bsmartfon\b|\bsmartphone\b|\btelefon komorkowy\b", text):
@@ -211,13 +221,31 @@ def read_specs(title, category=None):
                 storage = size
                 break
         if storage is None:
+            # 1TB and 2TB SSD are common product-title formats, but must
+            # not be confused with the much smaller RAM value 16GB.
+            tb = re.search(r"(?<!\w)([1-9](?:[.,]\d+)?)\s*tb\b",text)
+            if tb:
+                storage=float(tb.group(1).replace(",", "."))*1000
+        if storage is None:
+            compact=re.search(r"\bssd\s*(256|512|1024|2048)\s*gb\b|"
+                              r"\b(256|512|1024|2048)\s*ssd\b",text)
+            if compact:
+                storage=float(compact.group(1) or compact.group(2))
+        if storage is None:
+            slash=re.search(r"\b(256|512|1024|2048)\s*/\s*(?:win|w11|windows)",text)
+            if slash:
+                storage=float(slash.group(1))
+        if storage is None:
             raw = re.search(
-                r"\b(?:ssd[- ]?)?(256|512|1024|2048)\b(?=\s*(?:ssd|win(?:dows)?"
+                r"\b(?:ssd[- ]?)?(256|512|1000|1024|2048)\b(?=\s*(?:ssd|win(?:dows)?"
                 r"|oled|ips|w11|$))", text)
             if raw:
                 storage = float(raw.group(1))
         if storage is not None:
             specs["capacity_gb"] = storage
+        cpu_tier=re.search(r"\b(?:core\s*)?i([3579])(?:[- ]?\d{4,5}[a-z]{0,3})?\b",text)
+        if cpu_tier:
+            specs["cpu_tier"]="Core i"+cpu_tier.group(1)
         if re.search(r"\bsnapdragon\b|\bqualcomm\b", text):
             specs["cpu_family"] = "Snapdragon ARM"
         elif re.search(r"\b(?:intel|core i[3579]|core ultra|ultra [3579] \d{3}|i[3579][- ]?\d{4,5}[a-z]{0,3})\b", text):
@@ -235,6 +263,16 @@ def read_specs(title, category=None):
         size = _first_number(
             text, r"(?<!\d)(1[034567](?:[.,]\d)?)\s*(?:[\"″]|cal(?:e|i)?\b|inch\b)",
             10, 18)
+        if size is None:
+            standard=re.search(r"(?<!\d)(1[34567])\s*[.,]\s*([0-9])(?!\d)",text)
+            if standard:
+                size=float(standard.group(1)+"."+standard.group(2))
+        if size is None:
+            # URL slugs often split 15,6 into "15 6". Require both
+            # components in a laptop context, never generic number parsing.
+            split_screen=re.search(r"(?<!\d)(1[34567])\s+([0-9])(?!\d)",text)
+            if split_screen:
+                size=float(split_screen.group(1)+"."+split_screen.group(2))
         if size is not None:
             specs["screen_in"] = size
     if cat in ("SSD", "SMARTPHONE"):

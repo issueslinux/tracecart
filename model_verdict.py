@@ -99,7 +99,40 @@ def verdict_context(projection,graph):
     return context
 
 
-def insufficient_verdict(graph,error_type="MODEL_UNAVAILABLE"):
+def _best_sourced_observations(graph,limit=5):
+    """Prefer technical differentiators, never random SKU IDs or bare codes."""
+    nodes=graph.get("nodes") or []
+    types={"source_declaration","seller_declaration","reference_observation"}
+    priority=[
+        ("procesor",0),("cpu",0),
+        ("ram",1),("pamięć ram",1),("pojemnosc dysku",2),("pojemność dysku",2),
+        ("storage",2),("ssd",2),("bateria",3),("baterii",3),("akumulator",3),
+        ("rozdzielczo",4),("display",4),("ekran",4),("waga",5),("weight",5),
+        ("moc",6),("power",6),("speed",7),("prędkość",7),
+    ]
+    candidates=[]
+    for node in nodes:
+        if node.get("type") not in types:continue
+        key=str(node.get("source_property") or "").casefold()
+        value=str(node.get("value") or node.get("label") or "")
+        if not key or not value:continue
+        if key in ("sku","mpn","model","kod producenta (mpn)","model produktu"):
+            continue
+        rank=min([priority_index for token,priority_index in priority if token in key] or [99])
+        if rank>=99:continue
+        candidates.append((rank,node["id"],key,value))
+    candidates.sort()
+    accepted=[]
+    seen_rank=set()
+    for rank,node_id,key,value in candidates:
+        if rank in seen_rank:continue
+        seen_rank.add(rank)
+        accepted.append({"text":key+": "+value,"evidence_ids":[node_id]})
+        if len(accepted)>=limit:break
+    return accepted
+
+
+def insufficient_verdict(graph,error_type="MODEL_UNAVAILABLE",projection=None):
     stats=graph.get("stats") or {}
     documented=(stats.get("documented_product_declarations",0)+
                 stats.get("seller_page_declarations",0))
@@ -113,25 +146,27 @@ def insufficient_verdict(graph,error_type="MODEL_UNAVAILABLE"):
     source_nodes=[n for n in nodes if n.get("type")=="fetched_source"]
     index_quotes=stats.get("unverified_index_quotes",0)
     independent=stats.get("independent_reference_measurements",0)
-    # Fallback is a genuine, informative SOURCE-BASED outcome, not a fake
-    # model verdict and not a generic repeated instruction to 'verify SKU'.
-    summary=(
-        "Research for "+product+": "+str(documented)+
-        " published technical declarations from "+str(len(source_nodes))+
-        " saved documents, "+str(independent)+" independent measurements, and "+
-        str(index_quotes)+" unverified search-index price quotes. "
-        "Those observations do not establish exact SKU identity or a current "
-        "delivered checkout total. Local Qwen did not finish its synthesis."
-    )
-    observations=[{"text":_label(n.get("label"),230),
-                   "evidence_ids":[n["id"]]}
-                  for n in documents[:3]]
+    # Focus on alternative purchase value. Exact model is not required
+    # for a technical peer; however title/index prices are never checkout.
+    from purchase_insights import build_purchase_insights
+    comparison=build_purchase_insights(projection or {},graph)
+    if comparison["status"]=="COMPARABLE_INDEX_OFFERS_FOUND":
+        summary=comparison["headline"]
+    else:
+        summary=(comparison["headline"]+" Zebrano "+str(documented)+
+                 " deklaracji parametrów ze źródeł, "+str(independent)+
+                 " niezależnych pomiarów i "+str(index_quotes)+
+                 " cen indeksowych.")
+    observations=_best_sourced_observations(graph)
     return {
         "status":"UNAVAILABLE",
         "origin":"DETERMINISTIC_FALLBACK_NOT_LLM",
         "model":None,"verdict":"INSUFFICIENT_EVIDENCE",
         "summary":summary,"observations":observations,
-        "next_step":"Check seller documentation for the leading indexed candidates and verify actual delivered prices before purchase.",
+        "purchase_insights":comparison,
+        "next_step":("Sprawdź bezpośrednie strony pierwszych porównywalnych ofert, "
+                     "różnice w ekranie, pamięci i procesorze oraz cenę z dostawą. "
+                     "Nie zakładaj, że wynik indeksu jest ceną zakupu."),
         "error_type":_label(error_type,75),
         "payment_authorized":False,
         "verification":"NO_VERIFIED_BEST_BUY",
@@ -214,7 +249,7 @@ def generate_final_verdict(projection,graph,request=None):
     # Qwen chooses a conditional classification after reading all compressed
     # available evidence. Every displayed word and evidence link below is
     # derived deterministically from the actual saved source records.
-    evidence_summary=insufficient_verdict(graph)
+    evidence_summary=insufficient_verdict(graph,projection=projection)
     summary=evidence_summary["summary"].replace(
         " Local Qwen did not finish its synthesis.","")
     next_step=evidence_summary["next_step"]
@@ -229,6 +264,7 @@ def generate_final_verdict(projection,graph,request=None):
                    else "INSUFFICIENT_EVIDENCE"),
         "summary":summary,
         "observations":accepted,
+        "purchase_insights":evidence_summary["purchase_insights"],
         "next_step":next_step,
         "coverage":{"offers_considered":len(context["offers"]),
                     "indexed_quotes":sum(bool(x.get("indexed_quote"))

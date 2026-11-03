@@ -233,6 +233,87 @@
     return verdict==="NOT_SCHEDULED" &&
       snapshot.progress_stage==="PER_OFFER_MODEL_COMPLETE";
   }
+  function renderPurchaseAlternatives(target,snapshot,app,report){
+    if(!report||typeof report!=="object")return;
+    const options=Array.isArray(report.options)?report.options:[];
+    const tradeoffs=Array.isArray(report.tradeoffs)?report.tradeoffs:[];
+    const container=item("section","purchase-insights");
+    container.appendChild(item("h3","","Czy są ciekawsze lub tańsze alternatywy?"));
+    container.appendChild(item("p","purchase-market-note",
+      report.market_reference?
+      "Mediana cen porównywalnych ofert w indeksie: "+report.market_reference+
+      " — to NIE cena wybranego sklepu ani gwarantowana oszczędność.":
+      "Brak wiarygodnej ceny porównawczej; dane ofert są niepełne."));
+    function addGroup(rows,heading){
+      if(!rows.length)return;
+      container.appendChild(item("h4","",heading));
+      const cards=item("div","purchase-options");
+      rows.forEach(row=>{
+        const card=item("article","purchase-option");
+        const summary=item("div","purchase-option-heading");
+        summary.appendChild(item("strong","",row.title||"Oferta"));
+        summary.appendChild(item("span","purchase-price",
+          (row.price||"Cena nieznana")+" "+(row.currency||"")));
+        card.appendChild(summary);
+        if(row.vs_index_median)
+          card.appendChild(item("p","purchase-relative",row.vs_index_median));
+        if((row.matched_features||[]).length)
+          card.appendChild(item("p","purchase-matches",
+            "Podobne parametry z tytułów: "+
+            row.matched_features.slice(0,4).join(" · ")));
+        if((row.different_features||[]).length)
+          card.appendChild(item("p","purchase-diff",
+            "Różnice: "+row.different_features.slice(0,3).join(" · ")));
+        if((row.unconfirmed_features||[]).length)
+          card.appendChild(item("p","purchase-unknown",
+            "Niepotwierdzone: "+row.unconfirmed_features.slice(0,3).join(", ")));
+        if((row.highlights||[]).length)
+          card.appendChild(item("p","purchase-highlight",
+            "Możliwa zaleta: "+row.highlights.join("; ")));
+        const actions=item("div","purchase-actions");
+        const controller=app._traceCartGraphController;
+        if(row.offer_id&&controller&&controller.graph.nodes.some(n=>n.id===row.offer_id)){
+          const button=item("button","","Pokaż ofertę w grafie");
+          button.type="button";
+          button.addEventListener("click",()=>controller.select(row.offer_id));
+          actions.appendChild(button);
+        }
+        if(row.source_url){
+          try{
+            const u=new URL(row.source_url);
+            if(u.protocol==="https:"||u.protocol==="http:"){
+              const a=document.createElement("a");
+              a.href=u.href;a.target="_blank";a.rel="noopener noreferrer";
+              a.textContent="Otwórz stronę z indeksu ↗";
+              actions.appendChild(a);
+            }
+          }catch(_ignore){}
+        }else {
+          actions.appendChild(item("small","",
+            "Brak bezpośredniego adresu sklepu w wynikach wyszukiwania."));
+        }
+        card.appendChild(actions);
+        cards.appendChild(card);
+      });
+      container.appendChild(cards);
+    }
+    addGroup(options,"Podobna deklarowana konfiguracja");
+    addGroup(tradeoffs,"Tańsze lub inne warianty — sprawdź różnice");
+    const anomalies=Array.isArray(report.suspicious_price_quotes)?
+      report.suspicious_price_quotes:[];
+    if(anomalies.length){
+      const amounts=[...new Set(anomalies.map(x=>
+        (x.indexed_price||"?")+" "+(x.currency||"")))];
+      container.appendChild(item("p","purchase-anomaly",
+        "Pominięto "+anomalies.length+" podejrzanie niskie ceny z indeksu ("+
+        amounts.join(", ")+"). Nie stanowią wiarygodnej ceny sprzętu."));
+    }
+    container.appendChild(item("p","purchase-disclaimer",
+      report.disclaimer||
+      "Tytuły i ceny z wyszukiwarki nie dowodzą zgodności konfiguracji ani ceny zakupu."));
+    target.appendChild(container);
+  }
+
   function renderVerdict(target,snapshot,app) {
     if(!target)return;
     const v=snapshot.final_verdict||{};
@@ -245,13 +326,13 @@
     if(target.hidden)return;
     target.replaceChildren();
     const head=item("div","verdict-head");
-    const title=v.status==="COMPLETE"?"Final evidence assessment":
-      v.status==="UNAVAILABLE"?"Research complete · evidence-based summary":
+    const title=v.status==="COMPLETE"?"Wynik porównania ofert":
+      v.status==="UNAVAILABLE"?"Wynik porównania · model niedostępny":
       legacy?"Research result · earlier saved job":"Research interrupted";
     head.appendChild(item("strong","",title));
     const tag=item("span","verdict-tag"+(v.status==="UNAVAILABLE"?" unavailable":""),
-      v.status==="COMPLETE"?"Local Qwen · conditional verdict":
-      v.status==="UNAVAILABLE"?"Local Qwen timed out · source-based fallback":
+      v.status==="COMPLETE"?"Qwen: ocena warunkowa · ceny indeksowe":
+      v.status==="UNAVAILABLE"?"Qwen: przekroczony czas · analiza źródłowa":
       "Research from archived job");
     head.appendChild(tag);target.appendChild(head);
     const text=v.summary || (
@@ -262,9 +343,15 @@
     );
     target.appendChild(item("p","verdict-summary",text));
     if(v.status==="COMPLETE")
-      target.appendChild(item("p","verdict-tag",String(v.verdict||"").replace(/_/g," ")));
+      target.appendChild(item("p","verdict-tag",
+        v.verdict==="COMPARE_WITH_CAUTION"?"Warto porównać — niezweryfikowane ceny":
+        v.verdict==="INSUFFICIENT_EVIDENCE"?"Możliwe alternatywy, brak potwierdzenia zakupu":
+        "Brak porównywalnych ofert w dostępnych danych"));
+    renderPurchaseAlternatives(target,snapshot,app,v.purchase_insights);
     const findings=(v.observations||[]).filter(x=>x&&typeof x.text==="string");
     if(findings.length){
+      target.appendChild(item("h4","purchase-facts-title",
+        "Istotne parametry ze znalezionych dokumentów"));
       const group=item("div","verdict-findings");
       findings.forEach((finding,i)=>{
         const card=item("div","verdict-finding");
@@ -286,10 +373,10 @@
       target.appendChild(group);
     }
     if(v.next_step)
-      target.appendChild(item("p","verdict-next","Next step: "+v.next_step));
+      target.appendChild(item("p","verdict-next","Co jeszcze sprawdzić: "+v.next_step));
     target.appendChild(item("p","verdict-limits",
-      "Product claims are not independent tests. Index prices are not checkout totals. "+
-      "No payment or purchase was authorized."+
+      "Parametry w tytułach i deklaracje sprzedawców nie są testami. "+
+      "Ceny z indeksu nie są cenami końcowymi. Nie autoryzowano zakupu."+
       (v.status==="COMPLETE" && v.coverage&&v.coverage.observations_omitted?
        " Local-model context omitted "+v.coverage.observations_omitted+
        " source observations; full audit remains available.":"")));

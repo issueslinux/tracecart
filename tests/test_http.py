@@ -438,7 +438,7 @@ class WebFlowTests(unittest.TestCase):
         self.assertEqual(payload["evidence"]["catalog_only"],0)
         self.assertEqual(payload["evidence"]["google_shopping_cards"],12)
         self.assertEqual(payload["evidence"]["indexed_store_links"],3)
-        self.assertEqual(payload["evidence"]["unverified_similar_product_leads"],4)
+        self.assertEqual(payload["evidence"]["unverified_similar_product_leads"],5)
         self.assertEqual(payload["evidence"]["seller_confirmed_competitor_prices"],0)
         self.assertEqual(payload["evidence"]["unusually_low_raw_index_quotes"],3)
         self.assertEqual(payload["category"],"LAPTOP")

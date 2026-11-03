@@ -967,6 +967,7 @@ class CartResearchJobs:
         # Graph/projection are computed from the same persisted evidence
         # as the user sees. A model must never rewrite a source receipt.
         graph={}
+        projection={}
         try:
             from guided_decision import build_decision_projection
             from offer_knowledge_graph import build_offer_knowledge_graph
@@ -980,7 +981,7 @@ class CartResearchJobs:
                 TimeoutError) as exc:
             status="UNAVAILABLE"
             error=type(exc).__name__
-            result=insufficient_verdict(graph,error)
+            result=insufficient_verdict(graph,error,projection)
         with self._db() as db:
             db.execute("""UPDATE cart_final_verdict
                 SET status=?,result_json=?,error_type=? WHERE job_id=?""",
