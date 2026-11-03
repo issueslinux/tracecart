@@ -15,7 +15,7 @@ import socket
 import threading
 import sys
 import time
-from urllib.parse import parse_qs, urlsplit, urlencode
+from urllib.parse import parse_qs, urlsplit, urlencode, quote
 
 from core import (CATALOG, CONSENT_TEXT, CheckoutStore, SandboxPayPal,
                   ollama_suggestion)
@@ -431,8 +431,14 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             return False
         return True
 
-    def companion_page(self):
+    def companion_page(self, default_url=""):
         jobs = self.server.companion.listed()
+        # SQLite retains completed evidence even after an in-memory queue
+        # restart; merge by capture ID without presenting duplicate jobs.
+        seen={row["id"] for row in jobs}
+        for receipt in self.server.cart_jobs.recent_browser_claim_receipts():
+            if receipt["id"] not in seen:
+                jobs.append(receipt)
         rows = []
         for row in jobs:
             fields = (row.get("result") or {}).get("fields") or {}
@@ -466,7 +472,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
               <label>Product HTTPS URLs (up to 12 explicitly selected pages,
               one per line)
               <textarea name="product_urls" rows="5" maxlength="7000" required
-              placeholder="https://store.example.org/product/..."></textarea></label>
+              placeholder="https://store.example.org/product/...">{}</textarea></label>
               <button>Queue selected research pages</button>
             </form>
             <p>No cookies, localStorage, authentication tokens, full page HTML
@@ -478,7 +484,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             · <a href="/research">Research lab</a></p>{}
             </section>""".format(self.server.server_port,
                                   h(self.server.companion.token),
-                                  self.hidden(), table))
+                                  self.hidden(), h(default_url), table))
 
     def cart_entry_page(self):
         # One screen for both a new URL and ongoing graph research.
@@ -489,6 +495,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{DECISION_URL}}":"","{{LIVE_URL}}":"",
             "{{KNOWLEDGE_GRAPH_URL}}":"","{{AUDIT_URL}}":"",
             "{{RAW_URL}}":"","{{PRODUCT_URL}}":"",
+            "{{COMPANION_URL}}":"/research/companion",
             "{{INPUT_PRICE_ACTION}}":"","{{INPUT_PRICE_VALUE}}":"",
             "{{INPUT_PROMOTION_CODE}}":"",
         }.items():
@@ -606,6 +613,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{RAW_URL}}":"/cart/status/"+job_id+".json",
             "{{SHORT_ID}}":job_id[:8],
             "{{PRODUCT_URL}}":(result.get("item") or {}).get("merchant_url") or "",
+            "{{COMPANION_URL}}":"/research/companion?product_url="+quote(
+                (result.get("item") or {}).get("merchant_url") or "",safe=""),
             "{{INPUT_PRICE_ACTION}}":"/cart/status/"+job_id+"/input-price",
             "{{INPUT_PRICE_VALUE}}":(result.get("input_price") or {}).get("price") or "",
             "{{INPUT_PROMOTION_CODE}}":(result.get("input_price") or {}).get("promotion_code") or "",
@@ -666,13 +675,24 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 return
             return self.companion_json({"job": self.server.companion.take()})
         if path == "/research/companion":
-            return self.companion_page()
+            requested=parse_qs(urlsplit(self.path).query).get("product_url",[""])[0]
+            if requested:
+                from product_intake import normalized_product_url
+                try:
+                    requested=normalized_product_url(requested)
+                except (ValueError,TypeError):
+                    requested=""
+            return self.companion_page(default_url=requested)
         if path.startswith("/research/companion/") and path.endswith(".json"):
             job_id = path[len("/research/companion/"):-len(".json")]
             try:
-                return self.companion_json(self.server.companion.get_job(job_id))
+                row=self.server.companion.get_job(job_id)
             except ValueError:
-                return self.companion_json({"error": "UNKNOWN_RESEARCH_JOB"}, 404)
+                try:
+                    row=self.server.cart_jobs.browser_claim_receipt(job_id)
+                except ValueError:
+                    return self.companion_json({"error": "UNKNOWN_RESEARCH_JOB"}, 404)
+            return self.companion_json(row)
         if path == "/":
             menu = "".join("<li><b>{}</b> — {} USD · {}</li>".format(h(name), h(value[1]), h(value[0]))
                            for name, value in CATALOG.items())
@@ -1448,7 +1468,13 @@ https://www.adafruit.com/product/3400</textarea></label>
                         != "application/json"):
                     raise ValueError("INVALID_COMPANION_CONTENT_TYPE_OR_SIZE")
                 payload = json.loads(self.rfile.read(size).decode("utf8"))
-                return self.companion_json(self.server.companion.report(payload))
+                ack=self.server.companion.report(payload)
+                if ack["status"]=="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED":
+                    # Browser result is separately persisted for the cart
+                    # graph; a claim never changes checkout or input price.
+                    row=self.server.companion.get_job(ack["job_id"])
+                    self.server.cart_jobs.store_browser_claim(row)
+                return self.companion_json(ack)
             except (ValueError, UnicodeError, TypeError, KeyError):
                 return self.companion_json({"error": "INVALID_COMPANION_RECEIPT"}, 400)
         try:

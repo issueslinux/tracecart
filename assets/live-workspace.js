@@ -121,6 +121,15 @@
         detail:"Duplicate source checks are collapsed here; the separate product and indexed-price nodes remain in the graph.",
         mode:"BLOCKED",state:"SAME URL",weight:weight.BLOCKED});
     }
+    const browserPages=(g.nodes||[]).filter(node=>
+      node.source_kind==="USER_BROWSER_FILTERED_PROJECTION");
+    if(browserPages.length){
+      rows.push({
+        key:"BROWSER",title:browserPages.length+" browser-captured seller page",
+        detail:"Claim from opted-in Chromium; URL matched. Exact variant and checkout price unverified.",
+        mode:"REFERENCE",state:"PAGE CAPTURED",weight:weight.REFERENCE
+      });
+    }
     rows.sort((a,b)=>(a.key==="#1"?-1:b.key==="#1"?1:
       a.weight-b.weight||
       (Number(a.key.slice(1))||999)-(Number(b.key.slice(1))||999)));
@@ -623,6 +632,7 @@
       $("live-evidence-status").textContent=
         (researchDone?"Research finished · new evidence requires another run · ":"")+
         (stats.seller_page_declarations||0)+" seller-page declarations · "+
+        (stats.browser_claims_not_checkout_verified||0)+" browser declarations (unverified) · "+
         (stats.independent_reference_measurements||0)+
         " independent test values · "+(stats.documented_product_declarations||0)+
         " sourced declarations · "+(stats.unresolved_source_discrepancies||0)+

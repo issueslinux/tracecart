@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 
 import app
 from browser_companion_queue import CompanionQueue
+from cart_research import CartResearchJobs
 from tests.test_browser_companion_queue import sample
 
 
@@ -21,6 +22,9 @@ class CompanionHTTPTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.server = app.StreamingHTTPServer(("127.0.0.1", 0), app.TraceCartHandler)
         self.server.csrf = secrets.token_urlsafe(24)
+        self.server.cart_jobs = CartResearchJobs(
+            Path(self.temp.name) / "staging.sqlite",
+            runner=lambda item: {})
         self.server.companion = CompanionQueue(token_path=(
             Path(self.temp.name) / "companion.secret"))
         self.base = "http://127.0.0.1:{}".format(self.server.server_port)
@@ -31,6 +35,7 @@ class CompanionHTTPTests(unittest.TestCase):
         self.server.shutdown()
         self.worker.join(timeout=3)
         self.server.server_close()
+        self.server.cart_jobs.close()
         self.temp.cleanup()
 
     def call(self, path, method="GET", payload=None, token=None, origin=None,
@@ -114,6 +119,67 @@ class CompanionHTTPTests(unittest.TestCase):
         evidence = json.loads(raw)
         self.assertEqual(evidence["result"]["fields"]["price"], "34.90")
         self.assertFalse(evidence["result"]["checkout_verified"])
+        # Receipt is durable, independent of in-memory queue state.
+        latest=self.server.cart_jobs.recent_browser_claim_receipts()
+        self.assertEqual(len(latest),1)
+        self.assertEqual(latest[0]["result"]["fields"]["price"],"34.90")
+
+    def test_real_http_cart_graph_updates_from_browser_claim_and_survives_queue_reset(self):
+        url="https://store.example.org/p/123"
+        cart_id="test_browser_graph_12345678"
+        item={"title":"Example SKU 7","merchant_url":url,"price":None,
+              "currency":None,"barcode":None}
+        report={"indexed_shopping":{"indexed_offers":[],"search_result_groups":[]},
+                "source_intake":{"intake_status":"URL_ONLY_UNVERIFIED"}}
+        with self.server.cart_jobs._db() as db:
+            db.execute("""INSERT INTO cart_research_jobs(id,item,state,created,result)
+                VALUES (?,?,?,?,?)""",
+                (cart_id,json.dumps(item),"READY","2026-11-03T12:00:00+00:00",
+                 json.dumps(report)))
+        start_code, start_body=self.call("/cart/status/"+cart_id+".knowledge-graph.json")
+        self.assertEqual(start_code,200)
+        before=json.loads(start_body)
+        self.assertEqual(before["stats"]["browser_claims_not_checkout_verified"],0)
+        csrf=self.server.csrf
+        code,_=self.call("/research/companion/queue",method="POST",
+                         payload={"csrf":csrf,"product_urls":url},origin=self.base)
+        self.assertEqual(code,200)
+        token=self.server.companion.token
+        task=json.loads(self.call("/api/browser-companion/next",token=token)[1])["job"]
+        from datetime import datetime, timezone
+        payload={"job_id":task["job_id"],"url":url,
+                 "captured_at":datetime.now(timezone.utc).isoformat(),
+                 "snapshot":sample(),"price_origin":"DIRECT_OFFER_PRICE",
+                 "error":None}
+        code,body=self.call("/api/browser-companion/result",method="POST",
+                             token=token,payload=payload,content_type="application/json")
+        self.assertEqual(code,200)
+        after=json.loads(self.call("/cart/status/"+cart_id+".knowledge-graph.json")[1])
+        self.assertGreater(after["stats"]["browser_claims_not_checkout_verified"],0)
+        self.assertEqual(after["stats"]["verified_checkout_prices"],0)
+        source=[n for n in after["nodes"] if
+                n.get("source_kind")=="USER_BROWSER_FILTERED_PROJECTION"]
+        self.assertEqual(len(source),1)
+        self.assertFalse(source[0]["checkout_verified"])
+        live=json.loads(self.call("/cart/status/"+cart_id+"/live.json")[1])
+        self.assertEqual(live["graph"]["stats"]["verified_checkout_prices"],0)
+        self.assertGreater(live["graph"]["stats"]["browser_claims_not_checkout_verified"],0)
+        main_html=self.call("/cart/status/"+cart_id)[1]
+        self.assertIn("companion-research-link",main_html)
+        self.assertIn("product_url=https%3A%2F%2Fstore.example.org%2Fp%2F123",main_html)
+        prefilled=self.call("/research/companion?product_url="+
+                            "https%3A%2F%2Fstore.example.org%2Fp%2F123")[1]
+        self.assertIn("https://store.example.org/p/123</textarea>",prefilled)
+        # Discard only the ephemeral queue; persisted evidence remains
+        # in browser page and cart graph.
+        self.server.companion=CompanionQueue(token="c"*64)
+        page=self.call("/research/companion")[1]
+        self.assertIn("34.90 PLN",page)
+        saved=json.loads(self.call("/research/companion/"+
+                                    task["job_id"]+".json")[1])
+        self.assertEqual(saved["result"]["fields"]["price"],"34.90")
+        replay=json.loads(self.call("/cart/status/"+cart_id+".knowledge-graph.json")[1])
+        self.assertGreater(replay["stats"]["browser_claims_not_checkout_verified"],0)
 
     def test_bad_receipt_type_and_token_denied(self):
         token = self.server.companion.token

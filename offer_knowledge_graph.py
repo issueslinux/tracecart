@@ -199,6 +199,92 @@ def build_offer_knowledge_graph(projection):
             if isinstance(min_days,(int,float)) and isinstance(max_days,(int,float)):
                 seller_fact("delivery","Advertised handling + transit",
                             "{}–{} days".format(min_days,max_days))
+    browser_claim_count=0
+    browser_conflict_count=0
+    for receipt in (projection.get("browser_claims") or [])[:2]:
+        if not isinstance(receipt,dict) or receipt.get("acquisition_method")!="USER_BROWSER":
+            continue
+        fields=receipt.get("fields") or {}
+        url=receipt.get("source_url")
+        sha=receipt.get("snapshot_sha256")
+        if (not isinstance(fields,dict) or not isinstance(url,str) or
+                not isinstance(sha,str) or len(sha)!=64 or
+                receipt.get("checkout_verified") is not False or
+                receipt.get("seller_verified") is not False):
+            continue
+        from product_intake import normalized_gtin
+        from browser_cart_identity import browser_cart_link_key
+        try:
+            browser_key=browser_cart_link_key(url)
+            selected_key=browser_cart_link_key(selected_item.get("merchant_url"))
+            if not browser_key or browser_key!=selected_key:
+                continue
+        except (TypeError,ValueError):
+            continue
+        sid="browser-source:"+_key(sha+"|"+url)
+        add_node(sid,"fetched_source","Browser Product/Offer projection",
+                 url=url,sha256=sha,retrieved_at=receipt.get("acquired_at"),
+                 source_kind="USER_BROWSER_FILTERED_PROJECTION",
+                 status="SELLER_DECLARATION_NOT_CHECKOUT",
+                 checkout_verified=False,exact_variant_verified=False)
+        add_edge("offer-0",sid,"BROWSER_OBSERVED_SELECTED_URL",
+                 status="URL_MATCH_ONLY_VARIANT_UNVERIFIED")
+        selected_sku=str(intake.get("sku") or "").casefold()
+        browser_sku=str(fields.get("sku") or "").casefold()
+        old_gtin=normalized_gtin(selected_item.get("barcode"))
+        new_gtin=normalized_gtin(fields.get("gtin"))
+        identity_conflict=((selected_sku and browser_sku and selected_sku!=browser_sku) or
+                           (old_gtin and new_gtin and old_gtin!=new_gtin))
+        if identity_conflict:
+            cid="browser-conflict:"+_key(sha+"|identity")
+            add_node(cid,"source_disagreement","Browser SKU/GTIN disagreement",
+                     status="CONFLICT_REQUIRES_EXACT_VARIANT_REVIEW",
+                     checkout_verified=False)
+            add_edge(cid,sid,"CONFLICT_OBSERVED_IN_BROWSER_SOURCE")
+            add_edge("offer-0",cid,"BROWSER_IDENTITY_DISAGREEMENT",
+                     status="DO_NOT_PROMOTE_PRICE")
+            browser_conflict_count+=1
+            continue
+        values=[("title",fields.get("title"),"model"),
+                ("brand",fields.get("brand"),"model"),
+                ("sku",fields.get("sku"),"model"),
+                ("gtin",fields.get("gtin"),"barcode"),
+                ("seller",fields.get("seller"),"seller"),
+                ("availability",fields.get("availability"),"seller")]
+        price=fields.get("price")
+        currency=fields.get("currency")
+        if isinstance(price,str) and currency in ("PLN","EUR","USD"):
+            values.append(("price",price+" "+currency,"seller"))
+            earlier=selected_item.get("price")
+            earlier_currency=selected_item.get("currency")
+            if (earlier is not None and earlier_currency in ("PLN","EUR","USD")
+                    and (str(earlier)!=price or earlier_currency!=currency)):
+                cid="browser-price-disagreement:"+_key(sha+"|"+str(earlier))
+                add_node(cid,"source_disagreement",
+                         "Earlier selected price differs from browser claim",
+                         status="SAME_URL_DIFFERENT_PRICE_RECHECK_VARIANT_OR_TIME",
+                         parameter="listed_price",checkout_verified=False)
+                add_edge("offer-0",cid,"BROWSER_PRICE_DISAGREEMENT",
+                         status="DO_NOT_PROMOTE_TO_CHECKOUT_PRICE")
+                add_edge(cid,sid,"CONFLICT_OBSERVED_IN_BROWSER_SOURCE",
+                         status="SOURCE_ONLY_VARIANT_UNVERIFIED")
+        for key,value,family in values:
+            if not isinstance(value,str) or not value.strip() or len(value)>240:
+                continue
+            nid="browser-claim:"+_key(sha+"|"+key+"|"+value)
+            label=("Browser declared "+key+" · "+value)[:210]
+            add_node(nid,"seller_declaration",label,parameter=key,value=value,
+                     source_url=url,source_sha256=sha,
+                     captured_at=receipt.get("acquired_at"),
+                     provenance="BROWSER_SOURCE_CLAIM_NOT_CHECKOUT",
+                     price_origin=receipt.get("browser_original_price_origin") if key=="price" else None,
+                     status="URL_MATCH_VARIANT_NOT_VERIFIED",
+                     checkout_verified=False)
+            add_edge("offer-0",nid,"BROWSER_PAGE_DECLARES",
+                     status="SOURCE_CLAIM_ONLY_NOT_CHECKOUT")
+            source_facet("offer-0",family,nid)
+            add_edge(nid,sid,"OBSERVED_IN_FILTERED_BROWSER_PROJECTION")
+            browser_claim_count+=1
     search=(projection.get("source_search") or {})
     search_lead_ids={}
     for candidate in (search.get("leads") or [])[:24]:
@@ -531,6 +617,8 @@ def build_offer_knowledge_graph(projection):
             "independent_reference_measurements":len(unique_measurements),
             "documented_product_declarations":len(unique_document_declarations),
             "seller_page_declarations":seller_page_claims,
+            "browser_claims_not_checkout_verified":browser_claim_count,
+            "browser_identity_conflicts":browser_conflict_count,
             "evidence_facets":sum(n["type"]=="evidence_facet"
                                     for n in vertices.values()),
             "focused_verification_gaps":sum(n["type"]=="verification_gap"
