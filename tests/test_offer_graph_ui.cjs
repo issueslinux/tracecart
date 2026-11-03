@@ -21,7 +21,9 @@ test("network labels are shortened but never embedded as HTML",()=>{
   const src=fs.readFileSync(path.join(__dirname,"../assets/offer-graph.js"),"utf8");
   assert.ok(src.includes(".textContent="));
   assert.ok(!src.includes(".innerHTML"));
-  assert.ok(src.includes("OPEN · no verified exact-variant answer"));
+  assert.ok(src.includes("Remaining evidence gaps"));
+  assert.ok(src.includes("Published specifications and seller-page details"));
+  assert.ok(src.includes("source_property"));
 });
 test("the page initializes graph after research READY without replacing saved audit",()=>{
  const app=fs.readFileSync(path.join(__dirname,"../assets/decision-flow.js"),"utf8");
@@ -37,9 +39,24 @@ test("the page initializes graph after research READY without replacing saved au
 
 test("global graph keeps source contradictions visible without focusing a seller offer",()=>{
   const src=fs.readFileSync(path.join(__dirname,"../assets/offer-graph.js"),"utf8");
-  assert.ok(src.includes('observations.filter(n=>n.type==="source_disagreement").slice(0,4)'));
+  assert.ok(src.includes('graph.nodes.filter(n=>n.type==="source_disagreement").slice(0,3)'));
   assert.ok(src.includes('"DISCREPANCY_REQUIRES_SOURCE_REVIEW"'));
   assert.ok(src.includes('"UNRESOLVED PUBLISHED CLAIM"'));
   assert.ok(src.includes("Downloaded source SHA256: "));
   assert.ok(src.includes("NOT an independent measurement or proof"));
+});
+
+
+test("focused graph displays published source facts, seller-page declarations and evidence facets",()=>{
+  const src=fs.readFileSync(path.join(__dirname,"../assets/offer-graph.js"),"utf8");
+  assert.ok(src.includes('"seller_declaration"'));
+  assert.ok(src.includes('"evidence_facet"'));
+  assert.ok(src.includes('"verification_gap"'));
+  assert.ok(src.includes('"FACET_HAS_SOURCE_FACT"'));
+  assert.ok(src.includes('"HAS_UNRESOLVED_VERIFICATION_GAP"'));
+  assert.ok(src.includes(".slice(0,32)"));
+  assert.ok(!src.includes("slice(0,13)"));
+  assert.ok(src.includes("root.dispatchEvent(new Event"));
+  assert.ok(src.includes("visibleGraphNodes"));
+  assert.ok(src.includes("nodes visible"));
 });

@@ -1,3 +1,24 @@
+> **EVIDENCE-RICH GRAPH / NO 24 GENERIC QUESTIONS (2026-11-03):**
+> Fixed missing `selected_source_intake` in decision projection so the
+> actually fetched selected seller product fields (brand, SKU, EAN,
+> declared price, availability, conditional delivery/shipping) render
+> alongside original downloaded technical parameters. General extractor
+> captures up to 24 actual source fields. New source facets make
+> offer→parameter family→value→fetched document explicit. Central
+> SVG draws up to 32 concrete source facts in Input focus and labels
+> displayed/full counts; provenance remains in the JSON export.
+> Detail drawer and right rail now show only specific *unresolved*
+> evidence gaps after accounting for existing documentation; old 24×12
+> generic question catalogue is no longer displayed as active work.
+> Once all workers finish, UI states **Completed · X/X checked · no
+> active tasks**, rather than silently ceasing animation or displaying
+> generic WRITING. Real saved RYOBI: 7 seller-page declarations, 15+
+> source technical attributes, 4 material verification gaps, 0
+> proven exact-SKU laboratory measurements/checkout totals. 439
+> Python + 22 Node tests. No new paid search.
+> [EVIDENCE_FIRST_GRAPH_AND_TARGETED_GAPS_2026-11-03](
+> EVIDENCE_FIRST_GRAPH_AND_TARGETED_GAPS_2026-11-03.md).
+>
 > **INPUT-FIRST PARALLEL RESEARCH (2026-11-03):**
 > The real RYOBI product URL now leads the graph: input source check
 > starts as soon as URL identity is extracted, in parallel with

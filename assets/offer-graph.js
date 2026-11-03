@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   const NS="http://www.w3.org/2000/svg";
-  const WIDTH=1120,HEIGHT=670;
+  const WIDTH=1120,HEIGHT=880;
   function el(tag,cls,label) {
     const n=document.createElement(tag);
     if(cls)n.className=cls;
@@ -133,17 +133,20 @@
         details.appendChild(el("span","kg-detail-type",
           selected.offer_kind==="INPUT_PRODUCT"?"INPUT PRODUCT":"SEARCH-INDEX OFFER"));
         details.appendChild(el("h3","",d.title||selected.label));
-        details.appendChild(el("p","kg-missing",
-          "Declared values below come from "+(d.claim_provenance||"an unverified title")+
-          ". Neither a matching number nor brand spelling is identity proof."));
+        const coverage=d.source_coverage||{};
+        details.appendChild(el("p","kg-coverage",
+          (coverage.documented_field_count||0)+" retrieved specification values · "+
+          (coverage.source_documents||0)+" downloaded documents · "+
+          (d.high_impact_questions||[]).length+" outstanding checks. "+
+          "Published specifications and seller-page details are NOT independent tests."));
         if(d.indexed_price)
           details.appendChild(el("p","kg-quote","Index quote: "+
             d.indexed_price.value+" "+(d.indexed_price.currency||"")+
             " · NOT a current seller checkout price"));
         else details.appendChild(el("p","kg-quote","Checkout price: NOT VERIFIED"));
         if(d.url)details.appendChild(external("Open listing pointer ↗",d.url));
-        details.appendChild(el("h4","","Parameters · unverified title/derived"));
         if((d.claims||[]).length){
+          details.appendChild(el("h4","","Title-only parameters · unverified"));
           const tbl=el("table","kg-claim-table");
           (d.claims||[]).forEach(c=>{
             const tr=el("tr");
@@ -154,8 +157,7 @@
             tbl.appendChild(tr);
           });
           details.appendChild(tbl);
-        } else details.appendChild(el("p","kg-missing",
-            "No numeric configuration could be extracted from the title."));
+        }
         const original=graph.offer_details["offer-0"];
         if(original&&selected.id!=="offer-0"){
           const originalSpecs=new Map((original.claims||[]).map(c=>[c.parameter,String(c.value)]));
@@ -174,10 +176,11 @@
           a.source_kind!=="INDEPENDENT_TEST");
         const independent=(d.reference_observations||[]).filter(a=>
           a.source_kind==="INDEPENDENT_TEST");
-        addLinkList(details,"Published product specifications · unverified variant",
+        addLinkList(details,"Retrieved product data · publisher declarations",
           declared.map(a=>({
-            title:(a.value||"Claim")+" · source declaration",
-            note:"Source type: "+(a.source_kind||"unknown")+
+            title:(a.source_property?a.source_property+": ":"")+
+                  (a.value||"Source claim"),
+            note:"Published value, not lab measured · "+(a.source_kind||"unknown")+
                  " · SHA "+(a.source_sha256||"").slice(0,16)+"…",
             url:a.source_url,
           })));
@@ -208,22 +211,20 @@
               h.name+" ("+h.source_offer+") · NOT verified as the submitted SKU"));
           });
         }
-        details.appendChild(el("h4","","Unresolved high-priority questions · "+
+        details.appendChild(el("h4","","Remaining evidence gaps · "+
           (d.high_impact_questions||[]).length));
         const ol=el("ol","kg-questions-list");
         (d.high_impact_questions||[]).slice(0,12).forEach(q=>{
           const li=el("li","",q.question);
-          li.appendChild(el("small","","OPEN · no verified exact-variant answer"));
+          li.appendChild(el("small","",q.reason||
+            "New evidence needed; existing documents do not answer this."));
           ol.appendChild(li);
         });
         details.appendChild(ol);
         details.appendChild(el("p","kg-footnote",
-          "Full plan: "+(d.planned_question_count||0)+" source checks · "+
-          "Qwen: "+(d.model_question_status||"NOT_STARTED")+
-          " · Independent source: "+(d.source_check_status||"NOT_STARTED")));
-        const jump=el("a","kg-jump","Open all questions for this offer ↓");
-        jump.href="#offer-research-"+selected.ordinal;
-        details.appendChild(jump);
+          "Source check: "+(d.source_check_status||"NOT_STARTED")+
+          " · Model batch: "+(d.model_question_status||"NOT_STARTED")+
+          " · Earlier generic question catalogue is not evidence or active work."));
         return;
       }
       if(selected.type==="title_claim"||selected.type==="derived_claim"){
@@ -290,6 +291,11 @@
       details.appendChild(el("span","kg-detail-type",
         selected.type.replace(/_/g," ").toUpperCase()));
       details.appendChild(el("h3","",selected.label));
+      if(selected.source_property)
+        details.appendChild(el("p","kg-quote",
+          selected.source_property+": "+(selected.value||"")));
+      if(selected.reason)
+        details.appendChild(el("p","kg-missing",selected.reason));
       if(selected.finding)details.appendChild(el("p","",selected.finding));
       if(selected.variant_match)
         details.appendChild(el("p","kg-missing",
@@ -301,87 +307,102 @@
     }
 
     function buildLayout() {
-      const specs=graph.nodes.filter(n=>n.type==="title_claim"||
-                                    n.type==="derived_claim");
-      const gaps=graph.nodes.filter(n=>n.type==="research_gap");
-      const observations=graph.nodes.filter(n=>
-        ["reference_observation","source_declaration","fetched_source",
-         "source_disagreement","source_lead",
-         "indexed_quote","decision_gate"].includes(n.type));
+      // Evidence is the center of the graph, not the old 24x12 generic
+      // question catalogue. Preserve the entire saved graph in JSON, but
+      // show all source facts of the focused offer before unsourced leads.
       const selected=focus&&index.get(focus)&&
         index.get(focus).type==="offer"?focus:null;
-      // All offers stay visible. The right side changes according to focus.
-      let shownSpecs;
-      if(selected) {
-        const specIds=new Set((byFrom.get(selected)||[])
-          .filter(e=>["TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS"]
-            .includes(e.relation)).map(e=>e.to));
-        shownSpecs=specs.filter(n=>specIds.has(n.id)).slice(0,12);
-      } else {
-        const popularity=new Map();
-        edges.filter(e=>e.relation==="TITLE_MENTIONS").forEach(e=>
-          popularity.set(e.to,(popularity.get(e.to)||0)+1));
-        shownSpecs=specs.filter(n=>(popularity.get(n.id)||0)>=2)
-          .sort((a,b)=>(popularity.get(b.id)||0)-(popularity.get(a.id)||0))
-          .slice(0,12);
-        if(shownSpecs.length<4)
-          shownSpecs=specs.slice(0,Math.min(12,specs.length));
-      }
-      const gapIds=new Set();
-      if(selected) (byFrom.get(selected)||[])
-        .filter(e=>e.relation==="EVIDENCE_NEEDED").slice(0,7)
-        .forEach(e=>gapIds.add(e.to));
-      const shownGaps=selected?gaps.filter(n=>gapIds.has(n.id)):gaps.slice(0,3);
-      const related=selected?(byFrom.get(selected)||[])
-        .filter(e=>["HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM",
-                    "POTENTIAL_SOURCE_DISCREPANCY",
-                    "SOURCE_DISCOVERY_LEAD"].includes(e.relation))
-        .map(e=>e.to):
-        observations.filter(n=>["reference_observation","source_declaration",
-                       "source_disagreement","source_lead","indexed_quote"]
-                       .includes(n.type)).map(n=>n.id);
-      const seen=new Set(related);
-      seen.add("decision:abstain");
-      // Source discrepancies affect the purchase decision even when the
-      // user's URL has no exact maker identity. Keep the first four actual
-      // sourced discrepancies visible in the global graph, not hidden until
-      // somebody happens to click a specific indexed alternative.
-      observations.filter(n=>n.type==="source_disagreement").slice(0,4)
-        .forEach(n=>seen.add(n.id));
-      [...seen].forEach(id=>(byFrom.get(id)||[])
-        .filter(e=>["OBSERVED_IN_SOURCE","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
-                     "DISCOVERED_PAGE_FETCHED_AND_EXTRACTED"].includes(e.relation))
-        .forEach(e=>seen.add(e.to)));
-      const priority={source_disagreement:0,decision_gate:1,
-        source_lead:2,source_declaration:3,reference_observation:3,
-        indexed_quote:4,fetched_source:5};
-      const shownEvidence=observations.filter(n=>seen.has(n.id))
-        .sort((a,b)=>(priority[a.type]??8)-(priority[b.type]??8))
-        .slice(0,13);
+      const chosen=selected||"offer-0";
+      const isRelevant=new Set();
+      const directRelations=new Set([
+        "SELLER_PAGE_DECLARES","HAS_SOURCE_OBSERVATION",
+        "HAS_DOCUMENTED_FACET","HAS_UNRESOLVED_VERIFICATION_GAP",
+        "INDEXED_PRICE_CLAIM","SOURCE_DISCOVERY_LEAD",
+        "SELLER_PAGE_MODEL_IDENTITY","POTENTIAL_SOURCE_DISCREPANCY",
+      ]);
+      (byFrom.get(chosen)||[]).forEach(e=>{
+        if(directRelations.has(e.relation))isRelevant.add(e.to);
+      });
+      // Every property node is linked to an actual document receipt and
+      // many are also grouped under an evidence facet. Do not cap at
+      // 13 observations as the previous graph did.
+      [...isRelevant].forEach(id=>(byFrom.get(id)||[]).forEach(e=>{
+        if(["FACET_HAS_SOURCE_FACT","OBSERVED_IN_SOURCE",
+            "DISCREPANCY_REQUIRES_SOURCE_REVIEW"].includes(e.relation)){
+          isRelevant.add(e.to);
+        }
+      }));
+      // Publisher claims elsewhere can contradict the input; show actual
+      // discrepancies globally, never silently hide them in seller #4.
+      graph.nodes.filter(n=>n.type==="source_disagreement").slice(0,3)
+        .forEach(n=>isRelevant.add(n.id));
+      const show=(node)=>!selected||isRelevant.has(node.id);
+      const visibleOffers=selected?
+        [index.get(selected),...offers.filter(n=>n.id!==selected).slice(0,5)]:
+        offers;
+      const facets=graph.nodes.filter(n=>(
+        n.type==="evidence_facet"||n.type==="model_family")&&show(n)
+      ).slice(0,12);
+      const documented=graph.nodes.filter(n=>
+        ["source_declaration","seller_declaration","reference_observation"]
+          .includes(n.type)&&show(n)
+      ).slice(0,32);
+      const sources=graph.nodes.filter(n=>
+        ["fetched_source","source_lead"].includes(n.type)&&show(n)
+      ).slice(0,6);
+      const quotes=graph.nodes.filter(n=>n.type==="indexed_quote"&&show(n))
+        .slice(0,5);
+      const discrepancies=graph.nodes.filter(n=>n.type==="source_disagreement"
+        &&isRelevant.has(n.id)).slice(0,3);
+      const questions=graph.nodes.filter(n=>n.type==="verification_gap"
+        &&show(n)).slice(0,6);
+      const specs=graph.nodes.filter(n=>["title_claim","derived_claim"]
+        .includes(n.type));
+      const linked=selected?new Set((byFrom.get(selected)||[])
+        .filter(e=>["TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS"]
+          .includes(e.relation)).map(e=>e.to)):null;
+      const shownSpecs=specs.filter(n=>!selected||linked.has(n.id))
+        .slice(0,7);
       const layout=new Map();
-      function column(nodes,x,y0,y1) {
+      function column(nodes,x,y0,y1){
         nodes.forEach((n,i)=>{
           const slot=(i+.5)/Math.max(1,nodes.length);
           layout.set(n.id,{x,y:y0+(y1-y0)*slot});
         });
       }
-      column(offers,114,20,640);
-      column(shownSpecs,535,25,330);
-      column(shownGaps,535,380,645);
-      column(shownEvidence,915,45,630);
-      const visible=edges.filter(e=>layout.has(e.from)&&layout.has(e.to)&&
-        ["TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS",
-         "EVIDENCE_NEEDED","HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM",
-         "RESEARCH_GAP_PREVENTS_VERIFIED_DECISION",
-         "POTENTIAL_SOURCE_DISCREPANCY","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
-         "SOURCE_DISCOVERY_LEAD","DISCOVERED_PAGE_FETCHED_AND_EXTRACTED",
-         "OBSERVED_IN_SOURCE","INFORMS_DIMENSION",
-         "SIMILAR_INDEX_MODEL_NAME_LEAD"].includes(e.relation));
+      column(visibleOffers,92,28,837);
+      column(facets,355,42,573);
+      column(shownSpecs,355,630,843);
+      column(documented,666,32,844);
+      column(sources,976,35,225);
+      column(quotes,976,239,336);
+      column(discrepancies,976,351,438);
+      column(questions,976,465,848);
+      const relations=new Set([
+        "TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS",
+        "HAS_DOCUMENTED_FACET","FACET_HAS_SOURCE_FACT",
+        "OBSERVED_IN_SOURCE","INDEXED_PRICE_CLAIM",
+        "HAS_UNRESOLVED_VERIFICATION_GAP","GAP_BLOCKS_VERIFIED_PURCHASE",
+        "SELLER_PAGE_MODEL_IDENTITY","INDEX_TITLE_MATCHES_DECLARED_MODEL",
+        "POTENTIAL_SOURCE_DISCREPANCY","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
+        "SOURCE_DISCOVERY_LEAD","DISCOVERED_PAGE_FETCHED_AND_EXTRACTED",
+        "SIMILAR_INDEX_MODEL_NAME_LEAD","ARITHMETIC_INPUT",
+      ]);
+      const visible=edges.filter(e=>layout.has(e.from)&&layout.has(e.to)
+        &&relations.has(e.relation));
       return {layout,visible};
     }
 
     function draw() {
       const {layout,visible}=buildLayout();
+      root.dataset.visibleGraphNodes=String(layout.size);
+      root.dataset.visibleGraphLinks=String(visible.length);
+      const count=root.querySelector("#live-graph-count");
+      if(count){
+        count.textContent=(graph.stats.offers||0)+" offers · "+
+          layout.size+"/"+graph.nodes.length+" nodes visible · "+
+          visible.length+" displayed links";
+      }
       canvas.replaceChildren();
       canvas.setAttribute("viewBox","0 0 "+WIDTH+" "+HEIGHT);
       const viewport=svg("g",{"class":"kg-canvas-group",
@@ -389,8 +410,6 @@
       const lines=svg("g",{"class":"kg-links"});
       visible.forEach(e=>{
         const a=layout.get(e.from),b=layout.get(e.to);
-        const close=(e.relation==="TITLE_MENTIONS"||
-                     e.relation==="EVIDENCE_NEEDED");
         const related=!focus||e.from===focus||e.to===focus||
           (active&&(e.from===active||e.to===active));
         const path=svg("path",{
@@ -402,7 +421,8 @@
             e.relation==="RESEARCH_GAP_PREVENTS_VERIFIED_DECISION"?
             "kg-link-gap":e.relation==="INDEXED_PRICE_CLAIM"?
             "kg-link-quote":e.relation==="POTENTIAL_SOURCE_DISCREPANCY"?
-            "kg-link-warning":"kg-link-evidence")+
+            "kg-link-warning":e.relation==="OBSERVED_IN_SOURCE"?
+            "kg-link-provenance":"kg-link-evidence")+
             (related?"":" kg-muted"),
           "data-relation":e.relation,
           "stroke-dasharray":e.relation==="TITLE_MENTIONS"||
@@ -427,7 +447,7 @@
           "aria-label":item.type+": "+item.label,
           "data-node-id":id,
           "transform":"translate("+p.x+" "+p.y+")"});
-        const circle=svg("circle",{"r":isOffer?9:6});
+        const circle=svg("circle",{"r":isOffer?(item.ordinal===1?11:8):6});
         g.appendChild(circle);
         const text=svg("text",{"x":isOffer?17:12,"y":4});
         const short={
@@ -438,7 +458,28 @@
           ram_gb:"RAM GB",capacity_gb:"storage GB",
           cpu_family:"CPU family",display_technology:"panel"
         };
-        let display=clip(item.label,item.type==="research_gap"?37:32);
+        let display=clip(item.label,item.type==="verification_gap"?33:36);
+        if(item.type==="source_declaration")
+          display=clip((item.source_property?
+            item.source_property+": ":"")+(item.value||item.label),43);
+        if(item.type==="evidence_facet")display=clip(item.label,29);
+        if(item.type==="seller_declaration")display=clip(item.label,43);
+        if(item.type==="verification_gap"){
+          const missing={
+            identity:"Exact model?",
+            seller_variant:"Seller variant?",
+            technical:"Technical specs?",
+            independent_test:"Independent test?",
+            operating:"Performance test?",
+            contents:"Kit contents?",
+            warranty:"Warranty terms?",
+            repair:"Parts & repairs?",
+            checkout:"Checkout total?",
+            legality:"Road-use proof?",
+            compatibility:"Compatibility test?",
+          };
+          display=missing[item.dimension]||clip(item.label,24);
+        }
         if(item.type==="title_claim"||item.type==="derived_claim")
           display=clip(String(item.value)+" · "+
             (short[item.parameter]||item.parameter)+
@@ -446,9 +487,18 @@
         if(item.type==="indexed_quote")
           display="Index: "+clip(item.label,22);
         text.textContent=isOffer?
-          "#"+String(item.ordinal).padStart(2,"0")+" "+clip(item.label,27):
+          "#"+String(item.ordinal).padStart(2,"0")+" "+clip(item.label,29):
           display;
         g.appendChild(text);
+        if(isOffer&&item.id===focus){
+          const d=graph.offer_details[item.id]||{};
+          const facts=(d.source_coverage||{}).documented_field_count||0;
+          const open=(d.high_impact_questions||[]).length;
+          const caption=svg("text",{"x":17,"y":21,
+            "class":"kg-offer-caption"});
+          caption.textContent=facts+" published specs · "+open+" checks left";
+          g.appendChild(caption);
+        }
         const label=svg("title");label.textContent=item.label;
         g.appendChild(label);
         g.addEventListener("click",()=>select(id));
@@ -470,6 +520,7 @@
       if(index.get(id)&&index.get(id).type==="offer")focus=id;
       remember();showDetails(id);
       syncButtons();draw();
+      root.dispatchEvent(new Event("tracecart:selection-changed"));
     }
     function syncButtons() {
       buttons.all.setAttribute("aria-pressed",String(!focus));
@@ -482,7 +533,8 @@
       scale=next;remember();draw();
     }
     buttons.all.addEventListener("click",()=>{
-      focus=null;active=null;remember();showDetails(null);syncButtons();draw();});
+      focus=null;active=null;remember();showDetails(null);syncButtons();draw();
+      root.dispatchEvent(new Event("tracecart:selection-changed"));});
     buttons.input.addEventListener("click",()=>select("offer-0"));
     buttons.plus.addEventListener("click",()=>changeZoom(1.2));
     buttons.minus.addEventListener("click",()=>changeZoom(1/1.2));

@@ -87,3 +87,43 @@ body.live-page{font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-se
  .live-stage .kg-details{top:5px;right:5px;bottom:5px;width:calc(100% - 10px)}
 }
 @media(prefers-reduced-motion:reduce){.live-task,.live-stage .kg-node.kg-added circle,.live-stage .kg-node.kg-added text{animation:none}}
+
+
+/* Evidence-first graph: facets, seller facts and downloaded specification
+   values remain visible as nodes rather than hidden behind a 13-node cap. */
+.live-stage .kg-node.kg-type-evidence_facet circle{
+  r:7;fill:#e2edf3;stroke:#4e809b;stroke-width:2
+}
+.live-stage .kg-node.kg-type-evidence_facet text{fill:#285873;font-weight:700}
+.live-stage .kg-node.kg-type-seller_declaration circle{
+  fill:#e2ecf0;stroke:#527e91
+}
+.live-stage .kg-node.kg-type-seller_declaration text{fill:#315e6d}
+.live-stage .kg-node.kg-type-model_family circle{
+  r:8;fill:#d7ecdc;stroke:#246849;stroke-width:3
+}
+.live-stage .kg-node.kg-type-verification_gap circle{
+  fill:#fff3e9;stroke:#c38b5f;stroke-dasharray:2 2
+}
+.live-stage .kg-node.kg-type-verification_gap text{fill:#92572d}
+.live-stage .kg-links path[data-relation="FACET_HAS_SOURCE_FACT"]{
+  stroke:#749aaa;stroke-width:1.45
+}
+.live-stage .kg-links path[data-relation="HAS_DOCUMENTED_FACET"]{
+  stroke:#477e9b;stroke-width:1.8
+}
+.live-stage .kg-links path[data-relation="HAS_UNRESOLVED_VERIFICATION_GAP"]{
+  stroke:#c18b57;stroke-dasharray:3 4;opacity:.56
+}
+.live-stage .kg-node text{font:600 12px/1 var(--mono)}
+.live-stage .kg-node.kg-type-source_declaration text{fill:#335e38}
+.live-stage .kg-node.kg-type-offer text{font-size:12px}
+.live-page .kg-details .kg-coverage{background:#eaf4ed;padding:10px 12px;color:#2f664a;border-left:3px solid #6a9b76;line-height:1.55}
+
+
+.live-stage .kg-node text.kg-offer-caption{
+ font-size:10px;fill:#668474;font-weight:500
+}
+.live-stage .kg-links path.kg-link-provenance{
+ stroke:#a4bdad;stroke-width:1;opacity:.32
+}
