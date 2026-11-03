@@ -120,6 +120,15 @@ capture and a disabled queue; HTTP tests exercise CSRF, bearer token, Host
 filter, queue, receipt validation and evidence output. They **do not**
 demonstrate successful live Allegro extraction or bypass an HTTP 403.
 
+## Subsequent DOM extraction work
+
+See `BROWSER_COMPANION_DOM_EXTRACTION_2026-11-03.md` for schema.org
+microdata / WooCommerce primary DOM support, strict crosschecks, and the
+11/11 actual-Chromium fixture smoke. A single public Adafruit page also
+returned the same 9.95 USD declared price via static and browser parsers.
+The MV3 extension service-worker + queue path is not yet fully E2E verified
+with an installed browser extension.
+
 ## Next work
 
 Validate in a real Chromium instance on a safe, authorized public merchant

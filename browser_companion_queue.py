@@ -23,11 +23,15 @@ MAX_CAPTURE = 12000
 LEASE_SECONDS = 90
 FAILURES = frozenset((
     "SITE_PERMISSION_REQUIRED", "REDIRECTED", "ACCESS_CHALLENGE",
-    "NO_STRUCTURED_PRODUCT", "TAB_TIMEOUT", "BROWSER_ERROR",
+    "NO_STRUCTURED_PRODUCT", "MULTIPLE_PRODUCTS_AMBIGUOUS",
+    "CONFLICTING_PRODUCT_IDENTITY", "CONFLICTING_OFFER_EVIDENCE",
+    "TAB_TIMEOUT", "BROWSER_ERROR",
 ))
 PRICE_ORIGINS = frozenset(("DIRECT_OFFER_PRICE",
                            "EXPLICIT_SALE_PRICE_SPECIFICATION",
-                           "UNTYPED_PRICE_SPECIFICATION"))
+                           "UNTYPED_PRICE_SPECIFICATION",
+                           "PRODUCT_OFFER_MICRODATA",
+                           "WOOCOMMERCE_PRIMARY_PRICE"))
 _ALLOWED_PRODUCT = frozenset(("@type", "name", "brand", "model", "sku",
                               "gtin", "gtin8", "gtin12", "gtin13", "gtin14",
                               "offers"))

@@ -43,7 +43,7 @@ test("one graph product with an unrelated organization is accepted",()=>{
 });
 test("multiple Product objects are ambiguous",()=>{
   page([product(),product("11.00")]);
-  assert.equal(traceCartQueuedProductProjection().error,"NO_STRUCTURED_PRODUCT");
+  assert.equal(traceCartQueuedProductProjection().error,"MULTIPLE_PRODUCTS_AMBIGUOUS");
 });
 test("multiple offers are ambiguous",()=>{
   const entry=product();
