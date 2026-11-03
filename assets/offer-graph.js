@@ -250,6 +250,23 @@
         details.appendChild(list);
         return;
       }
+      if(selected.type==="source_disagreement"){
+        details.appendChild(el("span","kg-detail-type","UNRESOLVED PUBLISHED CLAIM"));
+        details.appendChild(el("h3","",selected.label));
+        details.appendChild(el("p","kg-missing",
+          "The indexed listing and a published source, or two different sources, "+
+          "disagree. This is NOT an independent measurement or proof the seller "+
+          "offers the same hardware variant. Confirm exact SKU and test conditions."));
+        const receipts=(byFrom.get(selected.id)||[]).filter(e=>
+          e.relation==="DISCREPANCY_REQUIRES_SOURCE_REVIEW");
+        const realDocs=receipts.map(e=>index.get(e.to)).filter(n=>n&&n.url);
+        addLinkList(details,"Fetched documents to check",realDocs.map(n=>({
+          title:n.publisher||n.label,
+          note:"Downloaded source SHA256: "+(n.sha256||"").slice(0,18)+"…",
+          url:n.url,
+        })));
+        return;
+      }
       if(selected.type==="research_gap"){
         details.appendChild(el("span","kg-detail-type","OPEN RESEARCH DIMENSION"));
         details.appendChild(el("h3","",selected.label));
@@ -325,11 +342,22 @@
                        .includes(n.type)).map(n=>n.id);
       const seen=new Set(related);
       seen.add("decision:abstain");
-      related.forEach(id=>(byFrom.get(id)||[])
+      // Source discrepancies affect the purchase decision even when the
+      // user's URL has no exact maker identity. Keep the first four actual
+      // sourced discrepancies visible in the global graph, not hidden until
+      // somebody happens to click a specific indexed alternative.
+      observations.filter(n=>n.type==="source_disagreement").slice(0,4)
+        .forEach(n=>seen.add(n.id));
+      [...seen].forEach(id=>(byFrom.get(id)||[])
         .filter(e=>["OBSERVED_IN_SOURCE","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
                      "DISCOVERED_PAGE_FETCHED_AND_EXTRACTED"].includes(e.relation))
         .forEach(e=>seen.add(e.to)));
-      const shownEvidence=observations.filter(n=>seen.has(n.id)).slice(0,13);
+      const priority={source_disagreement:0,decision_gate:1,
+        source_lead:2,source_declaration:3,reference_observation:3,
+        indexed_quote:4,fetched_source:5};
+      const shownEvidence=observations.filter(n=>seen.has(n.id))
+        .sort((a,b)=>(priority[a.type]??8)-(priority[b.type]??8))
+        .slice(0,13);
       const layout=new Map();
       function column(nodes,x,y0,y1) {
         nodes.forEach((n,i)=>{

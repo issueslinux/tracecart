@@ -33,3 +33,13 @@ test("the page initializes graph after research READY without replacing saved au
  assert.ok(template.includes('id="kg-svg"'));
  assert.ok(template.includes("{{KNOWLEDGE_GRAPH_URL}}"));
 });
+
+
+test("global graph keeps source contradictions visible without focusing a seller offer",()=>{
+  const src=fs.readFileSync(path.join(__dirname,"../assets/offer-graph.js"),"utf8");
+  assert.ok(src.includes('observations.filter(n=>n.type==="source_disagreement").slice(0,4)'));
+  assert.ok(src.includes('"DISCREPANCY_REQUIRES_SOURCE_REVIEW"'));
+  assert.ok(src.includes('"UNRESOLVED PUBLISHED CLAIM"'));
+  assert.ok(src.includes("Downloaded source SHA256: "));
+  assert.ok(src.includes("NOT an independent measurement or proof"));
+});
