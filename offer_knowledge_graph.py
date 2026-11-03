@@ -81,6 +81,7 @@ def build_offer_knowledge_graph(projection):
         add_edge(dim_ids[-1],gate,"RESEARCH_GAP_PREVENTS_VERIFIED_DECISION",
                  status="NEEDS_TRUSTWORTHY_OFFER_SPECIFIC_EVIDENCE")
     unique_measurements=set()
+    unique_document_declarations=set()
     linked_references=0
     count_titles=0
     count_prices=0
@@ -179,20 +180,25 @@ def build_offer_knowledge_graph(projection):
                      publisher=ref.get("publisher"),retrieved_at=ref.get("retrieved_at"),
                      source_kind=ref.get("source_kind"))
             answer_id="answer:"+oid+":"+str(i)
-            add_node(answer_id,"reference_observation",
-                     ref.get("value") or ref.get("finding") or "Reference finding",
+            independent=ref.get("source_kind")=="INDEPENDENT_TEST"
+            node_kind="reference_observation" if independent else "source_declaration"
+            answer_status=("EXACT_SKU_INDEPENDENTLY_VERIFIED" if verified else
+                "REFERENCE_ONLY_NOT_THIS_OFFER" if independent else
+                "DOCUMENT_DECLARATION_EXACT_SKU_UNVERIFIED")
+            add_node(answer_id,node_kind,
+                     ref.get("value") or ref.get("finding") or "Source finding",
                      question_id=ref.get("question_id"),
                      finding=ref.get("finding"),value=ref.get("value"),
                      reviewed_model=ref.get("reviewed_model"),
                      reviewed_variant=ref.get("reviewed_variant"),
                      variant_match=ref.get("variant_match"),
                      method=ref.get("source_method"),
-                     status=("EXACT_SKU_INDEPENDENTLY_VERIFIED" if verified
-                             else "REFERENCE_ONLY_NOT_THIS_OFFER"),
+                     status=answer_status,
+                     property_family=ref.get("property_family"),
+                     source_kind=ref.get("source_kind"),
                      source_sha256=digest)
             add_edge(oid,answer_id,"HAS_SOURCE_OBSERVATION",
-                     status=("EXACT_SKU_INDEPENDENTLY_VERIFIED" if verified
-                             else "REFERENCE_ONLY_NOT_THIS_OFFER"))
+                     status=answer_status)
             add_edge(answer_id,source,"OBSERVED_IN_SOURCE",
                      status="FETCHED_DOCUMENT_WITH_SHA256")
             if ref.get("dimension") in axes:
@@ -203,12 +209,16 @@ def build_offer_knowledge_graph(projection):
             answers.append({"id":answer_id,"finding":ref.get("finding"),
                             "value":ref.get("value"),"source_id":source,
                             "source_url":source_url,"source_sha256":digest,
-                            "status":("EXACT_SKU_INDEPENDENTLY_VERIFIED" if verified
-                                      else "REFERENCE_ONLY_NOT_THIS_OFFER"),
+                            "source_kind":ref.get("source_kind"),
+                            "property_family":ref.get("property_family"),
+                            "status":answer_status,
                             "variant_match":ref.get("variant_match"),
                             "method":ref.get("source_method")})
-            unique_measurements.add((digest,ref.get("source_method"),
-                                     str(ref.get("value"))))
+            identifier=(digest,ref.get("source_property"),str(ref.get("value")))
+            if independent:
+                unique_measurements.add(identifier)
+            else:
+                unique_document_declarations.add(identifier)
             linked_references+=1
             if verified:
                 exact_verified+=1
@@ -258,6 +268,7 @@ def build_offer_knowledge_graph(projection):
             "high_priority_unanswered_check_links":gap_edges,
             "total_planned_questions":sum(o.get("question_count",0) for o in offers),
             "independent_reference_measurements":len(unique_measurements),
+            "documented_product_declarations":len(unique_document_declarations),
             "reference_offer_links":linked_references,
             "verified_exact_sku_answers":exact_verified,
             "verified_checkout_prices":projection.get("evidence",{}).get(
@@ -277,6 +288,7 @@ def build_offer_knowledge_graph(projection):
             "Title numbers are unverified claims, not tested product specifications.",
             "A matching value or related Shopping title does not establish identical model, battery or frame.",
             "Independent reviews of other variants stay reference-only until exact SKU and tested configuration match.",
+            "Seller/OEM/third-party page specifications are source declarations, not independent laboratory tests.",
             "No verified seller checkout price is inferred from indexed quotes.",
             "Knowledge gaps are open investigations, not failed performance tests.",
         ],

@@ -1,3 +1,21 @@
+> **LATEST GENERAL SOURCE PIPELINE (2026-11-03):** Replace
+> model-by-model document research with `generic_source_research.py`,
+> which accepts real seller URLs, previously stored source-discovery
+> URLs, dynamically identified exact brand/model links on proposed
+> manufacturer homepages, and bounded same-origin product sitemaps.
+> Extract real JSON-LD Product, specification tables and visible
+> fields across product categories with actual URL/SHA/retrieval time.
+> Treat declarations as `source_declaration` graph nodes, never
+> independent benchmark results or verified exact SKU.
+> Optional `browser_render.py` + `browser_render.js` launch
+> Chromium **graphically inside Xvfb** ONLY after robots-approved
+> static HTTP 200 with no usable properties, with pinned public IP
+> and blocked cross-origin requests. A 403/CAPTCHA is NOT bypassed.
+> Test run on saved e-bike job: 12 actually retrieved ALLGOBIKE
+> manufacturer-site declarations; zero independent tested range,
+> zero verified seller checkout. See
+> [GENERAL_PRODUCT_SOURCE_RESEARCH_2026-11-03](GENERAL_PRODUCT_SOURCE_RESEARCH_2026-11-03.md).
+>
 > **LATEST UI / RAM STREAMING (2026-11-03):** Unified `/cart`
 > and `/cart/status/<id>` graph-first interface: product URL field
 > above a centred evolving network, real source worker statuses on

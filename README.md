@@ -5,6 +5,28 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-03: general-source investigation for products across categories
+
+The research workers now use a **single robots-aware structured
+product-source pipeline**, not individual scrapers for each laptop or
+e-bike variant. It discovers URLs from real saved retailer/discovery
+links or a visibly confirmed matching brand/model link on a candidate
+brand homepage/bounded product sitemap; broad HTML/JSON-LD technical
+fields are extracted from six tested category families (with generic
+support for other classes). Documented claims get URL, SHA256,
+retrieved timestamp, model/variant uncertainty and graph nodes.
+Source claims are **not independent laboratory tests** or verified
+checkout totals. This remains separate from the existing exact
+Lenovo-family Notebookcheck test adapter.
+
+When a publicly permitted source returns HTTP 200 but has no usable
+static product data, an optional disposable Chromium in graphical
+Xvfb mode may render JS: set
+`TRACECART_GRAPHICAL_BROWSER_FALLBACK=1`. One browser at a time,
+pinned public-IP DNS and intercepted same-origin HTTPS requests only.
+**No bypass of 403, robots.txt, login or CAPTCHA.**
+[Generic source and browser design, multi-category tests and live e-bike replay](docs/GENERAL_PRODUCT_SOURCE_RESEARCH_2026-11-03.md).
+
 ## 2026-11-03: minimal, live, RAM-backed graph workspace
 
 `/cart` is now the same full-screen interface used by active and completed
