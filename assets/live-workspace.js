@@ -53,7 +53,17 @@
       const capacity=direct.find(a=>a.browser_status==="GRAPHICAL_BROWSER_CAPACITY_LIMIT");
       const hasFacts=(entry.reference_answers||[]).length>0;
       const directUrl=direct.find(a=>a.url)?.url || d.url || null;
+      // Research may have completed before indexed seller URLs were found.
+      // No evidence job was scheduled for such links; show NOT VERIFIED,
+      // not a fake, indefinitely WAITING browser check.
       let mode="QUEUED",label="WAITING",detail="Scheduled for source checking.";
+      if(complete&&!state){
+        mode="BLOCKED";
+        label=d.kind==="INDEXED_SEARCH_CARD"?"INDEX ONLY":"NOT VERIFIED";
+        detail=d.kind==="INDEXED_SEARCH_CARD"
+          ?"Shopping search card with no direct seller URL; no page to visit."
+          :"Indexed seller URL found. Browser verification has not yet been authorized.";
+      }
       if(state==="RUNNING"){
         mode="RUNNING";label="CHECKING";detail="Fetching eligible source pages.";
       }else if(state==="QUEUED"){
@@ -235,7 +245,8 @@
       return true;
     if(evidenceStatus!=="COMPLETE")return false;
     const verdict=(snapshot.final_verdict||{}).status||"NOT_SCHEDULED";
-    if(["COMPLETE","UNAVAILABLE","INTERRUPTED"].includes(verdict))
+    if(["COMPLETE","UNAVAILABLE","INTERRUPTED",
+        "STALE_AFTER_SHOPPING_REFRESH"].includes(verdict))
       return true;
     // Old durable jobs predate the verdict phase. Never retroactively
     // describe those saved reports as local LLM conclusions.
@@ -617,7 +628,9 @@
       status.textContent=snapshot.state==="FAILED"?"Research failed":
         snapshot.state==="INTERRUPTED"?"Research interrupted":
         researchDone?
-        ((finalStatus==="COMPLETE"?"Verdict ready":"Research finished")+
+        ((finalStatus==="COMPLETE"?"Verdict ready":
+          finalStatus==="STALE_AFTER_SHOPPING_REFRESH"
+          ?"Offers updated · old verdict stale":"Research finished")+
          " · "+(activity.processed||0)+"/"+
          (activity.planned||0)+" checked"):
         finalStatus==="RUNNING"?"Qwen synthesizing evidence":
@@ -704,7 +717,10 @@
         const v=(lastSnapshot||{}).final_verdict||{};
         status.textContent=(lastSnapshot.state==="FAILED"?"Research failed":
           lastSnapshot.state==="INTERRUPTED"?"Research interrupted":
-          v.status==="COMPLETE"?"Verdict ready":"Research finished")+
+          v.status==="COMPLETE"?"Verdict ready":
+          v.status==="STALE_AFTER_SHOPPING_REFRESH"
+          ?"Offers updated · previous verdict needs refreshing"
+          :"Research finished")+
           " · "+(e.processed||0)+"/"+(e.planned||0)+" checked";
       }
     });
