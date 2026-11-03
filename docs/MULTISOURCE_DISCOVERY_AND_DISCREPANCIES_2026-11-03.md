@@ -88,6 +88,12 @@ Persisted flags are
 URLs, SHA256 and `not_fraud_or_exact_sku_proof: true`.
 The original source declarations remain unchanged.
 
+The SVG keeps up to four real published discrepancies visible even
+when the initial input URL itself has no matched manufacturer identity:
+the user does not need to know which indexed alternative to click.
+Clicking the warning shows the original downloaded document URL and SHA256.
+This was verified on the real 13-offer e-bike job in graphical Chromium.
+
 The graph has `source_disagreement` nodes linked to the source
 document(s) by `DISCREPANCY_REQUIRES_SOURCE_REVIEW`; clicking
 the related offer displays the warning. The right research rail
