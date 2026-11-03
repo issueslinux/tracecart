@@ -94,3 +94,57 @@ test("contradictory current direct and sale prices fail closed",()=>{
   page([entry]);
   assert.equal(traceCartQueuedProductProjection().error,"NO_STRUCTURED_PRODUCT");
 });
+
+test("generic visible code promotion is captured separately from standard offer price",()=>{
+  page([product("3499.99")]);
+  const original=globalThis.document.querySelectorAll;
+  globalThis.document.querySelectorAll=selector=>
+    selector.startsWith('script[') ? original(selector) :
+    selector==='main [class*="price"]'
+      ? [{innerText:"Cena standardowa 3 499,99 zł. 2\u202f799,00 zł z kodem BW1610-0112 do 01.12.2026"}] : [];
+  const result=traceCartQueuedProductProjection();
+  assert.equal(result.snapshot.offers.price,"3499.99");
+  assert.deepEqual(result.promotion,{
+    price:"2799.00",currency:"PLN",code:"BW1610-0112",
+    valid_until:"2026-12-01",source:"VISIBLE_PRODUCT_PRICE_WITH_CODE"
+  });
+});
+
+test("separately rendered cents in discount widget are normalized",()=>{
+  page([product("3499.99")]);
+  const scripts=globalThis.document.querySelectorAll;
+  globalThis.document.querySelectorAll=selector=>
+    selector.startsWith('script[') ? scripts(selector) :
+    selector==='main [class*="price"]'
+      ? [{innerText:"2 799 00 zł z kodem BW1610-0112"}] : [];
+  const result=traceCartQueuedProductProjection();
+  assert.equal(result.promotion.price,"2799.00");
+  assert.equal(result.promotion.code,"BW1610-0112");
+});
+
+test("coupon-shaped text without nearby product price is not fabricated",()=>{
+  page([product("3499.99")]);
+  const original=globalThis.document.querySelectorAll;
+  globalThis.document.querySelectorAll=selector=>
+    selector.startsWith('script[') ? original(selector) :
+    selector==='main [class*="promo"]'
+      ? [{innerText:"Z kodem SAVE2026 na akcesoria, oferta nie dotyczy tego produktu"}] : [];
+  assert.equal(traceCartQueuedProductProjection().promotion,undefined);
+});
+
+test("unrelated hidden or ambiguous promotion widgets cannot become sale price",()=>{
+  page([product("3499.99")]);
+  const original=globalThis.document.querySelectorAll;
+  const a={innerText:"2 799,00 zł z kodem BW1610-0112",getClientRects:()=>[]};
+  const b={innerText:"1 799,00 zł z kodem SAVE2026",getClientRects:()=>[{x:0}]};
+  globalThis.document.querySelectorAll=selector=>
+    selector.startsWith('script[') ? original(selector) :
+    selector==='main [class*="price"]' ? [a,b] : [];
+  const result=traceCartQueuedProductProjection();
+  assert.equal(result.promotion.price,"1799.00");
+  globalThis.document.querySelectorAll=selector=>
+    selector.startsWith('script[') ? original(selector) :
+    selector==='main [class*="price"]'
+      ? [{...b,innerText:"2 799,00 zł z kodem BW1610-0112"},b] : [];
+  assert.equal(traceCartQueuedProductProjection().promotion,undefined);
+});

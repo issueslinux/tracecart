@@ -181,6 +181,27 @@ class CompanionHTTPTests(unittest.TestCase):
         replay=json.loads(self.call("/cart/status/"+cart_id+".knowledge-graph.json")[1])
         self.assertGreater(replay["stats"]["browser_claims_not_checkout_verified"],0)
 
+    def test_browser_auto_opt_in_is_explicit_and_can_be_disabled(self):
+        self.assertFalse(self.server.cart_jobs.browser_auto_enabled())
+        status,html=self.call("/research/companion")
+        self.assertEqual(status,200)
+        self.assertIn("Enable automatic seller checks",html)
+        status,html=self.call("/research/companion/auto",method="POST",
+             payload={"csrf":self.server.csrf,"operation":"enable"},
+             origin=self.base)
+        self.assertEqual(status,200)
+        self.assertTrue(self.server.cart_jobs.browser_auto_enabled())
+        self.assertIn("Disable automatic seller checks",html)
+        self.assertEqual(self.call("/research/companion/auto",method="POST",
+             payload={"csrf":self.server.csrf,"operation":"disable"},
+             origin="https://untrusted.example.org")[0],400)
+        self.assertTrue(self.server.cart_jobs.browser_auto_enabled())
+        status,_=self.call("/research/companion/auto",method="POST",
+             payload={"csrf":self.server.csrf,"operation":"disable"},
+             origin=self.base)
+        self.assertEqual(status,200)
+        self.assertFalse(self.server.cart_jobs.browser_auto_enabled())
+
     def test_bad_receipt_type_and_token_denied(self):
         token = self.server.companion.token
         self.assertEqual(self.call("/api/browser-companion/result",method="POST",

@@ -142,12 +142,85 @@ export function traceCartQueuedProductProjection() {
       price_origin:"WOOCOMMERCE_PRIMARY_PRICE"};
   }
 
+  // A coupon is separate from the schema.org sale price. Inspect only
+  // bounded, visible product-price/promotion widgets; never arbitrary body
+  // text, recommendations, checkout controls, cookies or full-page HTML.
+  function visibleCodePromotion(listedPrice, currency) {
+    if (currency!=="PLN") return null;
+    const selectors=[
+      'main [class*="price"]','main [class*="promo"]',
+      'main [class*="discount"]','main [data-testid*="price"]',
+      '[class*="product-price"]','[class*="productPrice"]',
+      '[class*="product-promo"]','[data-testid*="product-price"]'
+    ];
+    const elements=new Set();
+    for (const selector of selectors) {
+      for (const node of Array.from(document.querySelectorAll(selector)).slice(0,35)) {
+        elements.add(node);
+        if (elements.size>=85) break;
+      }
+    }
+    const matches=[];
+    for (const element of elements) {
+      if (element.closest?.('footer,header,nav,aside,[aria-hidden="true"]')) continue;
+      if (typeof element.getClientRects==="function" &&
+          element.getClientRects().length===0) continue;
+      const raw=String(element.innerText ?? element.textContent ?? "");
+      if (!raw || raw.length>750) continue;
+      const text=raw.replace(/[  \s]+/g," ").trim();
+      // Must explicitly state the code and the discounted amount nearby.
+      const codes=Array.from(text.matchAll(
+        /(?:cena\s+z\s+kodem|z\s+kodem(?:\s+rabatowym)?|kod\s+rabatowy|kod\s+promocyjny)\s*:?\s*([A-Z0-9][A-Z0-9_-]{3,29})\b/gi));
+      if (codes.length!==1) continue;
+      const code=codes[0][1].toUpperCase();
+      if (!/[A-Z]/.test(code) || !/[0-9]/.test(code)) continue;
+      const prices=Array.from(text.matchAll(
+        /\b((?:[0-9]{1,3}(?: [0-9]{3})+(?: [0-9]{2})?|[0-9]{2,6})(?:[,.][0-9]{2})?)\s*(?:zł|PLN)(?=\s|$|[.,;])/gi));
+      function codeAdjacentPrice(raw) {
+        // Retailers sometimes render grosze in a separate raised <sup>
+        // resulting in "2 799 00 zł" instead of "2 799,00 zł".
+        if (/^[0-9]{1,3}(?: [0-9]{3})+ [0-9]{2}$/.test(raw)) {
+          const tokens=raw.split(" ");
+          const cents=tokens.pop();
+          return priceValue(tokens.join("")+"."+cents);
+        }
+        return priceValue(raw.replace(/ /g,""));
+      }
+      const near=prices.filter(p=>Math.abs((p.index||0)-(codes[0].index||0))<105 &&
+          !/(?:rata|raty|miesi[eę]cznie)/i.test(
+             text.slice(Math.max(0,(p.index||0)-15),(p.index||0))))
+        .map(p=>codeAdjacentPrice(p[1]))
+        .filter(p=>p!==null && Number(p)<Number(listedPrice));
+      const different=[...new Set(near)];
+      if (different.length!==1) continue;
+      const valid=text.match(/(?:ważn[yae]?\s+do|promocja\s+do|do)\s+(\d{1,2})[.](\d{1,2})[.](20\d{2})/i);
+      let validUntil=null;
+      if (valid) {
+        const iso=valid[3]+"-"+valid[2].padStart(2,"0")+"-"+valid[1].padStart(2,"0");
+        if (!Number.isNaN(Date.parse(iso+"T00:00:00Z"))) validUntil=iso;
+      }
+      matches.push({price:different[0],currency,code,valid_until:validUntil,
+                    source:"VISIBLE_PRODUCT_PRICE_WITH_CODE"});
+    }
+    // Two distinct promotions visible concurrently are ambiguous. Identical
+    // DOM parent/child copies of the same coupon are safe to deduplicate.
+    const ids=[...new Set(matches.map(x=>x.price+"|"+x.currency+"|"+x.code))];
+    const dates=[...new Set(matches.map(x=>x.valid_until).filter(Boolean))];
+    if (ids.length!==1 || dates.length>1) return null;
+    const candidate=matches[0];
+    candidate.valid_until=dates[0] || null;
+    return candidate;
+  }
   const dom=domProductOffer();
   if (found.length > 1) return {error:"MULTIPLE_PRODUCTS_AMBIGUOUS"};
   if (found.length === 0) {
     if (!dom) return {error:"NO_STRUCTURED_PRODUCT"};
     if (dom.error) return dom;
-    return {url,captured_at:new Date().toISOString(),...dom};
+    const result={url,captured_at:new Date().toISOString(),...dom};
+    const offer=dom.snapshot?.offers;
+    const promo=visibleCodePromotion(offer?.price,offer?.priceCurrency);
+    if (promo) result.promotion=promo;
+    return result;
   }
   const product=found[0];
   const offer=Array.isArray(product.offers)
@@ -228,8 +301,11 @@ export function traceCartQueuedProductProjection() {
     ? plain(offer.seller?.name,150) : plain(offer.seller,150);
   if (seller) projection.offers.seller={"name":seller};
 
-  return {
+  const result={
     url, captured_at: new Date().toISOString(), snapshot: projection,
     price_origin: priceOrigin
   };
+  const promo=visibleCodePromotion(price,currency);
+  if (promo) result.promotion=promo;
+  return result;
 }

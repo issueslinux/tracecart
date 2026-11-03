@@ -460,8 +460,12 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             <p>Install the local, unpacked Chrome/Chromium extension from
             <code>browser-extension/</code>. Enter this local port and pairing
             token in its popup once, then grant access to each selected merchant
-            site in the browser permission prompt. Only URLs you queue here
-            are opened. Disable background queue in the popup at any time.</p>
+            site in the browser permission prompt. With automatic checks
+            disabled, only URLs explicitly queued here are opened. When
+            automatic checks are enabled below, a newly completed cart
+            queues the input and discovered seller URLs; unapproved
+            domains remain inaccessible. Disable the extension queue
+            in its popup at any time.</p>
             <p><b>Local endpoint:</b> 127.0.0.1:{}</p>
             <label>Private pairing token (keep on this computer)
             <input type="text" readonly value="{}"></label>
@@ -475,6 +479,18 @@ class TraceCartHandler(BaseHTTPRequestHandler):
               placeholder="https://store.example.org/product/...">{}</textarea></label>
               <button>Queue selected research pages</button>
             </form>
+            <form method="post" action="/research/companion/auto">{}
+              <input type="hidden" name="operation" value="{}">
+              <button type="submit">{}</button>
+            </form>
+            <p><b>Automatic follow-up:</b> {}. When enabled, new cart research
+            queues the input product plus discovered direct seller URLs
+            automatically (maximum 12 pages per batch). Only sites explicitly
+            permitted in the paired Chromium extension can be inspected.
+            No site permissions are silently granted, no checkout occurs.
+            Unknown sites remain SITE_PERMISSION_REQUIRED until manually
+            authorized in the extension. Queue capacity and errors remain
+            visible; disabling this stops new automatic batches.</p>
             <p>No cookies, localStorage, authentication tokens, full page HTML
             or account information are sent. Only a bounded, sanitized
             Product/Offer projection is accepted. All prices remain
@@ -484,7 +500,51 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             · <a href="/research">Research lab</a></p>{}
             </section>""".format(self.server.server_port,
                                   h(self.server.companion.token),
-                                  self.hidden(), h(default_url), table))
+                                  self.hidden(), h(default_url),
+                                  self.hidden(),
+                                  ("disable" if self.server.cart_jobs.browser_auto_enabled()
+                                   else "enable"),
+                                  ("Disable automatic seller checks" if
+                                   self.server.cart_jobs.browser_auto_enabled()
+                                   else "Enable automatic seller checks"),
+                                  ("ENABLED" if self.server.cart_jobs.browser_auto_enabled()
+                                   else "DISABLED"),table))
+
+    def shopping_provider_page(self):
+        """Loopback-only opt-in provider setup; API key never rendered."""
+        status=self.server.cart_jobs.shopping_provider_status()
+        enabled=status["configured"]
+        header=("ACTIVE · "+status["configured_via"] if enabled else
+                "NOT CONFIGURED — NO AUTOMATIC RETAILER SEARCH")
+        self.send_page("""<section><h2>Shopping discovery provider</h2>
+           <p><strong>{}</strong></p>
+           <p>Google Shopping through SerpAPI supplies candidate offers
+           for each newly submitted product. Without a provider key,
+           TraceCart cannot automatically discover competitor stores.
+           The Browser Companion verifies candidate seller URLs; it does
+           not search the web for them.</p>
+           <p><strong>Daily maximum:</strong> {} reserved API calls / {}.
+           Each new product reserves at most two calls before searching.
+           This is a paid/quotable third-party API; check your SerpAPI
+           plan before enabling it. No API calls occur while unconfigured.
+           The key is stored locally in a permission-0600 file and is
+           not sent to seller sites, the extension or browser receipts.</p>
+           <form method="post" action="/research/shopping/configure">{}
+             <label>SerpAPI API key (private, only saved on this machine)
+             <input type="password" name="api_key" minlength="20" maxlength="128"
+               autocomplete="new-password" placeholder="Private key"></label>
+             <input type="hidden" name="operation" value="enable">
+             <button>Enable automatic Shopping discovery</button>
+           </form>
+           <form method="post" action="/research/shopping/configure">{}
+             <input type="hidden" name="operation" value="disable">
+             <button>Disable local Shopping key</button>
+           </form>
+           <p><a href="/cart">New cart analysis</a> ·
+           <a href="/research/companion">Browser companion</a></p>
+           </section>""".format(
+             h(header),h(status["reserved_calls_today"]),
+             h(status["daily_cap"]),self.hidden(),self.hidden()))
 
     def cart_entry_page(self):
         # One screen for both a new URL and ongoing graph research.
@@ -496,6 +556,11 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{KNOWLEDGE_GRAPH_URL}}":"","{{AUDIT_URL}}":"",
             "{{RAW_URL}}":"","{{PRODUCT_URL}}":"",
             "{{COMPANION_URL}}":"/research/companion",
+            "{{VERIFY_INDEXED_ACTION}}":"",
+            "{{SEARCH_INDEX_ACTION}}":"",
+            "{{SHOPPING_PROVIDER_LABEL}}":("Shopping discovery · ACTIVE" if
+              self.server.cart_jobs.shopping_provider_status()["configured"] else
+              "⚠ Shopping discovery · NOT CONFIGURED"),
             "{{INPUT_PRICE_ACTION}}":"","{{INPUT_PRICE_VALUE}}":"",
             "{{INPUT_PROMOTION_CODE}}":"",
         }.items():
@@ -613,6 +678,11 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{RAW_URL}}":"/cart/status/"+job_id+".json",
             "{{SHORT_ID}}":job_id[:8],
             "{{PRODUCT_URL}}":(result.get("item") or {}).get("merchant_url") or "",
+            "{{VERIFY_INDEXED_ACTION}}":"/cart/status/"+job_id+"/verify-indexed",
+            "{{SEARCH_INDEX_ACTION}}":"/cart/status/"+job_id+"/search-index",
+            "{{SHOPPING_PROVIDER_LABEL}}":("Shopping discovery · ACTIVE" if
+              self.server.cart_jobs.shopping_provider_status()["configured"] else
+              "⚠ Shopping discovery · NOT CONFIGURED"),
             "{{COMPANION_URL}}":"/research/companion?product_url="+quote(
                 (result.get("item") or {}).get("merchant_url") or "",safe=""),
             "{{INPUT_PRICE_ACTION}}":"/cart/status/"+job_id+"/input-price",
@@ -673,7 +743,12 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         if path == "/api/browser-companion/next":
             if not self.companion_authorized():
                 return
-            return self.companion_json({"job": self.server.companion.take()})
+            task=self.server.companion.take()
+            if task:
+                self.server.cart_jobs.mark_index_browser_in_progress(task["job_id"])
+            return self.companion_json({"job":task})
+        if path == "/research/shopping":
+            return self.shopping_provider_page()
         if path == "/research/companion":
             requested=parse_qs(urlsplit(self.path).query).get("product_url",[""])[0]
             if requested:
@@ -1470,15 +1545,94 @@ https://www.adafruit.com/product/3400</textarea></label>
                 payload = json.loads(self.rfile.read(size).decode("utf8"))
                 ack=self.server.companion.report(payload)
                 if ack["status"]=="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED":
-                    # Browser result is separately persisted for the cart
-                    # graph; a claim never changes checkout or input price.
+                    # Persist the filtered claim before notifying the live
+                    # graph; otherwise SSE might cache a missing result.
                     row=self.server.companion.get_job(ack["job_id"])
                     self.server.cart_jobs.store_browser_claim(row)
+                self.server.cart_jobs.finish_index_browser_task(
+                    ack["job_id"], ack["status"])
+                self.server.cart_jobs.finish_browser_auto_task(
+                    ack["job_id"], ack["status"])
                 return self.companion_json(ack)
             except (ValueError, UnicodeError, TypeError, KeyError):
                 return self.companion_json({"error": "INVALID_COMPANION_RECEIPT"}, 400)
         try:
             form = self.form()
+            if (self.path.startswith("/cart/status/") and
+                    self.path.endswith("/search-index")):
+                cart_job_id=self.path[len("/cart/status/"):-len("/search-index")]
+                self.server.cart_jobs.request_shopping_refresh(cart_job_id)
+                self.send_response(303)
+                self.send_header("Location","/cart/status/"+cart_job_id)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
+            if (self.path.startswith("/cart/status/") and
+                    self.path.endswith("/auto-verify")):
+                cart_job_id=self.path[len("/cart/status/"):-len("/auto-verify")]
+                from automatic_browser_verification import enqueue_for_completed_cart
+                result=enqueue_for_completed_cart(self.server,cart_job_id)
+                if result["status"] not in ("QUEUED","ALREADY_QUEUED"):
+                    raise ValueError("AUTOMATIC_BROWSER_NOT_ENABLED_OR_NOT_AVAILABLE")
+                self.send_response(303)
+                self.send_header("Location","/cart/status/"+cart_job_id)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
+            if (self.path.startswith("/cart/status/") and
+                    self.path.endswith("/verify-indexed")):
+                cart_job_id=self.path[len("/cart/status/"):-len("/verify-indexed")]
+                targets=self.server.cart_jobs.indexed_browser_targets(cart_job_id)
+                if not targets:
+                    raise ValueError("NO_DIRECT_SELLER_URLS_TO_VERIFY")
+                # Requires a direct, CSRF-protected user POST. No background
+                # search result ever grants browser-site permission itself.
+                existing=self.server.cart_jobs.index_browser_checks(cart_job_id)
+                if any(x["status"] in ("QUEUED","IN_PROGRESS") for x in existing):
+                    raise ValueError("INDEX_VERIFICATION_ALREADY_RUNNING")
+                # Retrying inaccessible sites requires another explicit
+                # human click, not a hidden browser loop.
+                if existing:
+                    failed={x["offer_idx"] for x in existing
+                            if x["status"]!="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"}
+                    targets=[x for x in targets if x["offer_idx"] in failed] or targets
+                queued=self.server.companion.enqueue_many(
+                    [row["url"] for row in targets])
+                self.server.cart_jobs.register_index_browser_batch(
+                    cart_job_id,targets,queued)
+                self.send_response(303)
+                self.send_header("Location","/cart/status/"+cart_job_id)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
+            if self.path == "/research/shopping/configure":
+                if form.get("operation")=="enable":
+                    self.server.cart_jobs.configure_shopping_provider(
+                        form.get("api_key",""))
+                elif form.get("operation")=="disable":
+                    self.server.cart_jobs.disable_shopping_provider()
+                else:
+                    raise ValueError("INVALID_PROVIDER_ACTION")
+                self.send_response(303)
+                self.send_header("Location","/research/shopping")
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
+            if self.path == "/research/companion/auto":
+                action=form.get("operation")
+                if action not in ("enable","disable"):
+                    raise ValueError("INVALID_AUTOMATIC_BROWSER_SETTING")
+                self.server.cart_jobs.set_browser_auto_enabled(action=="enable")
+                self.send_response(303)
+                self.send_header("Location","/research/companion")
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
             if self.path == "/research/companion/queue":
                 urls = [v.strip() for v in form.get("product_urls", "").splitlines()
                         if v.strip()]
@@ -1663,6 +1817,9 @@ def run():
     server.cart_jobs = CartResearchJobs(args.db)
     server.companion = CompanionQueue(token_path=args.db.parent /
                                       "browser_companion.token")
+    from automatic_browser_verification import enqueue_for_completed_cart
+    server.cart_jobs.on_research_ready=lambda jid:enqueue_for_completed_cart(
+        server,jid)
     print("TraceCart local demo: http://127.0.0.1:{}".format(args.port))
     print("PayPal mode: sandbox only; no capture code; user approval mandatory")
     try:

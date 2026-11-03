@@ -164,6 +164,10 @@ def build_decision_projection(record):
                 "offers": offer_summaries(current, category),
                 "selected_item":item,
                 "browser_claims":record.get("browser_claims") or [],
+                "indexed_browser_checks":record.get("indexed_browser_checks") or [],
+                "shopping_search_status":((preview or {}).get("indexed_shopping") or {}).get(
+                    "status","SEARCH_NOT_STARTED"),
+                "shopping_refresh":record.get("shopping_refresh") or {"status":"NOT_STARTED"},
                 "input_price":record.get("input_price"),
                 "selected_source_intake":((preview or {}).get(
                     "source_intake") or {}),
@@ -320,6 +324,9 @@ def build_decision_projection(record):
         "offers":offer_summaries(record,category),
         "selected_item":selected,
         "browser_claims":record.get("browser_claims") or [],
+        "indexed_browser_checks":record.get("indexed_browser_checks") or [],
+        "shopping_search_status":shopping.get("status","SEARCH_NOT_STARTED"),
+        "shopping_refresh":record.get("shopping_refresh") or {"status":"NOT_STARTED"},
         "input_price":record.get("input_price"),
         "selected_source_intake":source,
         "source_search":record.get("source_search") or {},

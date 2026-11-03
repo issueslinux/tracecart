@@ -80,32 +80,57 @@ async function snapshotJob(job) {
   }
 }
 
+// Bounded parallelism: up to three real seller tabs are inspected at once.
+// Every job gets its own source receipt; no headless access bypass or retry.
+const MAX_BROWSER_JOBS_IN_PARALLEL = 3;
+const MAX_PER_LANE_PER_POLL = 4; // 3 × 4 = max 12 explicitly queued URLs
+
+
+async function processOne(config) {
+  const response=await localFetch(config,"/api/browser-companion/next");
+  const job=response.job;
+  if (!job) return false;
+  const captured=await snapshotJob(job);
+  const receipt={
+    job_id:job.job_id,url:job.url,
+    captured_at:captured.captured_at || null,
+    snapshot:captured.snapshot || null,
+    price_origin:captured.price_origin || null,
+    promotion:captured.promotion || null,
+    error:captured.error || null
+  };
+  const ack=await localFetch(config,"/api/browser-companion/result", {
+    method:"POST",body:JSON.stringify(receipt)
+  });
+  await chrome.storage.local.set({
+    companionLastStatus:job.url+" → "+ack.status
+  });
+  return true;
+}
+
 async function poll() {
   if (busy) return;
   busy=true;
   try {
     const {companionConfig:config}=await chrome.storage.local.get("companionConfig");
     if (!validConfig(config)) return;
-    const response=await localFetch(config,"/api/browser-companion/next");
-    const job=response.job;
-    if (!job) { await chrome.storage.local.set({companionLastStatus:"Queue empty"}); return; }
-    const captured=await snapshotJob(job);
-    const receipt={
-      job_id:job.job_id,url:job.url,
-      captured_at:captured.captured_at || null,
-      snapshot:captured.snapshot || null,
-      price_origin:captured.price_origin || null,
-      error:captured.error || null
-    };
-    const ack=await localFetch(config,"/api/browser-companion/result", {
-      method:"POST",body:JSON.stringify(receipt)
-    });
-    await chrome.storage.local.set({
-      companionLastStatus:job.url+" → "+ack.status
-    });
-  } catch (error) {
-    await chrome.storage.local.set({companionLastStatus:
-      "Companion local broker unavailable: "+String(error?.message || "ERROR").slice(0,85)});
+    let observed=0;
+    await Promise.all(Array.from({length:MAX_BROWSER_JOBS_IN_PARALLEL},
+      async ()=>{
+        try {
+          for (let i=0;i<MAX_PER_LANE_PER_POLL;i++){
+            if (!(await processOne(config))) break;
+            observed++;
+          }
+        } catch(error) {
+          await chrome.storage.local.set({companionLastStatus:
+            "Companion local broker unavailable: "+
+            String(error?.message || "ERROR").slice(0,85)});
+        }
+      }));
+    if (!observed) {
+      await chrome.storage.local.set({companionLastStatus:"Queue empty"});
+    }
   } finally {busy=false;}
 }
 

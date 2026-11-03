@@ -178,3 +178,49 @@ class BrowserCompanionQueueTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BrowserCouponReceiptTests(unittest.TestCase):
+    def setUp(self):
+        self.queue=CompanionQueue(token="b"*64)
+        self.queue.enqueue(URL)
+        self.job=self.queue.take()
+
+    def test_browser_coupon_is_conditional_and_never_checkout_verified(self):
+        product=sample()
+        product["offers"]["price"]="3499.99"
+        r=receipt(self.job,snapshot=product)
+        r["promotion"]={"price":"2799.00","currency":"PLN",
+          "code":"BW1610-0112","valid_until":"2026-12-01",
+          "source":"VISIBLE_PRODUCT_PRICE_WITH_CODE"}
+        accepted=self.queue.report(r)
+        self.assertEqual(accepted["status"],
+                         "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED")
+        result=self.queue.get_job(self.job["job_id"])["result"]
+        self.assertEqual(result["fields"]["price"],"3499.99")
+        self.assertEqual(result["browser_promotion"]["price"],"2799.00")
+        self.assertEqual(result["browser_promotion"]["code"],"BW1610-0112")
+        self.assertFalse(result["browser_promotion"]["code_applied"])
+        self.assertFalse(result["browser_promotion"]["checkout_verified"])
+
+    def test_reject_coupon_equal_or_higher_than_list_price(self):
+        for price in ("34.90","99.90"):
+            with self.subTest(price=price):
+                r=receipt(self.job,snapshot=sample())
+                r["promotion"]={"price":price,"currency":"PLN",
+                  "code":"SAVE2026","valid_until":None,
+                  "source":"VISIBLE_PRODUCT_PRICE_WITH_CODE"}
+                with self.assertRaisesRegex(ValueError,"INVALID_COUPON_PRICE_RELATION"):
+                    self.queue.report(r)
+        self.assertEqual(self.queue.get_job(self.job["job_id"])["status"],"IN_PROGRESS")
+
+    def test_reject_unknown_coupon_or_secret_fields(self):
+        r=receipt(self.job,snapshot=sample())
+        for bad in ({"price":"29.00","currency":"PLN","code":"SAVE2026",
+                     "valid_until":None,"source":"VISIBLE_PRODUCT_PRICE_WITH_CODE",
+                     "customer_token":"SECRET"},
+                    {"price":"29.00","currency":"USD","code":"SAVE2026",
+                     "valid_until":None,"source":"VISIBLE_PRODUCT_PRICE_WITH_CODE"}):
+            r["promotion"]=bad
+            with self.assertRaisesRegex(ValueError,"INVALID_COUPON_PROJECTION"):
+                self.queue.report(r)

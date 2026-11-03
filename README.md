@@ -729,6 +729,31 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## Automatic Shopping discovery + parallel seller-browser checks (2026-11-03)
+
+New-product competitor search requires a **configured Shopping search
+provider**. Previously a missing SerpAPI key silently left a cart with
+one selected offer, misleadingly similar to "zero competitors". Now
+the graph shows **NOT SEARCHED** explicitly and links to
+`/research/shopping`. TraceCart automatically reads the user's
+existing mode-0600 `~/.config/tracecart/serpapi.env` when present;
+otherwise the operator may opt in with a private local key.
+A strict per-database daily query cap applies. New products automatically
+search once enabled; old cart jobs can request a Shopping-only refresh.
+
+After one-time **Enable automatic seller checks** at
+`/research/companion`, newly completed cart research automatically
+queues the original product URL plus up to 11 direct indexed seller
+URLs. The opt-in MV3 worker checks up to **three explicitly authorized
+seller pages simultaneously**, maintains the index quote for comparison
+and attaches separate buyer-unverified observations to each offer.
+It also recognizes an unambiguous product-page **conditional coupon
+price plus code** next to a separate listed price; the coupon is never
+assumed accepted at checkout. No automatic host permission, CAPTCHA
+bypass or fabricated savings.
+Full setup, limits and tests:
+[`docs/AUTOMATIC_SHOPPING_DISCOVERY_PARALLEL_BROWSER_2026-11-03.md`](docs/AUTOMATIC_SHOPPING_DISCOVERY_PARALLEL_BROWSER_2026-11-03.md).
+
 ## Browser Companion claims now appear in the main cart graph (2026-11-03)
 
 A separate test instance with two live MV3-captured products is accessible

@@ -49,8 +49,8 @@
           <div class="live-graph-top">
             <span id="live-graph-count">0 nodes · 0 links</span>
             <div class="kg-toolbar" aria-label="Graph controls">
-              <button type="button" id="kg-all" aria-pressed="false">All</button>
-              <button type="button" id="kg-input" aria-pressed="true">Input</button>
+              <button type="button" id="kg-all" aria-pressed="true">All</button>
+              <button type="button" id="kg-input" aria-pressed="false">Input</button>
               <button type="button" id="kg-zoom-in" aria-label="Zoom in">+</button>
               <button type="button" id="kg-zoom-out" aria-label="Zoom out">−</button>
               <button type="button" id="kg-reset">Reset</button>
@@ -69,6 +69,18 @@
           <span id="live-evidence-status">Unverified claims are not evidence.</span>
           <nav>
             <a href="{{COMPANION_URL}}" id="companion-research-link">Browser capture</a>
+            <a href="/research/shopping" id="shopping-provider-link">{{SHOPPING_PROVIDER_LABEL}}</a>
+            <form method="post" action="{{SEARCH_INDEX_ACTION}}"
+                  class="verify-indexed-form" id="shopping-search-form">
+              <input type="hidden" name="csrf" value="{{CSRF}}">
+              <button type="submit" id="shopping-search-button">Search alternative offers</button>
+            </form>
+            <form method="post" action="{{VERIFY_INDEXED_ACTION}}"
+                  id="verify-indexed-form" class="verify-indexed-form">
+              <input type="hidden" name="csrf" value="{{CSRF}}">
+              <button type="submit" id="verify-indexed-button">
+                Verify indexed retailer offers in parallel</button>
+            </form>
             <a id="graph-export" href="{{KNOWLEDGE_GRAPH_URL}}" target="_blank" rel="noopener noreferrer">Graph JSON</a>
             <a id="audit-link" href="{{AUDIT_URL}}" target="_blank" rel="noopener noreferrer">Audit</a>
           </nav>
