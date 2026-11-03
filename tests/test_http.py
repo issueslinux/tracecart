@@ -65,8 +65,8 @@ class WebFlowTests(unittest.TestCase):
         self.csrf = re.search(r'name="csrf" value="([^"]+)"', response[1]).group(1)
 
     def _host_server(self):
-        from http.server import HTTPServer
-        server = HTTPServer(("127.0.0.1", 0), app.TraceCartHandler)
+        # Production server keeps checkout serialized, SSE in a separate thread.
+        server = app.StreamingHTTPServer(("127.0.0.1", 0), app.TraceCartHandler)
         server.store = CheckoutStore(str(Path(self.tmp.name) / "webquotes.sqlite"))
         server.reports = ReportStore(server.store.db)
         def cart_stub(item):
@@ -412,10 +412,11 @@ class WebFlowTests(unittest.TestCase):
         # Default is the clean progressive workspace, not 70 KB of 'None'.
         status,ui=self.request("GET","/cart/status/"+jid)
         self.assertEqual(status,200)
-        self.assertIn("From a product",ui)
+        self.assertIn("Paste a product URL",ui)
         self.assertIn('data-source="/cart/status/'+jid+'.decision.json"',ui)
         self.assertIn('data-audit="/cart/status/'+jid+'/audit"',ui)
-        self.assertIn('src="/assets/decision-flow.js"',ui)
+        self.assertIn('src="/assets/live-workspace.js"',ui)
+        self.assertIn('data-live="/cart/status/'+jid+'/live"',ui)
         self.assertNotIn("unit_economics:",ui)
         status,derived=self.request("GET","/cart/status/"+jid+".decision.json")
         self.assertEqual(status,200)
@@ -460,10 +461,47 @@ class WebFlowTests(unittest.TestCase):
             "catalog_alternatives_found"],0)
         self.assertNotIn("functional_alternatives",stored["report"]["indexed_shopping"])
 
+    def test_live_event_stream_is_ram_backed_and_nonblocking(self):
+        from time import monotonic
+        fixture=(Path(__file__).resolve().parents[1] /
+                 "examples/live_lenovo_ideapad_index_evidence_2026-11-02.json")
+        saved=json.loads(fixture.read_text(encoding="utf-8"))
+        jid="S"*24
+        with self.server.cart_jobs._db() as db:
+            db.execute("""INSERT INTO cart_research_jobs
+                (id,item,state,created,result,error_type)
+                VALUES (?,?,?,?,?,NULL)""",
+                (jid,json.dumps(saved["item"]),"READY",
+                 "2026-11-03T11:00:00Z",json.dumps(saved["report"])))
+        with urlopen(self.base+"/cart/status/"+jid+"/live",timeout=5) as res:
+            self.assertEqual(res.status,200)
+            self.assertIn("text/event-stream",res.headers["Content-Type"])
+            first=res.readline().decode()
+            event=res.readline().decode()
+            data=res.readline().decode()
+            self.assertTrue(first.startswith("id: "))
+            self.assertEqual(event,"event: graph\n")
+            payload=json.loads(data[len("data: "):])
+            self.assertEqual(payload["graph"]["stats"]["offers"],16)
+            self.assertFalse(payload["payment_authorized"])
+            started=monotonic()
+            status,page=self.request("GET","/cart")
+            self.assertEqual(status,200)
+            self.assertLess(monotonic()-started,2)
+            self.assertIn("Paste a product URL",page)
+            # Persisted progress wakes this same active connection.
+            self.server.cart_jobs._progress(jid,"LIVE_STATUS_UPDATED")
+            self.assertEqual(res.readline().decode(),"\n")
+            self.assertTrue(res.readline().decode().startswith("id: "))
+            self.assertEqual(res.readline().decode(),"event: graph\n")
+            changed=json.loads(res.readline().decode()[len("data: "):])
+            self.assertEqual(changed["progress_stage"],"LIVE_STATUS_UPDATED")
+
     def test_flow_assets_are_same_origin_and_not_inline_script_enabled(self):
         status,home=self.request("GET","/cart")
         self.assertEqual(status,200)
-        self.assertIn("Know more.",home)
+        self.assertIn("Paste a product URL",home)
+        self.assertIn('id="kg-svg"',home)
         self.assertIn('action="/cart/add"',home)
         self.assertIn('name="product_url"',home)
         self.assertIn('name="csrf"',home)
@@ -551,7 +589,8 @@ class WebFlowTests(unittest.TestCase):
         self.assertEqual(status,200)
         self.assertIn("data-knowledge-graph=",page)
         self.assertIn("offer-graph.js",page)
-        self.assertIn("OFFER / CLAIM / EVIDENCE GRAPH",page)
+        self.assertIn('id="kg-svg"',page)
+        self.assertIn('id="live-question-tasks"',page)
         status,payload=self.request("GET",
             "/cart/status/"+jid+".knowledge-graph.json")
         self.assertEqual(status,200)

@@ -4,7 +4,7 @@ Research products in Open Products Facts and attempt Open Prices price evidence.
 A Brave web search is optionally used for offer URL discovery when the
 operator has configured BRAVE_API_KEY; snippets are NOT verified store offers.
 """
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, Future, wait, FIRST_COMPLETED
 from datetime import datetime, timezone
 from decimal import Decimal
 from hashlib import sha256
@@ -19,6 +19,7 @@ from urllib.parse import quote, urlencode, urlsplit
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 
 from decision_tree import _node, to_html_tree
+from live_graph_bus import MemoryLiveGraphCache
 from unit_economics import unit_cost
 
 USER_AGENT = "TraceCart/0.4 (https://github.com/issueslinux/tracecart)"
@@ -575,6 +576,7 @@ class CartResearchJobs:
 
     def __init__(self, db_path, runner=research_cart, worker_limit=2):
         self.db_path = str(db_path)
+        self.live_bus = MemoryLiveGraphCache(max_jobs=24)
         self.runner = runner
         self.pool = ThreadPoolExecutor(max_workers=worker_limit)
         with self._db() as db:
@@ -621,6 +623,27 @@ class CartResearchJobs:
                 revision=revision+1,
                 preview=COALESCE(excluded.preview,cart_research_progress.preview)""",
                        (job_id, stage, snapshot))
+        self.live_bus.signal(job_id)
+
+    def live_snapshot(self, job_id):
+        """Bounded in-RAM projection for SSE subscribers; SQLite is durable."""
+        def build():
+            from guided_decision import build_decision_projection
+            from offer_knowledge_graph import build_offer_knowledge_graph
+            record=self.read(job_id)
+            projection=build_decision_projection(record)
+            graph=build_offer_knowledge_graph(projection)
+            return {
+                "state":record["state"],
+                "progress_stage":record.get("progress_stage"),
+                "progress_revision":record.get("progress_revision",0),
+                "graph":graph,
+                "evidence_progress":record.get("evidence_progress",{}),
+                "model_offers":record.get("model_offers",{}),
+                "evidence_offers":record.get("evidence_offers",{}),
+                "payment_authorized":False,
+            }
+        return self.live_bus.snapshot(job_id,build)
 
     def _execute_source_evidence(self, job_id, record):
         """Bounded real source retrieval; never mutates the original audit.
@@ -636,42 +659,105 @@ class CartResearchJobs:
         category=category_of(item.get("title") or item.get("merchant_url") or "")
         offers=offer_summaries(record,category)
         cache={}
+        cache_lock=threading.Lock()
         def cached_fetch(url,max_bytes,mimes,timeout=10):
-            if url not in cache:
+            # One concurrent fetch for the same URL; waiters reuse its
+            # successful result OR failure. Prevents repeated robots/review
+            # requests when many indexed listings share a model family.
+            with cache_lock:
+                future=cache.get(url)
+                owner=future is None
+                if owner:
+                    future=Future()
+                    cache[url]=future
+            if owner:
                 try:
-                    cache[url]=_read(url,max_bytes,mimes,timeout=timeout)
-                except (ValueError,OSError) as exc:
-                    cache[url]=exc
-            cached=cache[url]
-            if isinstance(cached,Exception):
-                raise cached
-            return cached
+                    future.set_result(_read(url,max_bytes,mimes,timeout=timeout))
+                except Exception as exc:
+                    future.set_exception(exc)
+            return future.result()
+
+        count=len(offers)
         with self._db() as db:
             db.execute("""INSERT OR REPLACE INTO cart_evidence_runs
                 (job_id,status,processed,planned) VALUES (?,?,0,?)""",
-                (job_id,"RUNNING",len(offers)))
-        for index, offer in enumerate(offers):
+                (job_id,"RUNNING",count))
+            # These are actual independently running CHECK tasks, not
+            # fabricated claim-verification answers.
+            for index in range(count):
+                db.execute("""INSERT OR REPLACE INTO cart_offer_evidence
+                    (job_id,offer_idx,status,result_json) VALUES (?,?,?,?)""",
+                    (job_id,index,"QUEUED",json.dumps({
+                        "status":"QUEUED","reference_answers":[],
+                        "verified_for_exact_offer":0})))
+        self.live_bus.signal(job_id)
+
+        def check(index,offer):
             if self.evidence_stop.is_set():
-                break
-            # Source errors are persisted explicitly; no infinite attempts,
-            # credential exposure, or silent substitution of index snippets.
+                return index,{"status":"INTERRUPTED","reference_answers":[],
+                              "verified_for_exact_offer":0}
             try:
                 result=execute_reference_checks(offer,category,fetch=cached_fetch)
             except (ValueError,TypeError,KeyError,OSError) as exc:
                 result={"status":"SOURCE_NOT_VERIFIED_"+type(exc).__name__,
                         "sources_checked":0,"reference_answers":[],
                         "verified_for_exact_offer":0}
+            return index,result
+
+        completed=0
+        # Parallel SOURCE I/O, not 16 simultaneous GPU inference requests.
+        # Per-URL Future de-duplicates remote reads, preserving robots checks.
+        # All SQLite status changes are made by the coordinator so 16 worker
+        # threads do not block on the single-writer SQLite lock.
+        with ThreadPoolExecutor(max_workers=min(16,max(1,count))) as executor:
+            running={}
+            next_index=0
+            slots=min(16,count)
+            running_row=json.dumps({"status":"RUNNING",
+                "reference_answers":[],"verified_for_exact_offer":0})
+            # Batch initial status writes, so SQLite never serializes
+            # worker *startups* and blocks the intended I/O concurrency.
             with self._db() as db:
-                db.execute("""INSERT OR REPLACE INTO cart_offer_evidence
-                    (job_id,offer_idx,status,result_json) VALUES (?,?,?,?)""",
-                    (job_id,index,result["status"],
-                     json.dumps(result,ensure_ascii=False)))
-                db.execute("""UPDATE cart_evidence_runs SET processed=?
-                    WHERE job_id=?""",(index+1,job_id))
+                for i in range(slots):
+                    db.execute("""UPDATE cart_offer_evidence SET status=?,
+                        result_json=? WHERE job_id=? AND offer_idx=?""",
+                        ("RUNNING",running_row,job_id,i))
+            self.live_bus.signal(job_id)
+            def dispatch(initial=False):
+                nonlocal next_index
+                i=next_index
+                next_index+=1
+                if not initial:
+                    with self._db() as db:
+                        db.execute("""UPDATE cart_offer_evidence SET status=?,
+                            result_json=? WHERE job_id=? AND offer_idx=?""",
+                            ("RUNNING",running_row,job_id,i))
+                    self.live_bus.signal(job_id)
+                future=executor.submit(check,i,offers[i])
+                running[future]=i
+            for _ in range(slots):
+                dispatch(initial=True)
+            while running:
+                done,_=wait(list(running),return_when=FIRST_COMPLETED)
+                for future in done:
+                    running.pop(future)
+                    index,result=future.result()
+                    completed+=1
+                    with self._db() as db:
+                        db.execute("""UPDATE cart_offer_evidence
+                            SET status=?,result_json=? WHERE job_id=? AND offer_idx=?""",
+                            (result["status"],json.dumps(result,ensure_ascii=False),
+                             job_id,index))
+                        db.execute("""UPDATE cart_evidence_runs SET processed=?
+                            WHERE job_id=?""",(completed,job_id))
+                    self.live_bus.signal(job_id)
+                    if next_index<count:
+                        dispatch()
         with self._db() as db:
             db.execute("""UPDATE cart_evidence_runs SET status=? WHERE job_id=?""",
                        ("INTERRUPTED" if self.evidence_stop.is_set()
                         else "COMPLETE",job_id))
+        self.live_bus.signal(job_id)
 
     def _generate_offer_questions(self, job_id, record):
         """Detached from user latency and from payment authorization logic."""
@@ -687,6 +773,7 @@ class CartResearchJobs:
                 db.execute("""INSERT OR REPLACE INTO cart_offer_model_questions
                     (job_id,offer_idx,status,questions_json) VALUES (?,?,?,NULL)""",
                     (job_id,index,"RUNNING"))
+            self.live_bus.signal(job_id)
             try:
                 questions = propose_offer_model_questions(offer, category)
                 status = "OK" if questions else "EMPTY"
@@ -696,6 +783,7 @@ class CartResearchJobs:
                 db.execute("""UPDATE cart_offer_model_questions
                     SET status=?,questions_json=? WHERE job_id=? AND offer_idx=?""",
                     (status,json.dumps(questions,ensure_ascii=False),job_id,index))
+            self.live_bus.signal(job_id)
         self._progress(job_id, "PER_OFFER_MODEL_COMPLETE")
 
     def submit(self, item):
@@ -812,6 +900,7 @@ class CartResearchJobs:
         with self._db() as db:
             db.execute("UPDATE cart_research_jobs SET state=?,result=?,error_type=? WHERE id=?",
                        (state, result, error, job_id))
+        self.live_bus.signal(job_id)
         if state == "READY" and self.runner is research_cart:
             # Actual evidence retrieval must NOT wait for all local model
             # questions. Both workers are independent of original READY.
@@ -846,6 +935,7 @@ class CartResearchJobs:
         with self._db() as db:
             db.execute("UPDATE cart_research_jobs SET state=?,result=?,error_type=? WHERE id=?",
                        (state, result, error, job_id))
+        self.live_bus.signal(job_id)
 
     def read(self, job_id):
         if not isinstance(job_id, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{18,40}", job_id):

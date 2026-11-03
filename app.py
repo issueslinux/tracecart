@@ -11,7 +11,10 @@ import json
 import os
 from pathlib import Path
 import secrets
+import socket
+import threading
 import sys
+import time
 from urllib.parse import parse_qs, urlsplit, urlencode
 
 from core import (CATALOG, CONSENT_TEXT, CheckoutStore, SandboxPayPal,
@@ -32,6 +35,8 @@ FLOW_ASSETS = {
     "/assets/decision-flow.css": ("text/css; charset=utf-8", "decision-flow.css"),
     "/assets/decision-flow.js": ("text/javascript; charset=utf-8", "decision-flow.js"),
     "/assets/offer-graph.js": ("text/javascript; charset=utf-8", "offer-graph.js"),
+    "/assets/live-workspace.js": ("text/javascript; charset=utf-8", "live-workspace.js"),
+    "/assets/live-workspace.css": ("text/css; charset=utf-8", "live-workspace.css"),
 }
 
 FLOW_CSP = (
@@ -335,6 +340,44 @@ def research_critic_panel(report):
             h(critic['open_question_count']), ''.join(rows)))
 
 
+class StreamingHTTPServer(HTTPServer):
+    """Only the SSE connection runs on a secondary thread.
+
+    Legacy checkout and report routes retain the original serialized server
+    loop and their thread-affine SQLite connection. Long-lived SSE streams
+    use CartResearchJobs' per-call SQLite connections plus in-RAM cache.
+    """
+
+    def process_request(self, request, client_address):
+        try:
+            request.settimeout(2)
+            first=request.recv(192,socket.MSG_PEEK)
+            request.settimeout(None)
+        except (socket.timeout,OSError):
+            self.shutdown_request(request)
+            return
+        # A route is recognized before BaseHTTPRequestHandler reads it,
+        # so a 48-second stream cannot stall normal checkout operations.
+        line=first.split(b"\r\n",1)[0]
+        live=(line.startswith(b"GET /cart/status/") and
+              line.endswith(b"/live HTTP/1.1") or
+              line.endswith(b"/live HTTP/1.0"))
+        if not live:
+            return super().process_request(request,client_address)
+        worker=threading.Thread(
+            target=self._stream_request,args=(request,client_address),
+            daemon=True)
+        worker.start()
+
+    def _stream_request(self,request,client_address):
+        try:
+            self.finish_request(request,client_address)
+        except Exception:
+            self.handle_error(request,client_address)
+        finally:
+            self.shutdown_request(request)
+
+
 class TraceCartHandler(BaseHTTPRequestHandler):
     server_version = "TraceCart/0.1"
 
@@ -368,9 +411,17 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def cart_entry_page(self):
+        # One screen for both a new URL and ongoing graph research.
         tmpl=(Path(__file__).resolve().parent / "assets" /
-              "decision-entry.html").read_text(encoding="utf-8")
-        payload=tmpl.replace("{{CSRF}}",h(self.server.csrf)).encode("utf-8")
+              "decision-page.html").read_text(encoding="utf-8")
+        for key,value in {
+            "{{CSRF}}":self.server.csrf,
+            "{{DECISION_URL}}":"","{{LIVE_URL}}":"",
+            "{{KNOWLEDGE_GRAPH_URL}}":"","{{AUDIT_URL}}":"",
+            "{{RAW_URL}}":"","{{PRODUCT_URL}}":"",
+        }.items():
+            tmpl=tmpl.replace(key,h(value))
+        payload=tmpl.encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type","text/html; charset=utf-8")
         self.send_header("Cache-Control","no-store")
@@ -409,6 +460,59 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(output)
 
+    def stream_live_graph(self, job_id):
+        """Server-sent events from bounded RAM snapshots.
+
+        Same-origin loopback only. The long-lived connection runs in its own
+        HTTP thread and never blocks source extraction or model workers.
+        Reconnects recover from SQLite if the server is restarted.
+        """
+        try:
+            version,snapshot=self.server.cart_jobs.live_snapshot(job_id)
+        except ValueError:
+            self.send_page("<section>Unknown research job</section>",404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type","text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control","no-cache, no-store")
+        self.send_header("X-Accel-Buffering","no")
+        self.send_header("X-Content-Type-Options","nosniff")
+        self.send_header("Content-Security-Policy",FLOW_CSP)
+        self.end_headers()
+        self.close_connection=True
+        expires=time.monotonic()+48
+        last=-1
+        try:
+            while time.monotonic()<expires:
+                if version!=last:
+                    data=json.dumps(snapshot,ensure_ascii=False,
+                                    separators=(",",":"))
+                    frame=("id: {}\nevent: graph\ndata: {}\n\n".format(
+                        version,data)).encode("utf-8")
+                    self.wfile.write(frame)
+                    self.wfile.flush()
+                    last=version
+                    stage=snapshot.get("progress_stage") or ""
+                    evidence=(snapshot.get("evidence_progress") or {}).get(
+                        "status","NOT_STARTED")
+                    finished=snapshot["state"] in ("FAILED","INTERRUPTED") or (
+                        snapshot["state"]=="READY" and
+                        evidence=="COMPLETE" and
+                        stage=="PER_OFFER_MODEL_COMPLETE")
+                    if finished:
+                        self.wfile.write(b"event: settled\ndata: {}\n\n")
+                        self.wfile.flush()
+                        return
+                changed=self.server.cart_jobs.live_bus.wait_change(
+                    job_id,version,timeout=7)
+                if changed:
+                    version,snapshot=self.server.cart_jobs.live_snapshot(job_id)
+                else:
+                    self.wfile.write(b": heartbeat\n\n")
+                    self.wfile.flush()
+        except (BrokenPipeError,ConnectionResetError,ConnectionAbortedError):
+            return
+
     def cart_status_page(self, job_id, result):
         """Read-only decision explorer, also for historical persisted jobs.
 
@@ -419,6 +523,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         tmpl=(Path(__file__).resolve().parent / "assets" /
               "decision-page.html").read_text(encoding="utf-8")
         substitutions={
+            "{{CSRF}}":self.server.csrf,
+            "{{LIVE_URL}}":"/cart/status/"+job_id+"/live",
             "{{DECISION_URL}}":"/cart/status/"+job_id+".decision.json",
             "{{KNOWLEDGE_GRAPH_URL}}":"/cart/status/"+job_id+".knowledge-graph.json",
             "{{AUDIT_URL}}":"/cart/status/"+job_id+"/audit",
@@ -503,6 +609,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             self.send_flow_asset(path)
         elif path.startswith("/cart/status/"):
             suffix = path[len("/cart/status/"):]
+            if suffix.endswith("/live"):
+                return self.stream_live_graph(suffix[:-len("/live")])
             question_page = suffix.endswith("/questions.json")
             audit = suffix.endswith("/audit")
             projected = suffix.endswith(".decision.json")
@@ -1372,7 +1480,7 @@ def run():
                         default=Path.home() / ".tracecart" / "quotes.sqlite")
     args = parser.parse_args()
     args.db.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    server = HTTPServer(("127.0.0.1", args.port), TraceCartHandler)
+    server = StreamingHTTPServer(("127.0.0.1", args.port), TraceCartHandler)
     server.csrf = secrets.token_urlsafe(32)
     server.store = CheckoutStore(str(args.db))
     server.reports = ReportStore(server.store.db)

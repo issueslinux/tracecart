@@ -53,6 +53,10 @@
           details=root.querySelector("#kg-details"),
           stats=root.querySelector("#kg-stats");
     const index=new Map(graph.nodes.map(n=>[n.id,n]));
+    const known=root._seenOfferGraphNodes||new Set();
+    const justAdded=new Set(graph.nodes.filter(n=>!known.has(n.id)).map(n=>n.id));
+    root._seenOfferGraphNodes=new Set(graph.nodes.map(n=>n.id));
+    const layoutBox=root.querySelector(".kg-layout");
     const offers=graph.nodes.filter(n=>n.type==="offer");
     const edges=graph.edges||[];
     const byFrom=new Map(),byTo=new Map();
@@ -108,6 +112,13 @@
 
     function showDetails(nodeId) {
       details.replaceChildren();
+      if(root.classList.contains("live-workspace")){
+        const close=el("button","kg-close","×");
+        close.type="button";
+        close.setAttribute("aria-label","Close details");
+        close.addEventListener("click",()=>layoutBox.classList.remove("details-open"));
+        details.appendChild(close);
+      }
       const selected=index.get(nodeId);
       if(!selected) {
         details.appendChild(el("h3","","All offers · evidence network"));
@@ -350,7 +361,8 @@
         const g=svg("g",{
           "class":"kg-node kg-type-"+item.type+
             (id===focus?" kg-selected":"")+
-            (id===active?" kg-active":""),
+            (id===active?" kg-active":"")+
+            (justAdded.has(id)?" kg-added":""),
           "role":"button","tabindex":"0",
           "aria-label":item.type+": "+item.label,
           "data-node-id":id,
@@ -388,9 +400,12 @@
         points.appendChild(g);
       });
       viewport.appendChild(points);canvas.appendChild(viewport);
+      justAdded.clear();
     }
 
     function select(id) {
+      if(root.classList.contains("live-workspace"))
+        layoutBox.classList.add("details-open");
       active=id;
       if(index.get(id)&&index.get(id).type==="offer")focus=id;
       remember();showDetails(id);

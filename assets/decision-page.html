@@ -4,122 +4,80 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>TraceCart — autonomous research</title>
+  <title>TraceCart</title>
   <link rel="stylesheet" href="/assets/decision-flow.css">
-  <script defer src="/assets/decision-flow.js"></script>
+  <link rel="stylesheet" href="/assets/live-workspace.css">
   <script defer src="/assets/offer-graph.js"></script>
+  <script defer src="/assets/live-workspace.js"></script>
 </head>
-<body class="flow-page">
-  <header class="site-header"><div class="site-inner">
-    <a class="brand" href="/cart" aria-label="TraceCart home">
-      <span class="brand-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-      <span>tracecart<span class="brand-dot">.</span></span>
-    </a>
-    <div class="site-meta">RESEARCH / <strong>EVIDENCE PATH</strong> <span class="separator">·</span> SANDBOX DEMO</div>
-    <a class="site-link" href="/cart">+ New analysis <span aria-hidden="true">↗</span></a>
-  </div></header>
-  <main class="workspace" id="decision-app" data-source="{{DECISION_URL}}" data-knowledge-graph="{{KNOWLEDGE_GRAPH_URL}}" data-audit="{{AUDIT_URL}}" data-product-url="{{PRODUCT_URL}}">
-    <div class="workspace-topline"><span>01 / PRODUCT RESEARCH</span><span>NO BUYER QUESTIONS · NO PURCHASE</span></div>
-    <section class="intro"><div class="intro-head">
-      <div>
-        <p class="eyebrow">Evidence, not sales copy</p>
-        <h1>From a product<br>to a <em>reasoned decision.</em></h1>
-        <p class="intro-lead">Research questions expand automatically. Each branch shows what the sources actually support, what differs by variant and what remains unknown.</p>
-      </div>
-      <div class="status-ticket">
-        <div class="ticket-top">RESEARCH <span id="status-indicator" class="status-led" aria-hidden="true"></span></div>
-        <strong id="job-state">Loading</strong>
-        <small>No automatic purchase authorization</small>
-        <span class="ticket-index">ID <span>{{SHORT_ID}}</span></span>
-      </div>
-    </div></section>
-    <section class="research-layout" aria-label="Research evidence and conclusion">
-      <div class="research-main">
-        <div class="module-heading">
-          <span class="module-index">A / CONNECTED EVIDENCE GRAPH &amp; RESEARCH PATH</span>
-          <span id="flow-counter" class="module-counter">0 / 0</span>
+<body class="live-page">
+  <main id="decision-app" class="live-workspace"
+        data-source="{{DECISION_URL}}"
+        data-live="{{LIVE_URL}}"
+        data-knowledge-graph="{{KNOWLEDGE_GRAPH_URL}}"
+        data-audit="{{AUDIT_URL}}"
+        data-product-url="{{PRODUCT_URL}}">
+    <header class="live-header">
+      <a class="live-brand" href="/cart">tracecart</a>
+      <form id="product-form" class="live-url-form" action="/cart/add" method="post">
+        <input type="hidden" name="csrf" value="{{CSRF}}">
+        <label for="product_url" class="sr-only">Product URL</label>
+        <input id="product_url" name="product_url" type="url" maxlength="1200"
+          placeholder="Paste a product URL" autocomplete="url"
+          value="{{PRODUCT_URL}}" required>
+        <button type="submit">Analyze</button>
+      </form>
+      <span class="live-status" id="job-state" role="status" aria-live="polite">Ready</span>
+    </header>
+    <div class="live-grid">
+      <aside class="live-sidebar live-left" aria-label="Source research jobs">
+        <div class="live-sidebar-head">
+          <span>Sources</span><span id="live-source-count">0</span>
         </div>
-        <div id="flow-loading" class="loading-state" role="status" aria-live="polite">
-          <span class="loading-progress" aria-hidden="true"></span>
-          <h2>Building the research path…</h2>
-          <p>Research and critic questions appear without any clicks or further input.</p>
+        <div class="live-task-list" id="live-source-tasks" aria-live="polite">
+          <p class="live-empty">Waiting for a product URL.</p>
         </div>
-        <section id="knowledge-graph-region" class="knowledge-graph-region" hidden
-          aria-label="Connected evidence graph of all offers">
-          <div class="subsection-heading">
-            <span>OFFER / CLAIM / EVIDENCE GRAPH</span>
-            <a href="{{KNOWLEDGE_GRAPH_URL}}" id="graph-export" class="fine-print"
-              target="_blank" rel="noopener noreferrer">EXPORT GRAPH JSON ↗</a>
-          </div>
-          <p class="kg-intro">All indexed offers connected by <strong>claimed</strong>
-            parameters and unresolved source checks. Shared numbers do not
-            prove identical hardware or an independent test. Select a node to
-            inspect its relationships and missing evidence.</p>
-          <div class="kg-toolbar" aria-label="Graph exploration controls">
-            <button type="button" id="kg-all" aria-pressed="false">All offers</button>
-            <button type="button" id="kg-input" aria-pressed="true">Input product</button>
-            <button type="button" id="kg-zoom-in" aria-label="Zoom in graph">+</button>
-            <button type="button" id="kg-zoom-out" aria-label="Zoom out graph">−</button>
-            <button type="button" id="kg-reset" aria-label="Reset graph zoom">Reset view</button>
+      </aside>
+      <section class="live-stage" aria-label="Growing evidence graph">
+        <section id="knowledge-graph-region" class="knowledge-graph-region"
+          aria-label="Connected product and evidence graph">
+          <div class="live-graph-top">
+            <span id="live-graph-count">0 nodes · 0 links</span>
+            <div class="kg-toolbar" aria-label="Graph controls">
+              <button type="button" id="kg-all" aria-pressed="false">All</button>
+              <button type="button" id="kg-input" aria-pressed="true">Input</button>
+              <button type="button" id="kg-zoom-in" aria-label="Zoom in">+</button>
+              <button type="button" id="kg-zoom-out" aria-label="Zoom out">−</button>
+              <button type="button" id="kg-reset">Reset</button>
+            </div>
           </div>
           <div id="kg-stats" class="kg-stats" aria-live="polite"></div>
           <div class="kg-layout">
             <div class="kg-viewport">
-              <svg id="kg-svg" viewBox="0 0 1000 640" role="img"
-                 aria-label="Connections between offers and unverified specifications. Click a node to inspect evidence."></svg>
-              <p class="kg-caveat">Offer → parameter: unverified title claim ·
-                Offer → question: missing evidence · Document → review result:
-                independently fetched reference, not necessarily this SKU.
-                Mouse wheel to zoom; drag to pan.</p>
+              <svg id="kg-svg" viewBox="0 0 1120 670" role="img"
+                   aria-label="Growing evidence network; select nodes to inspect supporting data"></svg>
             </div>
-            <aside id="kg-details" class="kg-details" aria-live="polite">
-              <h3>Choose an offer or parameter</h3>
-              <p>The graph distinguishes declared specifications from independently
-                confirmed evidence and lists the next open research tasks.</p>
-            </aside>
+            <aside id="kg-details" class="kg-details" aria-label="Selected graph node details"></aside>
           </div>
         </section>
-        <div id="decision-graph" class="decision-graph" aria-live="polite" hidden></div>
-        <div id="flow-final" hidden></div>
-        <section id="offer-questions-region" class="alternatives-region" aria-live="polite">
-          <div class="subsection-heading"><span>PER-OFFER RESEARCH BACKLOG</span><span id="offer-plan-count" class="fine-print">Preparing source questions…</span></div>
-          <div id="offer-research-cards"></div>
-        </section>
-        <section id="alternatives-region" class="alternatives-region" hidden>
-          <div class="subsection-heading"><span>INDEXED ALTERNATIVES TO INVESTIGATE</span><span class="fine-print">Search prices ≠ checkout totals</span></div>
-          <div id="alternatives-cards"></div>
-        </section>
-      </div>
-      <aside class="research-aside">
-        <div class="aside-module">
-          <div class="aside-top">B / EVIDENCE COVERAGE</div>
-          <h2>What do we<br><em>actually know?</em></h2>
-          <dl class="evidence-stats">
-            <div><dt>Google Shopping cards</dt><dd id="stat-cards">—</dd></div>
-            <div><dt>Indexed seller links</dt><dd id="stat-store-links">—</dd></div>
-            <div><dt>Verified competitor checkout prices</dt><dd id="stat-verified">—</dd></div>
-            <div><dt>Candidate alternatives</dt><dd id="stat-alternatives">—</dd></div>
-          </dl>
-          <p id="counts-note" class="evidence-note">Product catalogs and Shopping indexes count different kinds of records.</p>
+        <div class="live-footer">
+          <span id="live-evidence-status">Unverified claims are not evidence.</span>
+          <nav>
+            <a id="graph-export" href="{{KNOWLEDGE_GRAPH_URL}}" target="_blank" rel="noopener noreferrer">Graph JSON</a>
+            <a id="audit-link" href="{{AUDIT_URL}}" target="_blank" rel="noopener noreferrer">Audit</a>
+          </nav>
         </div>
-        <div class="aside-module aside-module-warnings">
-          <div class="aside-top">C / RISKS &amp; UNKNOWNS</div>
-          <ul id="risk-list"><li>Waiting for source evidence.</li></ul>
+      </section>
+      <aside class="live-sidebar live-right" aria-label="Research questions and verification tasks">
+        <div class="live-sidebar-head">
+          <span>Questions</span><span id="live-question-count">0</span>
         </div>
-        <div class="aside-module aside-module-actions">
-          <div class="aside-top">D / AUDIT TRAIL</div>
-          <a href="{{RAW_URL}}" class="text-action">Original report JSON <span aria-hidden="true">↗</span></a>
-          <a href="{{AUDIT_URL}}" class="text-action">Complete source tree <span aria-hidden="true">↗</span></a>
-          <p>Model questions cannot invent evidence. Reference reviews of other variants are not tests of the submitted seller SKU.</p>
+        <div class="live-task-list" id="live-question-tasks" aria-live="polite">
+          <p class="live-empty">Questions appear as sources are discovered.</p>
         </div>
       </aside>
-    </section>
-    <footer class="flow-footer">
-      <strong>TRACECART / EVIDENCE</strong>
-      <span>Research is not payment consent or a guarantee of price, quality or availability.</span>
-      <a href="/cart">New research ↗</a>
-    </footer>
-    <noscript><p class="no-script">JavaScript is required for the visual research path. <a href="{{AUDIT_URL}}">The full audit is available without JavaScript.</a></p></noscript>
+    </div>
   </main>
+  <noscript><p>JavaScript is needed for live graph updates. <a href="{{AUDIT_URL}}">View the saved research audit.</a></p></noscript>
 </body>
 </html>
