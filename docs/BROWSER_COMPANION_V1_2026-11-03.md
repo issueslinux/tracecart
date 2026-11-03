@@ -120,6 +120,15 @@ capture and a disabled queue; HTTP tests exercise CSRF, bearer token, Host
 filter, queue, receipt validation and evidence output. They **do not**
 demonstrate successful live Allegro extraction or bypass an HTTP 403.
 
+## Subsequent live Chromium MV3 validation
+
+See `BROWSER_COMPANION_MV3_E2E_2026-11-03.md`: the real MV3 worker,
+ephemeral local server, CSRF enqueue and bearer-authenticated result path
+were successfully tested on two explicitly selected, robots-approved public
+merchant pages. Denied permission rejected the task; a **test-only
+pre-granted site permission** allowed the full flow and produced browser
+source evidence. User-facing grant/revoke popup dialogs remain unverified.
+
 ## Subsequent DOM extraction work
 
 See `BROWSER_COMPANION_DOM_EXTRACTION_2026-11-03.md` for schema.org

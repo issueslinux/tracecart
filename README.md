@@ -729,6 +729,23 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## Verified MV3 browser companion end-to-end research (2026-11-03)
+
+A disposable **real Chromium MV3 service worker** and loopback TraceCart
+broker have now completed the full queued browser research flow for two
+robots-approved public products: Adafruit #1083 (9.95 USD declared) and
+Maxpronet Persil Color (78.90 PLN declared promotional price). The test
+without merchant permission correctly rejected the job. With a
+**test-only, single-site pre-granted permission in a disposable copied
+manifest**, both jobs returned `USER_BROWSER` evidence, never a
+checkout-verified price. The extension in the repo is unmodified and still
+requires explicit user permission per site; that permission dialog is not
+yet validated end-to-end.
+
+See [`docs/BROWSER_COMPANION_MV3_E2E_2026-11-03.md`](docs/BROWSER_COMPANION_MV3_E2E_2026-11-03.md)
+and `benchmarks/browser_companion_mv3_e2e.py`. No production checkout
+or live browser profile was changed.
+
 ## Browser DOM extraction research (2026-11-03)
 
 The opt-in browser companion now also recognizes **schema.org Product/Offer
