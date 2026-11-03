@@ -744,6 +744,20 @@ class CartResearchJobs:
                      json.dumps(discovery,ensure_ascii=False),job_id))
             self.live_bus.signal(job_id)
         attach_discovery_leads(offers,discovery)
+        # Index-only cards without direct URLs often repeat the SAME model.
+        # Investigate one representative manufacturer domain per identity,
+        # not 12 redundant brand-home probes and redirections per job.
+        from generic_source_research import candidate_urls,product_identity
+        seen_no_link_models=set()
+        for offer in offers:
+            if candidate_urls(offer):
+                continue
+            identity=product_identity(offer.get("title") or "")
+            key=(identity["brand"],identity["model"]) if identity else None
+            if key is None or key in seen_no_link_models:
+                offer["_skip_brand_discovery"]=True
+            else:
+                seen_no_link_models.add(key)
         cache={}
         cache_lock=threading.Lock()
         def cached_fetch(url,max_bytes,mimes,timeout=10):
@@ -1100,12 +1114,11 @@ class CartResearchJobs:
                 db.execute("""INSERT INTO cart_final_verdict
                     (job_id,status,result_json,error_type)
                     VALUES (?,'QUEUED',NULL,NULL)""",(job_id,))
-            self._progress(job_id,"PER_OFFER_MODEL_QUEUED")
-            # Reserve the first model slot for question generation. When
-            # source checks finish they enqueue the FINAL model request
-            # behind it; no concurrent GPU prompts or checkout actions.
-            self.model_pool.submit(self._generate_offer_questions,job_id,
-                                   {"item":clean,"report":report})
+            # Source checks are the only prerequisite for the final Qwen
+            # verdict. The previous representative-question model batch used
+            # the SAME inference slot first, timed out, and delayed actual
+            # synthesis. Rule-based evidence gaps remain fully available.
+            self._progress(job_id,"SOURCE_CHECKS_QUEUED")
             self.evidence_pool.submit(self._execute_source_evidence,job_id,
                                       {"item":clean,"report":report})
 

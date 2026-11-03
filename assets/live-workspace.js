@@ -33,59 +33,97 @@
   function sourceTasks(data){
     const g=data.graph||{},details=g.offer_details||{},result=data.evidence_offers||{};
     const offers=(data.offer_queue&&data.offer_queue.length?
-      data.offer_queue.map(o=>[o.id,{title:o.title,url:o.url,
+      data.offer_queue.map(o=>[o.id,{title:o.title,url:o.url,kind:o.kind,
         input_access_problem:(details[o.id]||{}).input_access_problem}]):
       Object.entries(details));
-    const rows=[];
+    const complete=data.state==="READY" &&
+      ["COMPLETE","INTERRUPTED"].includes((data.evidence_progress||{}).status);
+    const rows=[],indexOnly=[],duplicates=[];
     const weight={RUNNING:0,QUEUED:1,REFERENCE:2,BLOCKED:3};
+    const seenLinks=new Set();
     offers.forEach(([id,d])=>{
       const entry=result[id]||{},state=entry.status;
-      let mode="QUEUED",label="WAITING";
-      if(state==="RUNNING"){mode="RUNNING";label="CHECKING";}
-      else if(state==="QUEUED"){mode="QUEUED";label="QUEUED";}
-      else if((entry.reference_answers||[]).length){
+      const attempts=entry.attempted_sources||[];
+      const direct=attempts.filter(a=>a.url);
+      const restricted=direct.find(a=>
+        String(a.status||"").startsWith("NOT_RETRIEVED_SourceAccessDenied"));
+      const failed=direct.find(a=>String(a.status||"").startsWith("NOT_RETRIEVED_"));
+      const mismatch=direct.find(a=>a.status==="SOURCE_PAGE_IDENTITY_NOT_CONFIRMED");
+      const rendered=direct.find(a=>a.browser_status==="RENDERED_NO_MATCHED_PRODUCT_DATA");
+      const capacity=direct.find(a=>a.browser_status==="GRAPHICAL_BROWSER_CAPACITY_LIMIT");
+      const hasFacts=(entry.reference_answers||[]).length>0;
+      const directUrl=direct.find(a=>a.url)?.url || d.url || null;
+      let mode="QUEUED",label="WAITING",detail="Scheduled for source checking.";
+      if(state==="RUNNING"){
+        mode="RUNNING";label="CHECKING";detail="Fetching eligible source pages.";
+      }else if(state==="QUEUED"){
+        mode="QUEUED";label="QUEUED";detail="Waiting for an available source worker.";
+      }else if(hasFacts){
         mode="REFERENCE";label=(entry.reference_answers||[]).some(x=>
           x.source_kind==="INDEPENDENT_TEST")?"REVIEW FOUND":"SPECIFICATIONS";
-      }
-      else if(state){
+        detail=label==="REVIEW FOUND"?
+          "Independent measurements of the reviewed model; exact retailer variant still unproven.":
+          (entry.reference_answers||[]).length+
+          " sourced product specifications; not independent testing.";
+      }else if(state){
         mode="BLOCKED";
-        const attempts=entry.attempted_sources||[];
-        const rejected=attempts.find(a=>String(a.status||"").startsWith("NOT_RETRIEVED_"));
-        const mismatch=attempts.find(a=>a.status==="SOURCE_PAGE_IDENTITY_NOT_CONFIRMED");
-        const rendered=attempts.find(a=>a.browser_status==="RENDERED_NO_MATCHED_PRODUCT_DATA");
-        const capacity=attempts.find(a=>a.browser_status==="GRAPHICAL_BROWSER_CAPACITY_LIMIT");
         label=state.startsWith("INTERRUPTED")?"INTERRUPTED":
           d.input_access_problem==="HTTP_403"?"HTTP 403 BLOCKED":
-          rejected?"PAGE NOT RETRIEVED":mismatch?"MODEL NOT MATCHED":
-          capacity?"BROWSER CAPACITY":rendered?"NO STRUCTURED DATA":
-          attempts.length?"NO MATCHED DATA":d.url?"NO RECORDED CHECK":"NO SOURCE URL";
+          restricted?"ACCESS RESTRICTED":
+          failed?"PAGE NOT RETRIEVED":
+          mismatch?"WRONG MODEL":
+          capacity?"BROWSER CAPACITY":
+          rendered?"NO STRUCTURED DATA":
+          !direct.length?(d.url?"NO FETCH RECEIPT":"INDEX ONLY"):"NO PRODUCT FACTS";
+        detail=label==="HTTP 403 BLOCKED"||label==="ACCESS RESTRICTED"?
+          "Seller denied automated retrieval. Graphical mode does not bypass access restrictions.":
+          label==="PAGE NOT RETRIEVED"?
+          "The source URL failed its network, robots or redirect check.":
+          label==="WRONG MODEL"?
+          "Page opened, but product identity did not match; its facts were rejected.":
+          label==="BROWSER CAPACITY"?
+          "No graphical renderer slot became available; evidence was not fabricated.":
+          label==="NO STRUCTURED DATA"?
+          "Page rendered, but no matching structured product fields were present.":
+          label==="INDEX ONLY"?
+          "Search index has a listing, but no usable direct product URL was supplied.":
+          label==="NO FETCH RECEIPT"?
+          "A product URL exists, but no HTTP or graphical fetch outcome was recorded.":
+          label==="NO PRODUCT FACTS"?
+          "Source was checked; no product facts matched the listed model.":
+          "Source check was interrupted.";
       }
-      const browserAttempts=(entry.attempted_sources||[]);
-      const issue=browserAttempts.find(a=>String(a.status||"").startsWith("NOT_RETRIEVED_"));
-      rows.push({
-        key:"#"+(Number(id.split("-")[1])+1),
-        title:d.title||"Product",
-        detail:mode==="REFERENCE"?
-          (label==="REVIEW FOUND"?
-           "Independent review · exact retailer variant still unproven.":
-           "Real product page checked · declared specifications, not tests."):
-          mode==="BLOCKED"?(label==="HTTP 403 BLOCKED"?
-            "Selected seller returned HTTP 403 to automated retrieval. The graphical renderer cannot bypass denied access.":
-            issue?
-            "Robots, HTTP or network access prevented retrieval; graphical fallback cannot bypass it.":
-            label==="BROWSER CAPACITY"?"Graphical renderer reached its bounded capacity; no source was invented.":
-            label==="MODEL NOT MATCHED"?"Retrieved page did not identify this model; source facts were rejected.":
-            label==="NO STRUCTURED DATA"?"Graphical page rendered but no matching product fields were found.":
-            label==="NO SOURCE URL"?"No eligible direct product/document URL is known; no page was opened.":
-            label==="NO RECORDED CHECK"?"A listing URL exists, but this saved job has no per-URL fetch receipt; access remains unverified.":
-            "Source was attempted, but this variant still lacks matched evidence."):
-          mode==="RUNNING"?"Independent source check in progress.":
-          "Scheduled for source identification and checking.",
-        mode,state:label,weight:weight[mode],
-      });
+      const row={key:"#"+(Number(id.split("-")[1])+1),
+        title:d.title||"Product",detail,mode,state:label,weight:weight[mode]};
+      // An index search card is useful in the graph, but not a browser task.
+      // Avoid twenty identical pseudo-failures in the left-side source rail.
+      if(complete&&mode==="BLOCKED"&&label==="INDEX ONLY"&&id!=="offer-0"){
+        indexOnly.push(row);return;
+      }
+      // A seller listing repeated under the same URL needs one visible task,
+      // although each persisted offer and quote remains in the full graph.
+      if(complete&&mode==="BLOCKED"&&directUrl&&id!=="offer-0" &&
+         seenLinks.has(directUrl)){
+        duplicates.push(row);return;
+      }
+      if(directUrl)seenLinks.add(directUrl);
+      rows.push(row);
     });
+    if(indexOnly.length){
+      rows.push({key:"INDEX",title:indexOnly.length+
+        " index-only cards without direct product links",
+        detail:"No web page can be opened from these search cards. Their indexed prices remain visible as unverified graph observations.",
+        mode:"BLOCKED",state:"INDEX LEADS",weight:weight.BLOCKED});
+    }
+    if(duplicates.length){
+      rows.push({key:"REUSED",title:duplicates.length+
+        " listings share an already checked seller URL",
+        detail:"Duplicate source checks are collapsed here; the separate product and indexed-price nodes remain in the graph.",
+        mode:"BLOCKED",state:"SAME URL",weight:weight.BLOCKED});
+    }
     rows.sort((a,b)=>(a.key==="#1"?-1:b.key==="#1"?1:
-        a.weight-b.weight||Number(a.key.slice(1))-Number(b.key.slice(1))));
+      a.weight-b.weight||
+      (Number(a.key.slice(1))||999)-(Number(b.key.slice(1))||999)));
     return rows.slice(0,20);
   }
   function questionTasks(data,selectedId="offer-0"){
@@ -208,12 +246,13 @@
     target.replaceChildren();
     const head=item("div","verdict-head");
     const title=v.status==="COMPLETE"?"Final evidence assessment":
-      v.status==="UNAVAILABLE"?"Research result · model unavailable":
+      v.status==="UNAVAILABLE"?"Research complete · evidence-based summary":
       legacy?"Research result · earlier saved job":"Research interrupted";
     head.appendChild(item("strong","",title));
     const tag=item("span","verdict-tag"+(v.status==="UNAVAILABLE"?" unavailable":""),
       v.status==="COMPLETE"?"Local Qwen · conditional verdict":
-      "No verified best buy");
+      v.status==="UNAVAILABLE"?"Local Qwen timed out · source-based fallback":
+      "Research from archived job");
     head.appendChild(tag);target.appendChild(head);
     const text=v.summary || (
       "Research finished. This saved job has no final local-LLM synthesis. "+

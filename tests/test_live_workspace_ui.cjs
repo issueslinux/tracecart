@@ -24,14 +24,14 @@ test("source rail reflects actual persisted worker statuses, not made-up verifie
   assert.equal(rows[0].mode,"RUNNING");
   assert.equal(rows[0].state,"CHECKING");
   assert.equal(rows[1].mode,"BLOCKED");
-  assert.equal(rows[1].state,"NO SOURCE URL");
-  assert.match(rows[1].detail,/No eligible direct product/);
+  assert.equal(rows[1].state,"INDEX ONLY");
+  assert.match(rows[1].detail,/no usable direct product URL/);
   const withUrl={...example,offer_queue:[
     {id:"offer-0",title:"Input",url:"https://manufacturer.example/a"},
     {id:"offer-1",title:"Indexed",url:"https://seller.example/b"}]};
   const oldJob=live.sourceTasks(withUrl).find(x=>x.key==="#2");
-  assert.equal(oldJob.state,"NO RECORDED CHECK");
-  assert.match(oldJob.detail,/no per-URL fetch receipt/);
+  assert.equal(oldJob.state,"NO FETCH RECEIPT");
+  assert.match(oldJob.detail,/no HTTP or graphical fetch outcome/);
 });
 test("blocked primary HTTP 403 is explained instead of NO MATCHED SOURCE",()=>{
   const input={...example,offer_queue:[
@@ -42,7 +42,37 @@ test("blocked primary HTTP 403 is explained instead of NO MATCHED SOURCE",()=>{
       reference_answers:[]}}};
   const row=live.sourceTasks(input)[0];
   assert.equal(row.state,"HTTP 403 BLOCKED");
-  assert.match(row.detail,/cannot bypass denied access/);
+  assert.match(row.detail,/does not bypass access restrictions/);
+});
+test("index-only cards are grouped instead of 12 meaningless NO SOURCE URL tasks",()=>{
+  const data={
+    state:"READY",evidence_progress:{status:"COMPLETE"},
+    graph:{offer_details:{}},offer_queue:[
+      {id:"offer-0",title:"Selected laptop",url:"https://seller.example/one"},
+      {id:"offer-1",title:"Indexed laptop",url:null},
+      {id:"offer-2",title:"Indexed laptop v2",url:null},
+      {id:"offer-3",title:"Indexed laptop v3",url:null},
+      {id:"offer-4",title:"Real seller laptop",url:"https://seller.example/two"},
+    ],
+    evidence_offers:{
+      "offer-0":{status:"NO_MATCHED_INDEPENDENT_SOURCE",
+        attempted_sources:[{url:"https://seller.example/one",
+          status:"NOT_RETRIEVED_SourceAccessDenied"}]},
+      "offer-1":{status:"NO_MATCHED_INDEPENDENT_SOURCE",
+        attempted_sources:[{discovery:"BRAND_SITE_CANDIDATE",
+          status:"NO_MATCHED_BRAND_DOCUMENT_SourceRedirect"}]},
+      "offer-2":{status:"NO_MATCHED_INDEPENDENT_SOURCE",attempted_sources:[]},
+      "offer-3":{status:"NO_MATCHED_INDEPENDENT_SOURCE",attempted_sources:[]},
+      "offer-4":{status:"GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED",
+        reference_answers:[{finding:"Documented 16GB RAM"}]},
+    }
+  };
+  const rows=live.sourceTasks(data);
+  assert.equal(rows.length,3);
+  assert.ok(rows.some(r=>r.title.includes("3 index-only cards")));
+  assert.ok(rows.some(r=>r.state==="ACCESS RESTRICTED"));
+  assert.ok(rows.some(r=>r.state==="SPECIFICATIONS"));
+  assert.ok(!rows.some(r=>["NO MATCHED DATA","NO SOURCE URL"].includes(r.state)));
 });
 test("spinner lasts through the persisted final Qwen verdict stage",()=>{
   const template=fs.readFileSync(path.join(__dirname,"../assets/decision-page.html"),"utf8");

@@ -125,7 +125,8 @@ def execute_reference_checks(offer, category, fetch=None):
     # source for its EXACT reviewed family (the prior adapter is preserved).
     if not (category=="LAPTOP" and model in REVIEW_SOURCES):
         from generic_source_research import execute_generic_sources
-        general=execute_generic_sources(offer,category,fetch=fetch)
+        general=execute_generic_sources(offer,category,fetch=fetch,
+            enable_brand_discovery=not offer.get("_skip_brand_discovery",False))
         if general["reference_answers"]:
             return general
     else:

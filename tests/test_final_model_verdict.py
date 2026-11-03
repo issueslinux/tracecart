@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from cart_research import CartResearchJobs
 from model_verdict import (generate_final_verdict,insufficient_verdict,
-                           verdict_context,RECORD_LIMIT)
+                           verdict_context,compact_verdict_context,RECORD_LIMIT)
 
 ROOT=Path(__file__).resolve().parents[1]
 EXAMPLE=json.loads((ROOT/"examples"/"live_lenovo_ideapad_index_evidence_2026-11-02.json").read_text())
@@ -53,6 +53,11 @@ class FinalVerdictTests(unittest.TestCase):
         self.assertEqual(context["selected_page"]["access"],"HTTP_403")
         self.assertNotIn("gap:1",json.dumps(context))
         self.assertLessEqual(len(json.dumps(context,ensure_ascii=False)),RECORD_LIMIT)
+        compact=compact_verdict_context(context)
+        self.assertEqual(len(compact["offer_rows_id_title_price_status"]),2)
+        self.assertEqual(len(compact["published_specs_not_independent_tests"]),1)
+        self.assertEqual(compact["indexed_prices"],"UNVERIFIED_INDEX_NOT_CHECKOUT")
+        self.assertLess(len(json.dumps(compact)),len(json.dumps(context)))
 
     def test_local_llm_returns_sourced_conditional_interpretation(self):
         def response(url,method,data,headers,timeout):
@@ -63,9 +68,7 @@ class FinalVerdictTests(unittest.TestCase):
                           payload["messages"][1]["content"])
             self.assertNotIn("Independent tests?",payload["messages"][1]["content"])
             return {"message":{"content":json.dumps({
-                "verdict":"COMPARE_WITH_CAUTION",
-                "summary":"Two models are listed, but the cheapest indexed value is not a checkout price.",
-                 "next_step":"Verify the SKU and delivered price at the seller."
+                "verdict":"COMPARE_WITH_CAUTION"
             })}}
         result=generate_final_verdict(projection(),source_graph(),request=response)
         self.assertEqual(result["status"],"COMPLETE")

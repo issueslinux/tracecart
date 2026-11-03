@@ -21,13 +21,14 @@
 
 - Uses the existing localhost Ollama Qwen `qwen2.5:1.5b-instruct` and a
   JSON-schema-constrained single inference call.
-- Input: **all indexed offer identities and source-check statuses** plus
-  attributed real source observations and primary title facts, respecting a
-  10,000-character budget for the loaded 4096-token context. Full source audit
-  and source IDs remain available separately; omitted observations are counted.
-- Untrusted page text is data, never model instructions. The Qwen result only
-  determines the **conditional assessment, summary and next research step**.
-  It **cannot invent evidence nodes, citations or verified prices**.
+- Input: compact model view of **all identified offers and indexed prices**
+  and the available published source declarations, within a bounded context.
+  The original source evidence (including exact URLs, hashes and full labels)
+  remains available in the audit; omitted observations are counted.
+- Untrusted page text is data, never model instructions. CPU-bound Qwen
+  returns **only the conditional verdict classification**. The explanation,
+  next step, fact cards and citations are composed from persisted evidence,
+  not generated text. It cannot invent source citations or verified prices.
 - Any fact cards and clickable evidence links are constructed directly from
   document-backed graph nodes. During tests the smaller Qwen erroneously cited
   indexed **price** nodes as proof of laptop RAM; this was rejected by design.
@@ -59,3 +60,32 @@
 - The model uses loopback only; no extra paid search or external API is
   required by the final verdict worker. Production process restarts must
   preserve the original DB and explicitly disabled optional paid searches.
+
+## Latency and source status correction (2026-11-03)
+
+- The latest Dell job `2NpxOO3WuElr61xUIev66G2F` completed 16/16
+  source checks, collected 15 vendor declarations from one document,
+  then timed out in the final model call. Its preliminary per-offer
+  question batch had already made four model attempts and all timed out.
+- New jobs **skip** that redundant question-generation model batch,
+  retaining deterministic evidence gaps. The single local Qwen worker
+  is reserved for synthesis after source checks.
+- The final Qwen request is constrained to a single JSON verdict,
+  at most 42 output tokens and a 24-second bounded HTTP timeout
+  (the previous verbose summary used up to 360 tokens/85 seconds).
+  In a measured replay of the 16-offer Dell job Qwen completed in
+  18.08 seconds; this is still CPU-bound, not an instantaneous response.
+  On timeout the fallback includes 15 real source declarations and their
+  saved evidence links rather than an empty generic summary.
+- Repeated manufacturer home-page probes for search-index-only cards
+  are de-duplicated per model family; direct seller URLs still get real
+  permitted source checks.
+- Source rail groups incomplete index cards without eligible direct
+  URLs into one explicit `INDEX LEADS` summary and groups duplicated
+  blocked seller URLs. It distinguishes `ACCESS RESTRICTED`,
+  `WRONG MODEL`, `NO STRUCTURED DATA`, `NO FETCH RECEIPT`, and
+  available source `SPECIFICATIONS`. The full graph/audit still
+  retains every offer, price observation and every source receipt.
+- This **does not** cause blocked seller pages to be fetched; HTTP 403
+  and robots restrictions remain enforced. No additional paid source
+  search service is enabled.

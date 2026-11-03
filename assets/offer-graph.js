@@ -254,10 +254,17 @@
           ol.appendChild(li);
         });
         details.appendChild(ol);
+        const sourceState=d.source_check_status||"NOT_STARTED";
+        const sourceExplanation=sourceState==="NO_MATCHED_INDEPENDENT_SOURCE"?
+          "No matching published facts for this listing (not proof none exist).":
+          sourceState==="GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED"?
+          "Published technical specifications found; exact SKU and tests unverified.":
+          sourceState.startsWith("SOURCE_NOT_VERIFIED_")?
+          "Source retrieval failed its checks; see source tasks.":
+          sourceState.replace(/_/g," ").toLowerCase();
         details.appendChild(el("p","kg-footnote",
-          "Source check: "+(d.source_check_status||"NOT_STARTED")+
-          " · Model batch: "+(d.model_question_status||"NOT_STARTED")+
-          " · Earlier generic question catalogue is not evidence or active work."));
+          "Source evidence: "+sourceExplanation+
+          " · Missing evidence remains visible in the right-hand research panel."));
         return;
       }
       if(selected.type==="title_claim"||selected.type==="derived_claim"){

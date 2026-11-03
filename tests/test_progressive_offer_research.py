@@ -195,6 +195,9 @@ class ProgressiveOfferResearchTests(unittest.TestCase):
                         time.sleep(.025)
                     self.assertEqual(jobs.read(jid)["evidence_progress"]
                                      ["status"],"COMPLETE")
+                    # New runs reserve the only local GPU inference slot for
+                    # the actual final verdict, never a preparatory question batch.
+                    self.assertEqual(jobs.read(jid)["model_offers"],{})
                 finally:
                     release.set()
                     jobs.close()
