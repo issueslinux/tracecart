@@ -474,7 +474,7 @@
           const input=id==="offer-0";
           const title=svg("text",{"x":14,"y":input?44:43,
                                 "class":"kg-card-title"});
-          title.textContent=clip(item.label,input?82:48);
+          title.textContent=clip(item.label,input?76:39);
           g.appendChild(title);
           const marker=svg("text",{"x":14,"y":18,
                                "class":"kg-card-eyebrow"});
@@ -498,7 +498,7 @@
           const facts=svg("text",{"x":14,"y":input?67:67,
                               "class":"kg-card-subtitle"});
           facts.textContent=clip(meaningful.slice(0,4).join(" · ")||
-            "No comparable quantity/variant declared in listing title",input?100:53);
+            "No comparable quantity/variant declared in listing title",input?92:43);
           g.appendChild(facts);
           if(!input&&d.unit_price){
             const unit=svg("text",{"x":p.w-13,"y":p.h-8,
