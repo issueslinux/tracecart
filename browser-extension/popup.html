@@ -24,6 +24,29 @@
   <textarea id="payload" readonly aria-label="Copy this JSON to TraceCart"></textarea>
   <p class="warn">User-initiated only. No site crawling, checkout access, data upload or
   proof of a seller-confirmed price. Captures only URL, title, price, optional GTIN and timestamp.</p>
+  <hr style="border:0;border-top:1px solid #516079;margin:20px 0">
+  <h2>Optional automatic research queue</h2>
+  <p>Start TraceCart locally, open <code>/research/companion</code>, and
+  enter its one-time pairing token here. Grant browser permission separately
+  for each shop. Only URLs explicitly placed in the local queue are opened.</p>
+  <label>TraceCart local port (no remote server)
+  <input id="companion-port" type="number" min="1024" max="65535" value="8765"></label>
+  <label>Private pairing token
+  <input id="companion-token" type="password" autocomplete="off"
+  placeholder="Paste once; stored in this extension only"></label>
+  <button id="companion-pair">Save local pairing</button>
+  <label>Merchant origin to authorize (one shop at a time)
+  <input id="companion-origin" type="url" placeholder="https://shop.example.org/product/..."></label>
+  <button id="companion-grant">Grant access to this shop</button>
+  <label><input id="companion-enabled" type="checkbox">
+  Enable queued, automatic research</label>
+  <button id="companion-apply">Apply / check queue</button>
+  <p id="companion-status" class="warn" role="status" aria-live="polite">
+  Companion inactive.</p>
+  <p class="warn">When enabled, the extension may open and close background
+  tabs for queued URLs on explicitly authorized sites. It sends only a
+  filtered Product/Offer projection to the local TraceCart instance.
+  No cookies, localStorage, full HTML or checkout. Stop by unchecking Enable.</p>
   <script type="module" src="popup.js"></script>
 </body>
 </html>

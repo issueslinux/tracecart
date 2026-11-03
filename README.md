@@ -729,6 +729,22 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## Browser companion: optional queued product research (2026-11-03)
+
+An **opt-in local Chromium extension** and research queue can inspect explicitly
+submitted product URLs on individually authorized merchant origins. The local
+TraceCart research UI is `/research/companion`; the extension is in
+`browser-extension/`. On each queued page it extracts a bounded, filtered
+Product/Offer JSON-LD projection and sends it to the universal extractor.
+The app preserves per-field evidence and flags all observations as **not
+seller/checkout verified**. No browser cookies or full HTML are exported.
+The old manual current-tab capture still exists.
+
+**This is development/research only:** installed extension permissions and
+live merchant behavior are not validated in production, CAPTCHA is never
+bypassed and currently running servers are not updated. See
+[`docs/BROWSER_COMPANION_V1_2026-11-03.md`](docs/BROWSER_COMPANION_V1_2026-11-03.md).
+
 ## New: universal product extraction (research v1, 2026-11-03)
 
 `universal_product_extract.py` parses bounded **already acquired** product
