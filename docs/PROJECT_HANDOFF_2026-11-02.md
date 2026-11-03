@@ -1,3 +1,16 @@
+> **LATEST UI / RAM STREAMING (2026-11-03):** Unified `/cart`
+> and `/cart/status/<id>` graph-first interface: product URL field
+> above a centred evolving network, real source worker statuses on
+> left, bounded changing OPEN/model questions on right, no decorative
+> hero or bulk question list. SSE `/cart/status/<id>/live` streams
+> deterministic source-backed graph state from a 24-job RAM cache;
+> SQLite remains the authority. Up to 16 parallel source I/O tasks
+> with per-URL deduplication, GPU-heavy Qwen separate. Legacy HTTP
+> payment operations intentionally stay serialized and on the
+> original SQLite thread; only SSE is threaded. GPU memory is not
+> exposed to the browser. Full details:
+> [LIVE_GRAPH_RAM_WORKSPACE_2026-11-03](LIVE_GRAPH_RAM_WORKSPACE_2026-11-03.md).
+>
 > **CONNECTED OFFER GRAPH (2026-11-03):** New deterministic,
 > read-only `/cart/status/<id>.knowledge-graph.json` and interactive
 > SVG above the existing decision path. Joins every offer's unverified
@@ -210,7 +223,7 @@ Nie poświęcaj całej nowej iteracji na formatowanie, parsery kosztów dostawy 
 | Rekonesans ofert przez dopuszczone wyszukiwarki | automatic_offer_discovery.py |
 | Starsze kompletne drzewo dowodów/krytyka | decision_tree.py |
 | Renderowanie wyborów i zmiana gałęzi | assets/decision-flow.js |
-| Projekt graficzny | assets/decision-flow.css, assets/decision-entry.html |
+| Projekt graficzny | assets/decision-flow.css, assets/live-workspace.css, assets/live-workspace.js, assets/decision-page.html |
 | Testy | tests/test_http.py, tests/test_guided_decision.py, tests/test_decision_flow_logic.cjs |
 | Szczegóły zakończonej przebudowy | docs/INTERACTIVE_DECISION_TREE_2026-11-02.md |
 | Porównywanie podobnej półki | docs/SIMILAR_PRODUCT_TIER_2026-11-02.md |

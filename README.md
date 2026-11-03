@@ -5,6 +5,26 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-03: minimal, live, RAM-backed graph workspace
+
+`/cart` is now the same full-screen interface used by active and completed
+research. **One URL input at the top, evolving graph in the middle,
+source tasks on the left and changing high-priority questions on the
+right.** No marketing hero, decorative process boxes, original bulky
+question list or buyer questionnaire in the primary UI.
+
+A same-origin `/cart/status/<id>/live` Server-Sent Events endpoint
+streams read-only graph snapshots from a bounded **24-job RAM cache**.
+The browser draws an immediate input node and adds offers, evidence
+links and verified observations only when persisted work really changes.
+An I/O pool checks up to **16 sources/offers concurrently**, with
+per-URL fetch de-duplication; local GPU-heavy Qwen question generation
+stays separately constrained. Source absence remains visible as missing
+source, not a fabricated answer. Original SQLite reports and evidence
+remain durable across restart; no browser access to server RAM addresses
+or VRAM is exposed. A small SVG network does not require WebGPU.
+[Runtime design and verification](docs/LIVE_GRAPH_RAM_WORKSPACE_2026-11-03.md).
+
 ## 2026-11-03: interactive offer / claim / source knowledge graph
 
 Every persisted cart decision now has a **read-only interactive evidence
