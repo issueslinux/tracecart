@@ -33,7 +33,7 @@
   function sourceTasks(data){
     const g=data.graph||{},details=g.offer_details||{},result=data.evidence_offers||{};
     const offers=(data.offer_queue&&data.offer_queue.length?
-      data.offer_queue.map(o=>[o.id,{title:o.title}]):Object.entries(details));
+      data.offer_queue.map(o=>[o.id,{title:o.title,url:o.url}]):Object.entries(details));
     const rows=[];
     const weight={RUNNING:0,QUEUED:1,REFERENCE:2,BLOCKED:3};
     offers.forEach(([id,d])=>{
@@ -47,8 +47,18 @@
       }
       else if(state){
         mode="BLOCKED";
-        label=state.startsWith("INTERRUPTED")?"INTERRUPTED":"NO MATCHED SOURCE";
+        const attempts=entry.attempted_sources||[];
+        const rejected=attempts.find(a=>String(a.status||"").startsWith("NOT_RETRIEVED_"));
+        const mismatch=attempts.find(a=>a.status==="SOURCE_PAGE_IDENTITY_NOT_CONFIRMED");
+        const rendered=attempts.find(a=>a.browser_status==="RENDERED_NO_MATCHED_PRODUCT_DATA");
+        const capacity=attempts.find(a=>a.browser_status==="GRAPHICAL_BROWSER_CAPACITY_LIMIT");
+        label=state.startsWith("INTERRUPTED")?"INTERRUPTED":
+          rejected?"PAGE NOT RETRIEVED":mismatch?"MODEL NOT MATCHED":
+          capacity?"BROWSER CAPACITY":rendered?"NO STRUCTURED DATA":
+          attempts.length?"NO MATCHED DATA":d.url?"NO RECORDED CHECK":"NO SOURCE URL";
       }
+      const browserAttempts=(entry.attempted_sources||[]);
+      const issue=browserAttempts.find(a=>String(a.status||"").startsWith("NOT_RETRIEVED_"));
       rows.push({
         key:"#"+(Number(id.split("-")[1])+1),
         title:d.title||"Product",
@@ -56,7 +66,14 @@
           (label==="REVIEW FOUND"?
            "Independent review · exact retailer variant still unproven.":
            "Real product page checked · declared specifications, not tests."):
-          mode==="BLOCKED"?"This exact variant still needs a source.":
+          mode==="BLOCKED"?(issue?
+            "Robots, HTTP or network access prevented retrieval; graphical fallback cannot bypass it.":
+            label==="BROWSER CAPACITY"?"Graphical renderer reached its bounded capacity; no source was invented.":
+            label==="MODEL NOT MATCHED"?"Retrieved page did not identify this model; source facts were rejected.":
+            label==="NO STRUCTURED DATA"?"Graphical page rendered but no matching product fields were found.":
+            label==="NO SOURCE URL"?"No eligible direct product/document URL is known; no page was opened.":
+            label==="NO RECORDED CHECK"?"A listing URL exists, but this saved job has no per-URL fetch receipt; access remains unverified.":
+            "Source was attempted, but this variant still lacks matched evidence."):
           mode==="RUNNING"?"Independent source check in progress.":
           "Scheduled for source identification and checking.",
         mode,state:label,weight:weight[mode],

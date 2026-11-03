@@ -24,7 +24,14 @@ test("source rail reflects actual persisted worker statuses, not made-up verifie
   assert.equal(rows[0].mode,"RUNNING");
   assert.equal(rows[0].state,"CHECKING");
   assert.equal(rows[1].mode,"BLOCKED");
-  assert.equal(rows[1].state,"NO MATCHED SOURCE");
+  assert.equal(rows[1].state,"NO SOURCE URL");
+  assert.match(rows[1].detail,/No eligible direct product/);
+  const withUrl={...example,offer_queue:[
+    {id:"offer-0",title:"Input",url:"https://manufacturer.example/a"},
+    {id:"offer-1",title:"Indexed",url:"https://seller.example/b"}]};
+  const oldJob=live.sourceTasks(withUrl).find(x=>x.key==="#2");
+  assert.equal(oldJob.state,"NO RECORDED CHECK");
+  assert.match(oldJob.detail,/no per-URL fetch receipt/);
 });
 test("right rail cycles unresolved checks when workers update, never converts them to answers",()=>{
   const list=live.questionTasks(example);

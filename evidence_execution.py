@@ -153,6 +153,9 @@ def execute_reference_checks(offer, category, fetch=None):
         return {"status":"NO_MATCHED_INDEPENDENT_SOURCE",
                 "model_family":model,"sources_checked":0,
                 "reference_answers":[],"verified_for_exact_offer":0,
+                # Preserve actual HTTP/robots/identity/browser outcomes. A
+                # missing lab review must not erase attempted product reads.
+                "attempted_sources":general.get("attempted_sources",[]),
                 "pending_high_impact":[x["dimension"] for x in TRIAGE]}
     source=REVIEW_SOURCES[model]
     listing_title=str(offer.get("title") or "").casefold()
