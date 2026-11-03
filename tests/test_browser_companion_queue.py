@@ -98,6 +98,38 @@ class BrowserCompanionQueueTests(unittest.TestCase):
             self.queue.report(receipt(job, snapshot=sample(), observed=old))
         self.assertEqual(self.queue.listed()[0]["status"], "IN_PROGRESS")
 
+    def test_dom_microdata_and_woocommerce_provenance_is_unverified(self):
+        for origin in ("PRODUCT_OFFER_MICRODATA", "WOOCOMMERCE_PRIMARY_PRICE"):
+            with self.subTest(origin=origin):
+                queue = CompanionQueue(token="b" * 64)
+                queue.enqueue(URL)
+                job = queue.take()
+                item = receipt(job, snapshot=sample())
+                item["price_origin"] = origin
+                response = queue.report(item)
+                self.assertEqual(response["status"],
+                                 "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED")
+                evidence = queue.listed()[0]["result"]
+                self.assertFalse(evidence["seller_verified"])
+                self.assertFalse(evidence["checkout_verified"])
+                self.assertEqual(evidence["browser_original_price_origin"], origin)
+                self.assertTrue(any(
+                    row["field"] == "price" and
+                    row["browser_original_price_origin"] == origin
+                    for row in evidence["evidence"]))
+
+    def test_dom_conflicts_and_ambiguity_are_explicit_failures(self):
+        for error in ("MULTIPLE_PRODUCTS_AMBIGUOUS",
+                      "CONFLICTING_OFFER_EVIDENCE",
+                      "CONFLICTING_PRODUCT_IDENTITY"):
+            with self.subTest(error=error):
+                queue = CompanionQueue(token="b" * 64)
+                queue.enqueue(URL)
+                job = queue.take()
+                failure = receipt(job, error=error)
+                self.assertEqual(queue.report(failure)["status"], error)
+                self.assertIsNone(queue.listed()[0]["result"])
+
     def test_expired_lease_never_reissued(self):
         self.queue.enqueue(URL)
         job = self.queue.take()

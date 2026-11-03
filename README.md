@@ -729,6 +729,21 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## Browser DOM extraction research (2026-11-03)
+
+The opt-in browser companion now also recognizes **schema.org Product/Offer
+microdata** and the **main WooCommerce single-product price widget**,
+rejecting ambiguous offers, crossed-out list-only prices and disagreements
+with JSON-LD Product/Offer claims. The source method is retained in the
+evidence JSON; no checkout price is inferred.
+
+Real headless Chromium DOM smoke: **11/11** controlled local HTTPS cases PASS,
+including JavaScript rendering, microdata, WooCommerce, and conflicts. A
+separate, explicit public Adafruit product probe matched the static parser
+at **9.95 USD declared**; neither method confirms a final checkout total.
+A real installed Chrome extension/broker end-to-end remains unverified.
+See [`docs/BROWSER_COMPANION_DOM_EXTRACTION_2026-11-03.md`](docs/BROWSER_COMPANION_DOM_EXTRACTION_2026-11-03.md).
+
 ## Browser companion: optional queued product research (2026-11-03)
 
 An **opt-in local Chromium extension** and research queue can inspect explicitly

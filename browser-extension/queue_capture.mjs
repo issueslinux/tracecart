@@ -27,8 +27,13 @@ export function traceCartQueuedProductProjection() {
   }
   function correctType(value, expected) {
     const types = Array.isArray(value?.["@type"]) ? value["@type"] : [value?.["@type"]];
-    return types.some(x => typeof x === "string" &&
-      x.split("/").pop().toLowerCase() === expected.toLowerCase());
+    return types.some(x => {
+      if (typeof x !== "string") return false;
+      const normalized=x.replace(/\/$/,"").toLowerCase();
+      return normalized===expected.toLowerCase() ||
+        normalized==="https://schema.org/"+expected.toLowerCase() ||
+        normalized==="http://schema.org/"+expected.toLowerCase();
+    });
   }
   const found=[];
   function visit(obj, depth=0) {
@@ -46,7 +51,104 @@ export function traceCartQueuedProductProjection() {
     if (typeof script.textContent !== "string" || script.textContent.length > 150000) continue;
     try { visit(JSON.parse(script.textContent)); } catch (_) {}
   }
-  if (found.length !== 1) return {error:"NO_STRUCTURED_PRODUCT"};
+  /* DOM fallback is deliberately limited to standard schema.org product
+     microdata or the MAIN WooCommerce single-product price widget.
+     Never scan arbitrary text, shopping carts, recommendations, search results. */
+  function one(nodes) {
+    return nodes && nodes.length === 1 ? nodes[0] : null;
+  }
+  function microvalue(node) {
+    if (!node) return null;
+    return plain(node.getAttribute?.("content") || node.getAttribute?.("value") ||
+                 node.textContent,180);
+  }
+  function domPrice(text) {
+    const match=String(text || "").trim().match(
+      /^([0-9][0-9 \u00a0\u202f]{0,10}(?:[.,][0-9]{1,2})?)\s*(zł|PLN|EUR|€|USD|\$)$/i);
+    if (!match) return null;
+    const value=priceValue(match[1].replace(/[ \u00a0\u202f]/g,""));
+    const unit=match[2].toUpperCase();
+    const currency=(unit==="ZŁ" || unit==="PLN") ? "PLN"
+      : (unit==="€" || unit==="EUR") ? "EUR" : "USD";
+    return value ? [value,currency] : null;
+  }
+  function domProductOffer() {
+    const productNodes=Array.from(document.querySelectorAll(
+      '[itemscope][itemtype]')).filter(node=>
+        ["https://schema.org/product","http://schema.org/product"].includes(
+          String(node.getAttribute?.("itemtype") || "").replace(/\/$/,"").toLowerCase()));
+    if (productNodes.length > 1) return {error:"MULTIPLE_PRODUCTS_AMBIGUOUS"};
+    if (productNodes.length === 1) {
+      const root=productNodes[0];
+      const nestedOffers=Array.from(root.querySelectorAll(
+        '[itemprop="offers"][itemscope][itemtype]')).filter(node=>
+          ["https://schema.org/offer","http://schema.org/offer"].includes(
+            String(node.getAttribute?.("itemtype") || "").replace(/\/$/,"").toLowerCase()));
+      if (nestedOffers.length !== 1) return {error:"NO_STRUCTURED_PRODUCT"};
+      const offer=nestedOffers[0];
+      const title=microvalue(one(Array.from(root.querySelectorAll('[itemprop="name"]'))
+        .filter(el=>!el.closest?.('[itemprop="offers"]'))));
+      const price=priceValue(microvalue(one(offer.querySelectorAll('[itemprop="price"]'))));
+      const currency=microvalue(one(offer.querySelectorAll('[itemprop="priceCurrency"]')));
+      if (!title || !price || !["PLN","EUR","USD"].includes(currency)) {
+        return {error:"NO_STRUCTURED_PRODUCT"};
+      }
+      const projection={"@type":"Product",name:title,
+        offers:{"@type":"Offer",price,priceCurrency:currency}};
+      const brand=microvalue(one(root.querySelectorAll('[itemprop="brand"]')));
+      if (brand) projection.brand={name:brand};
+      for (const key of ["model","sku","gtin","gtin8","gtin12","gtin13","gtin14"]) {
+        const node=one(root.querySelectorAll('[itemprop="'+key+'"]'));
+        const value=microvalue(node);
+        if (value && value.length<=70) projection[key]=value;
+      }
+      const availability=microvalue(one(offer.querySelectorAll(
+        '[itemprop="availability"]')));
+      if (availability && availability.length<=100) {
+        projection.offers.availability=availability;
+      }
+      const seller=microvalue(one(offer.querySelectorAll('[itemprop="seller"]')));
+      if (seller && seller.length<=150) projection.offers.seller={name:seller};
+      return {snapshot:projection,price_origin:"PRODUCT_OFFER_MICRODATA"};
+    }
+
+    // WooCommerce fallback requires explicit single-product context, one
+    // product heading, one primary price container, and one current amount.
+    if (!document.body?.classList?.contains("single-product")) return null;
+    const heading=one(document.querySelectorAll('h1.product_title, h1.entry-title'));
+    const title=plain(heading?.textContent);
+    if (!title) return null;
+    let blocks=document.querySelectorAll('.elementor-widget-woocommerce-product-price');
+    if (blocks.length===0) blocks=document.querySelectorAll('.summary.entry-summary');
+    const block=one(blocks);
+    if (!block) return {error:"NO_STRUCTURED_PRODUCT"};
+    const priceBlock=one(block.querySelectorAll('.price'));
+    if (!priceBlock) return {error:"NO_STRUCTURED_PRODUCT"};
+    const ins=Array.from(priceBlock.querySelectorAll('ins bdi'));
+    const del=Array.from(priceBlock.querySelectorAll('del bdi'));
+    let prices=[];
+    if (ins.length) {
+      prices=ins.map(node=>domPrice(node.textContent));
+    } else {
+      const current=Array.from(priceBlock.querySelectorAll('bdi'))
+        .filter(el=>!el.closest?.('del'));
+      prices=current.length ? current.map(node=>domPrice(node.textContent))
+        : (!del.length ? [domPrice(priceBlock.textContent)] : []);
+    }
+    if (prices.length!==1 || !prices[0]) return {error:"NO_STRUCTURED_PRODUCT"};
+    const [price,currency]=prices[0];
+    return {snapshot:{"@type":"Product",name:title,
+      offers:{"@type":"Offer",price,priceCurrency:currency}},
+      price_origin:"WOOCOMMERCE_PRIMARY_PRICE"};
+  }
+
+  const dom=domProductOffer();
+  if (found.length > 1) return {error:"MULTIPLE_PRODUCTS_AMBIGUOUS"};
+  if (found.length === 0) {
+    if (!dom) return {error:"NO_STRUCTURED_PRODUCT"};
+    if (dom.error) return dom;
+    return {url,captured_at:new Date().toISOString(),...dom};
+  }
   const product=found[0];
   const offer=Array.isArray(product.offers)
     ? (product.offers.length===1 ? product.offers[0] : null) : product.offers;
@@ -95,6 +197,18 @@ export function traceCartQueuedProductProjection() {
   const currency=selected?.[1];
   if (!title || !price || !currency) {
     return {error:"NO_STRUCTURED_PRODUCT"};
+  }
+  if (dom && dom.error==="MULTIPLE_PRODUCTS_AMBIGUOUS") {
+    return {error:"MULTIPLE_PRODUCTS_AMBIGUOUS"};
+  }
+  if (dom?.snapshot) {
+    const a=dom.snapshot;
+    if (a.name.trim().toLowerCase() !== title.trim().toLowerCase()) {
+      return {error:"CONFLICTING_PRODUCT_IDENTITY"};
+    }
+    if (a.offers.price!==price || a.offers.priceCurrency!==currency) {
+      return {error:"CONFLICTING_OFFER_EVIDENCE"};
+    }
   }
   const projection={"@type":"Product","name":title,"offers":{
     "@type":"Offer","price":price,"priceCurrency":currency
