@@ -83,8 +83,11 @@ class IndependentSourceExecutionTests(unittest.TestCase):
                       "Lenovo IdeaPad Slim 3 15IRH10R Intel Core 5 210H",
                       "Lenovo unknown Laptop", "Lenovo Slim 3 Intel"):
             offer={"id":"offer-4","title":title}
-            r=execute_reference_checks(offer,"LAPTOP",
-                                       fetch=lambda *a,**k: self.fail("No fetch"))
+            def denied(url,*args,**kwargs):
+                # Generic source discovery is permitted for other models,
+                # but must not transfer the 15Q8X10 lab results.
+                return b"User-agent: *\nDisallow: /\n"
+            r=execute_reference_checks(offer,"LAPTOP",fetch=denied)
             self.assertEqual(r["status"],"NO_MATCHED_INDEPENDENT_SOURCE")
             self.assertEqual(r["verified_for_exact_offer"],0)
         self.assertEqual(model_family("Lenovo Slim 3 15Q8X10"),
@@ -114,12 +117,14 @@ class IndependentSourceExecutionTests(unittest.TestCase):
                 self.assertEqual(after["evidence_progress"],
                                  {"status":"COMPLETE","processed":16,"planned":16})
                 self.assertEqual(len(after["evidence_offers"]),16)
-                self.assertEqual(hit_urls,
-                                 ["https://www.notebookcheck.net/robots.txt",
-                                  SOURCE["url"]])
+                self.assertEqual(
+                    [u for u in hit_urls if "notebookcheck.net" in u],
+                    ["https://www.notebookcheck.net/robots.txt",SOURCE["url"]])
+                # Other model families are separately eligible for general
+                # retailer/brand document checks; no foreign lab transfer.
                 references=[
                     (oid,row) for oid,row in after["evidence_offers"].items()
-                    if row["reference_answers"]]
+                    if row["status"]=="INDEPENDENT_REFERENCE_FETCHED_VARIANT_UNVERIFIED"]
                 self.assertGreaterEqual(len(references),2)
                 for oid,row in references:
                     self.assertEqual(len(row["reference_answers"]),2)

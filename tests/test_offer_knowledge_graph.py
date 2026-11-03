@@ -119,7 +119,8 @@ class GraphTests(unittest.TestCase):
                     "question_id":"offer-0-3","dimension":"manufacturer frame and variant identity",
                     "source_sha256":"a"*64,
                     "source_url":"https://example.com/review",
-                    "publisher":"Independent lab","value":"TEST",
+                    "publisher":"Independent lab",
+                    "source_kind":"INDEPENDENT_TEST","value":"TEST",
                     "status":"REFERENCE_EVIDENCE_ONLY_EXACT_SKU_UNVERIFIED",
                     "verified_for_exact_offer":True
                 }]}}

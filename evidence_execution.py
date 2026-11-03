@@ -49,7 +49,7 @@ def model_family(title):
     return found[0].upper() if len(set(found)) == 1 else None
 
 
-def _robot_checked_read(url, fetch=None):
+def _robot_checked_read(url, fetch=None, mimes=None):
     """Robot policy must be obtainable and permissive, never default-allow."""
     validate_product_url(url)
     host = urlsplit(url).hostname
@@ -60,7 +60,8 @@ def _robot_checked_read(url, fetch=None):
     rp.parse(rules.decode("utf-8", "replace").splitlines())
     if not rp.can_fetch(USER_AGENT, url):
         raise ValueError("ROBOTS_DISALLOW")
-    return getter(url, MAX_SOURCE_BYTES, ("text/html", "application/xhtml+xml"),timeout=10)
+    return getter(url, MAX_SOURCE_BYTES,
+                  mimes or ("text/html", "application/xhtml+xml"),timeout=10)
 
 
 def _parse_review(raw, source):
@@ -119,6 +120,16 @@ def execute_reference_checks(offer, category, fetch=None):
     results or automatic purchasing recommendations.
     """
     model=model_family(offer.get("title"))
+    # General-purpose page research runs before category-specific fallbacks.
+    # Known independently instrumented laptop review remains the preferred
+    # source for its EXACT reviewed family (the prior adapter is preserved).
+    if not (category=="LAPTOP" and model in REVIEW_SOURCES):
+        from generic_source_research import execute_generic_sources
+        general=execute_generic_sources(offer,category,fetch=fetch)
+        if general["reference_answers"]:
+            return general
+    else:
+        general={"attempted_sources":[]}
     if category=="E_BIKE":
         from ebike_research import offer_title_diagnostics
         # Never pretend the URL-derived title, indexed price or a similarly
@@ -129,6 +140,7 @@ def execute_reference_checks(offer, category, fetch=None):
             "model_family":None,"sources_checked":0,
             "reference_answers":[],"verified_for_exact_offer":0,
             "listing_diagnostics":diagnostic,
+            "attempted_sources":general.get("attempted_sources",[]),
             "pending_high_impact":[
                 "Exact OEM brand, model, and frame variant",
                 "Battery nominal voltage, manufacturer, Wh and BMS",

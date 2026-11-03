@@ -103,7 +103,7 @@ class EBikePlanTests(unittest.TestCase):
     def test_title_and_index_cannot_count_as_independent_tests(self):
         offer=offer_summaries(sample_record(),"E_BIKE")[0]
         result=execute_reference_checks(offer,"E_BIKE",
-                    fetch=lambda *a,**k:self.fail("No live source authorized"))
+                    fetch=lambda *a,**k: b"User-agent: *\nDisallow: /\n")
         self.assertEqual(result["status"],"NO_MATCHED_INDEPENDENT_EBIKE_REVIEW")
         self.assertEqual(result["sources_checked"],0)
         self.assertEqual(result["verified_for_exact_offer"],0)

@@ -39,13 +39,18 @@
       let mode="QUEUED",label="WAITING";
       if(state==="RUNNING"){mode="RUNNING";label="CHECKING";}
       else if(state==="QUEUED"){mode="QUEUED";label="QUEUED";}
-      else if((entry.reference_answers||[]).length){mode="REFERENCE";label="REVIEW FOUND";}
+      else if((entry.reference_answers||[]).length){
+        mode="REFERENCE";label=(entry.reference_answers||[]).some(x=>
+          x.source_kind==="INDEPENDENT_TEST")?"REVIEW FOUND":"SPECIFICATIONS";
+      }
       else if(state){mode="BLOCKED";label="NO MATCHED SOURCE";}
       rows.push({
         key:"#"+(Number(id.split("-")[1])+1),
         title:d.title||"Product",
         detail:mode==="REFERENCE"?
-          "Independent review only — exact retailer variant not proven.":
+          (label==="REVIEW FOUND"?
+           "Independent review · exact retailer variant still unproven.":
+           "Real product page checked · declared specifications, not tests."):
           mode==="BLOCKED"?"This exact variant still needs a source.":
           mode==="RUNNING"?"Independent source check in progress.":
           "Scheduled for source identification and checking.",
@@ -74,10 +79,16 @@
         }
       }
       const e=(data.evidence_offers||{})[id]||{};
-      for(const a of (e.reference_answers||[]).slice(0,2)){
-        answered.push({key:"#"+idx+" · REFERENCE",title:a.finding,
-          detail:"Published test · source variant needs an exact SKU match.",
-          state:"REFERENCE",mode:"REFERENCE"});
+      for(const a of (e.reference_answers||[]).slice(0,3)){
+        const independent=a.source_kind==="INDEPENDENT_TEST";
+        answered.push({
+          key:"#"+idx+(independent?" · TEST":" · DOCUMENT"),
+          title:a.finding,
+          detail:independent?
+            "Independent measurement · exact retailer SKU still unknown.":
+            "Fetched product specifications · publisher declaration, not a lab test.",
+          state:independent?"REFERENCE":"DECLARED",mode:"REFERENCE",
+        });
       }
       for(const q of (d.high_impact_questions||[]).slice(0,5)){
         open.push({key:"#"+idx+" · P0",title:q.question,
@@ -145,7 +156,8 @@
         phase.replace(/_/g," ").toLowerCase();
       $("live-evidence-status").textContent=
         (stats.independent_reference_measurements||0)+
-        " third-party measurements · "+(stats.verified_exact_sku_answers||0)+
+        " independent test values · "+(stats.documented_product_declarations||0)+
+        " sourced declarations · "+(stats.verified_exact_sku_answers||0)+
         " verified exact variants · "+
         (stats.verified_checkout_prices||0)+" verified checkout prices";
     }

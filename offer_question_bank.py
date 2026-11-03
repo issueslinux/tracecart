@@ -131,6 +131,32 @@ def offer_summaries(record, category=None):
             offer["research_diagnostics"] = offer_title_diagnostics(offer)
         else:
             offer["question_count"] = len(axes) * len(PROBES)
+    # Previously discovered links are leads, not source receipts. Match only
+    # explicit brand+model token identities; never transfer a page because it
+    # shares merely a wattage, battery size, product category or price.
+    web_hits=(report.get("source_discovery") or {}).get("web_hits") or []
+    if isinstance(web_hits,list) and web_hits:
+        from generic_source_research import product_identity
+        for offer in offers:
+            own=product_identity(offer["title"])
+            if not own:continue
+            matches=[]
+            for hit in web_hits[:16]:
+                if not isinstance(hit,dict):continue
+                candidate=product_identity(str(hit.get("title") or ""))
+                if not candidate or (
+                    candidate["brand"],candidate["model"])!=(
+                    own["brand"],own["model"]):
+                    continue
+                if hit.get("source_kind")!=(
+                    "UNVERIFIED_SEARCH_RESULT_NOT_A_PRICE_OFFER"):
+                    continue
+                link=hit.get("url")
+                if isinstance(link,str) and link.startswith("https://"):
+                    matches.append({
+                        "url":link,"origin":"SAVED_UNVERIFIED_SEARCH_HIT"})
+                if len(matches)>=2:break
+            if matches:offer["discovered_source_urls"]=matches
     if category == "E_BIKE" and offers:
         from ebike_research import likely_index_model_hints
         offers[0]["index_model_hints"] = likely_index_model_hints(offers)

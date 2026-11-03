@@ -170,8 +170,19 @@
             details.appendChild(diffs);
           }
         }
+        const declared=(d.reference_observations||[]).filter(a=>
+          a.source_kind!=="INDEPENDENT_TEST");
+        const independent=(d.reference_observations||[]).filter(a=>
+          a.source_kind==="INDEPENDENT_TEST");
+        addLinkList(details,"Published product specifications · unverified variant",
+          declared.map(a=>({
+            title:(a.value||"Claim")+" · source declaration",
+            note:"Source type: "+(a.source_kind||"unknown")+
+                 " · SHA "+(a.source_sha256||"").slice(0,16)+"…",
+            url:a.source_url,
+          })));
         addLinkList(details,"Independent reference observations · variant check required",
-          (d.reference_observations||[]).map(a=>({
+          independent.map(a=>({
             title:(a.value||"Observation")+" · "+a.status,
             note:"Variant match: "+(a.variant_match||"unknown")+
                  " · SHA "+(a.source_sha256||"").slice(0,16)+"…",
@@ -264,8 +275,8 @@
                                     n.type==="derived_claim");
       const gaps=graph.nodes.filter(n=>n.type==="research_gap");
       const observations=graph.nodes.filter(n=>
-        ["reference_observation","fetched_source","indexed_quote",
-         "decision_gate"].includes(n.type));
+        ["reference_observation","source_declaration","fetched_source",
+         "indexed_quote","decision_gate"].includes(n.type));
       const selected=focus&&index.get(focus)&&
         index.get(focus).type==="offer"?focus:null;
       // All offers stay visible. The right side changes according to focus.
@@ -293,8 +304,8 @@
       const related=selected?(byFrom.get(selected)||[])
         .filter(e=>["HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM"]
            .includes(e.relation)).map(e=>e.to):
-        observations.filter(n=>["reference_observation","indexed_quote"]
-            .includes(n.type)).map(n=>n.id);
+        observations.filter(n=>["reference_observation","source_declaration",
+                                  "indexed_quote"].includes(n.type)).map(n=>n.id);
       const seen=new Set(related);
       seen.add("decision:abstain");
       related.forEach(id=>(byFrom.get(id)||[])

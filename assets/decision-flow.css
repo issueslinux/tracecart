@@ -363,3 +363,7 @@ h1 em,h2 em{font-weight:400;font-style:italic;color:var(--accent)}
 .kg-node.kg-type-indexed_quote circle{fill:#fff5da;stroke:#ad8644}
 .kg-node.kg-type-indexed_quote text{fill:#775932}
 .kg-links .kg-link-quote{stroke:#b3a078;stroke-width:1.4;opacity:.65}
+
+
+.kg-node.kg-type-source_declaration circle{fill:#e9f1df;stroke:#659a53}
+.kg-node.kg-type-source_declaration text{fill:#376131}
