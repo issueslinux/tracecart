@@ -200,9 +200,10 @@
       const stats=graph&&graph.stats||{};
       $("live-graph-count").textContent=
         (stats.offers||0)+" offers · "+
-        (app.dataset.visibleGraphNodes||"0")+"/"+(graph.nodes||[]).length+
-        " nodes visible · "+(app.dataset.visibleGraphLinks||"0")+
-        " displayed links";
+        (app.dataset.visibleGraphNodes||"0")+" nodes visible · "+
+        Math.max(0,(graph.nodes||[]).length-
+          Number(app.dataset.visibleGraphNodes||0))+" empty checks hidden · "+
+        (app.dataset.visibleGraphLinks||"0")+" displayed links";
       const activity=snapshot.evidence_progress||{};
       const pendingSource=Object.values(snapshot.evidence_offers||{})
         .filter(x=>["RUNNING","QUEUED"].includes(x.status)).length;

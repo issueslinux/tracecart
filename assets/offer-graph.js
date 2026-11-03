@@ -45,29 +45,29 @@
     (graph.nodes||[]).forEach(n=>{types[n.type]=(types[n.type]||0)+1;});
     return types;
   }
-  // Render every persisted node, including archived research gaps and the
-  // decision gate. Lanes distribute large batches of missing-evidence nodes.
+  // Show all available factual observations, not repeated empty questions.
+  // Open gaps and the generic abstention gate remain in the saved graph JSON
+  // and evidence-gap panel, but are not rendered as SVG nodes or connections.
   function layoutAllNodes(nodes) {
-    const groups=Array.from({length:11},()=>[]);
-    let gaps=0;
+    const groups=Array.from({length:5},()=>[]);
     const destinations={offer:0,model_family:1,title_claim:1,
       derived_claim:1,evidence_facet:1,
       source_declaration:2,seller_declaration:2,reference_observation:2,
-      fetched_source:3,source_lead:3,indexed_quote:3,source_disagreement:3,
-      research_gap:8,decision_gate:9};
+      fetched_source:3,source_lead:3,indexed_quote:3,source_disagreement:3};
+    const empty=new Set(["verification_gap","research_gap","decision_gate"]);
     (nodes||[]).forEach(n=>{
-      const col=n.type==="verification_gap"?4+(gaps++%4):
-        Object.prototype.hasOwnProperty.call(destinations,n.type)?
-          destinations[n.type]:10;
+      if(empty.has(n.type))return;
+      const col=Object.prototype.hasOwnProperty.call(destinations,n.type)?
+        destinations[n.type]:4;
       groups[col].push(n);
     });
-    const xs=[100,390,740,1090,1430,1670,1910,2150,2390,2660,2930];
+    const xs=[100,390,740,1090,1430];
     const layout=new Map();
     let bottom=0,last=0;
     groups.forEach((group,col)=>{
       if(!group.length)return;
       last=Math.max(last,col);
-      const step=col>=4&&col<=8?34:col===9?72:37;
+      const step=37;
       group.forEach((node,i)=>{
         const y=48+i*step;
         layout.set(node.id,{x:xs[col],y});
@@ -340,8 +340,8 @@
     }
 
     function buildLayout() {
-      // All persisted nodes are drawn. The 24×N legacy planning links are
-      // still in JSON, but not drawn as hundreds of speculative crossings.
+      // Only source-bearing facts, offer records and observed indexed claims
+      // are visible. Empty research questions remain in JSON and the side panel.
       const {layout,bounds}=layoutAllNodes(graph.nodes);
       const relations=new Set([
         "TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS",
@@ -353,12 +353,9 @@
         "POTENTIAL_SOURCE_DISCREPANCY","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
         "SOURCE_DISCOVERY_LEAD","DISCOVERED_PAGE_FETCHED_AND_EXTRACTED",
         "SIMILAR_INDEX_MODEL_NAME_LEAD","ARITHMETIC_INPUT",
-        "GAP_BLOCKS_VERIFIED_PURCHASE",
       ]);
       const visible=edges.filter(e=>layout.has(e.from)&&layout.has(e.to)
-        &&relations.has(e.relation)
-        &&(e.relation!=="GAP_BLOCKS_VERIFIED_PURCHASE" ||
-          e.from.startsWith("verification:offer-0:")));
+        &&relations.has(e.relation));
       return {layout,visible,bounds};
     }
 
@@ -374,7 +371,8 @@
       const count=root.querySelector("#live-graph-count");
       if(count){
         count.textContent=(graph.stats.offers||0)+" offers · "+
-          layout.size+"/"+graph.nodes.length+" nodes visible · "+
+          layout.size+" nodes visible · "+
+          (graph.nodes.length-layout.size)+" empty checks hidden · "+
           visible.length+" displayed links";
       }
       canvas.replaceChildren();
