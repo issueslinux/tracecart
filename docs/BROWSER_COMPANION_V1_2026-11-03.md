@@ -120,6 +120,14 @@ capture and a disabled queue; HTTP tests exercise CSRF, bearer token, Host
 filter, queue, receipt validation and evidence output. They **do not**
 demonstrate successful live Allegro extraction or bypass an HTTP 403.
 
+## Subsequent real Chromium permission lifecycle tests
+
+See `BROWSER_COMPANION_PERMISSION_LIFECYCLE_2026-11-03.md`:
+actual Chromium native permission **Deny**, **Allow**, and extension popup
+**Revoke** were tested in a disposable Xvfb profile, followed by a
+real MV3 queue refusal after revocation. The extension version is
+`0.2.1`. No user browser profile was changed.
+
 ## Subsequent live Chromium MV3 validation
 
 See `BROWSER_COMPANION_MV3_E2E_2026-11-03.md`: the real MV3 worker,

@@ -72,6 +72,39 @@ test("approved URL executes one filtered capture and closes tab",async()=>{
   assert.equal(executed,1);
   assert.equal(closed,1);
 });
+test("permission revoked after loading prevents executeScript",async()=>{
+  config={...config,enabled:true};
+  permit=true; next={job_id:"job-revoked-after-open",url:source};
+  const prev=chrome.permissions.contains;
+  let checks=0;
+  chrome.permissions.contains=async()=>{
+    checks++;
+    return checks===1;
+  };
+  const executedBefore=executed;
+  try {
+    const done=await tick();
+    assert.equal(done.error,"SITE_PERMISSION_REQUIRED");
+    assert.equal(executed,executedBefore);
+  } finally {chrome.permissions.contains=prev;}
+});
+test("permission revoked during capture discards extracted fields",async()=>{
+  config={...config,enabled:true};
+  permit=true; next={job_id:"job-revoked-during-capture",url:source};
+  const prev=chrome.permissions.contains;
+  let checks=0;
+  chrome.permissions.contains=async()=>{
+    checks++;
+    return checks<=2;
+  };
+  const executedBefore=executed;
+  try {
+    const done=await tick();
+    assert.equal(done.error,"SITE_PERMISSION_REQUIRED");
+    assert.equal(done.snapshot,null);
+    assert.equal(executed,executedBefore+1);
+  } finally {chrome.permissions.contains=prev;}
+});
 test("disabled configuration never polls the broker",async()=>{
   config={...config,enabled:false};
   let calls=0;

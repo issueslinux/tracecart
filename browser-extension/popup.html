@@ -10,6 +10,7 @@
     button{background:#67ebbe;color:#091525;border:0;border-radius:7px;padding:9px 13px;font-weight:bold;cursor:pointer;margin:8px 6px 8px 0}
     button:disabled{opacity:.45}
     textarea{box-sizing:border-box;width:100%;height:155px;background:#111827;color:white;border:1px solid #516079;border-radius:5px;padding:8px}
+    input[type="number"],input[type="password"],input[type="url"]{box-sizing:border-box;width:100%;background:#111827;color:#edf1fa;border:1px solid #516079;border-radius:5px;padding:8px;margin:6px 0}
     .warn{color:#ffcf8c}
   </style>
 </head>
@@ -38,11 +39,16 @@
   <label>Merchant origin to authorize (one shop at a time)
   <input id="companion-origin" type="url" placeholder="https://shop.example.org/product/..."></label>
   <button id="companion-grant">Grant access to this shop</button>
+  <button id="companion-check">Check site permission</button>
+  <button id="companion-revoke">Revoke access to this shop</button>
   <label><input id="companion-enabled" type="checkbox">
   Enable queued, automatic research</label>
   <button id="companion-apply">Apply / check queue</button>
   <p id="companion-status" class="warn" role="status" aria-live="polite">
   Companion inactive.</p>
+  <p class="warn">Revoking a site's permission blocks future captures for
+  that shop, even if the queue stays enabled. It does not delete already
+  recorded research evidence. To halt all new captures, disable the queue.</p>
   <p class="warn">When enabled, the extension may open and close background
   tabs for queued URLs on explicitly authorized sites. It sends only a
   filtered Product/Offer projection to the local TraceCart instance.

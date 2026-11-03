@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TraceCart — Opt-in Product Research Companion",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Manual capture or explicitly queued, site-permission-gated product research via a local loopback broker; no cookies, accounts or checkout.",
   "permissions": [
     "activeTab",

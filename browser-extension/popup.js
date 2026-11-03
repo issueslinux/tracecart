@@ -1,4 +1,6 @@
 import {traceCartCapturePage} from "./capture_core.mjs";
+import {permissionStatus, requestMerchantPermission,
+        revokeMerchantPermission} from "./permission_ui.mjs";
 
 const captureButton = document.getElementById("capture");
 const copyButton = document.getElementById("copy");
@@ -87,23 +89,35 @@ document.getElementById("companion-pair").addEventListener("click",async ()=>{
   } catch (_) { companionStatus.textContent="Could not configure companion."; }
 });
 document.getElementById("companion-grant").addEventListener("click", async ()=>{
-  let origin;
   try {
-    const u=new URL(originInput.value);
-    if (u.protocol!=="https:" || u.username || u.password || u.port ||
-        !/^[a-z0-9.-]+$/i.test(u.hostname)) throw new Error("invalid");
-    origin=u.origin+"/*";
-  } catch (_) {
-    companionStatus.textContent="Enter a public HTTPS merchant URL.";
-    return;
-  }
-  try {
-    // Must be called from this explicit user click, never the background worker.
-    const granted=await chrome.permissions.request({origins:[origin]});
-    companionStatus.textContent=granted
-      ? "Permission granted to "+new URL(originInput.value).origin
-      : "Site permission declined.";
+    // Explicit popup click is the only entry to chrome.permissions.request.
+    const result=await requestMerchantPermission(chrome.permissions,originInput.value);
+    companionStatus.textContent=({
+      INVALID_MERCHANT_URL:"Enter a public HTTPS merchant URL.",
+      GRANTED:"Permission granted to "+result.origin,
+      DECLINED:"Site permission declined."
+    })[result.status];
   } catch (_) { companionStatus.textContent="Browser rejected this permission."; }
+});
+document.getElementById("companion-check").addEventListener("click", async ()=>{
+  try {
+    const result=await permissionStatus(chrome.permissions,originInput.value);
+    companionStatus.textContent=result.status==="INVALID_MERCHANT_URL"
+      ? "Enter a public HTTPS merchant URL."
+      : result.status==="GRANTED"
+      ? "Permission granted to "+result.origin
+      : "No permission to "+result.origin;
+  } catch (_) { companionStatus.textContent="Could not check browser permission."; }
+});
+document.getElementById("companion-revoke").addEventListener("click", async ()=>{
+  try {
+    const result=await revokeMerchantPermission(chrome.permissions,originInput.value);
+    companionStatus.textContent=result.status==="INVALID_MERCHANT_URL"
+      ? "Enter a public HTTPS merchant URL."
+      : result.status==="NOT_GRANTED"
+      ? "Access disabled for "+result.origin+" (queued tasks will be rejected)."
+      : "Permission could not be revoked: "+result.origin;
+  } catch (_) { companionStatus.textContent="Could not revoke browser permission."; }
 });
 document.getElementById("companion-apply").addEventListener("click",async ()=>{
   const c=await currentSettings();
