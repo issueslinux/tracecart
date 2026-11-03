@@ -10,6 +10,7 @@ from hashlib import sha256
 from html.parser import HTMLParser
 from html import unescape
 from urllib.parse import urljoin, urlsplit
+from product_intake import SourceRedirect
 from xml.etree import ElementTree
 import json
 import re
@@ -460,6 +461,30 @@ def _sitemap_model_links(home,model,fetch=None):
     return list(dict.fromkeys(urls))
 
 
+def _read_same_host_redirects(url,fetch=None):
+    """Follow same-host redirects only after a new robots and URL check.
+
+    No cross-origin hops or loops; the returned URL is the actual
+    downloaded document, not an obsolete search result address.
+    """
+    hostname=urlsplit(url).hostname
+    seen=set()
+    current=url
+    for _ in range(4):
+        if current in seen:
+            raise ValueError("SOURCE_REDIRECT_LOOP")
+        seen.add(current)
+        try:
+            return _robot_checked_read(current,fetch=fetch),current
+        except SourceRedirect as redirect:
+            target=validate_product_url(urljoin(current,redirect.location))
+            parsed=urlsplit(target)
+            if parsed.hostname!=hostname or parsed.port not in (None,443):
+                raise ValueError("SOURCE_REDIRECT_CROSS_ORIGIN")
+            current=target
+    raise ValueError("SOURCE_REDIRECT_LIMIT")
+
+
 def execute_generic_sources(offer,category,fetch=None,enable_brand_discovery=True):
     """Three documented attempts maximum: seller/direct and one brand page.
 
@@ -517,30 +542,44 @@ def execute_generic_sources(offer,category,fetch=None,enable_brand_discovery=Tru
         if url in seen:continue
         seen.add(url)
         try:
-            raw=_robot_checked_read(url,fetch=fetch)
-            parsed=parse_source_claims(raw,offer,category,url,row["scope"])
+            raw,actual_url=_read_same_host_redirects(url,fetch=fetch)
+            parsed=parse_source_claims(raw,offer,category,actual_url,row["scope"])
             method="SAFE_STATIC_HTTPS"
+            browser_status="NOT_NEEDED_STATIC_PRODUCT_DATA"
             # Browser is a REAL graphical Chromium on a disposable Xvfb
             # display, never an antibot bypass. Only run if static GET was
             # allowed, returned HTTP 200, and lacked usable product details.
             if not parsed["claims"]:
                 from browser_render import rendered_browser_document
+                browser_status="RENDER_ATTEMPTED"
                 try:
-                    rendered=rendered_browser_document(url,raw)
+                    rendered=rendered_browser_document(actual_url,raw)
                     improved=parse_source_claims(
-                        rendered,offer,category,url,row["scope"])
+                        rendered,offer,category,actual_url,row["scope"])
                     if improved["claims"]:
                         parsed=improved
                         method="ISOLATED_XVFB_CHROMIUM"
+                        browser_status="RENDERED_MATCHED_PRODUCT_DATA"
+                    else:
+                        browser_status="RENDERED_NO_MATCHED_PRODUCT_DATA"
                 except (ValueError,OSError) as exc:
-                    # The original HTTP attempt remains auditable; no browser
-                    # result or invented source if rendering was not permitted.
-                    method="SAFE_STATIC_HTTPS"
+                    # Only trusted local error codes are surfaced. Never
+                    # expose upstream page contents or arbitrary errors.
+                    code=str(exc)
+                    browser_status=(code if code in (
+                        "GRAPHICAL_BROWSER_NOT_ENABLED",
+                        "GRAPHICAL_BROWSER_CAPACITY_LIMIT",
+                        "GRAPHICAL_BROWSER_SOURCE_NOT_VERIFIED",
+                        "BROWSER_DENIED_SOURCE_OR_CHALLENGE",
+                        "BROWSER_RENDERED_CHALLENGE_OR_BAD_HTML",
+                    ) else "GRAPHICAL_RENDER_NOT_VERIFIED")
             attempted.append({"url":url,"scope":row["scope"],
+                "resolved_url":actual_url,
                 "status":parsed["status"],"method":method,
+                "browser_status":browser_status,
                 "properties":len(parsed["claims"])})
             if parsed["claims"]:
-                docs.append({"url":url,"scope":row["scope"],"result":parsed})
+                docs.append({"url":actual_url,"scope":row["scope"],"result":parsed})
         except (ValueError,OSError,TypeError,KeyError) as exc:
             attempted.append({"url":url,"scope":row["scope"],
                 "status":"NOT_RETRIEVED_"+type(exc).__name__})

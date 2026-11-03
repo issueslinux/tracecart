@@ -605,6 +605,15 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_source_search (
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 receipt_json TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_final_verdict (
+                job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+                result_json TEXT, error_type TEXT)""")
+            # Never leave a durable LLM verdict marked RUNNING after a
+            # process restart. Do not silently rerun model inference.
+            db.execute("""UPDATE cart_final_verdict
+                SET status='INTERRUPTED',
+                    error_type='SERVER_RESTART'
+                WHERE status IN ('QUEUED','RUNNING')""")
             # A model task that was RUNNING in another process is stale;
             # it cannot remain an eternal WRITING row after a restart.
             db.execute("""UPDATE cart_offer_model_questions
@@ -657,6 +666,7 @@ class CartResearchJobs:
                 "model_offers":record.get("model_offers",{}),
                 "evidence_offers":record.get("evidence_offers",{}),
                 "source_search":record.get("source_search",{}),
+                "final_verdict":record.get("final_verdict",{"status":"NOT_SCHEDULED"}),
                 "payment_authorized":False,
             }
         return self.live_bus.snapshot(job_id,build)
@@ -734,6 +744,20 @@ class CartResearchJobs:
                      json.dumps(discovery,ensure_ascii=False),job_id))
             self.live_bus.signal(job_id)
         attach_discovery_leads(offers,discovery)
+        # Index-only cards without direct URLs often repeat the SAME model.
+        # Investigate one representative manufacturer domain per identity,
+        # not 12 redundant brand-home probes and redirections per job.
+        from generic_source_research import candidate_urls,product_identity
+        seen_no_link_models=set()
+        for offer in offers:
+            if candidate_urls(offer):
+                continue
+            identity=product_identity(offer.get("title") or "")
+            key=(identity["brand"],identity["model"]) if identity else None
+            if key is None or key in seen_no_link_models:
+                offer["_skip_brand_discovery"]=True
+            else:
+                seen_no_link_models.add(key)
         cache={}
         cache_lock=threading.Lock()
         def cached_fetch(url,max_bytes,mimes,timeout=10):
@@ -841,6 +865,16 @@ class CartResearchJobs:
                        ("INTERRUPTED" if self.evidence_stop.is_set()
                         else "COMPLETE",job_id))
         self.live_bus.signal(job_id)
+        # The last stage must be a substantive local-model synthesis,
+        # not the earlier question-planning batch. One model_pool worker
+        # serializes all inference; HTTP/source extraction runs separately.
+        if self.runner is research_cart and not self.evidence_stop.is_set():
+            with self._db() as db:
+                verdict=db.execute("""SELECT status FROM cart_final_verdict
+                    WHERE job_id=?""",(job_id,)).fetchone()
+            if verdict and verdict[0]=="QUEUED":
+                self._progress(job_id,"FINAL_VERDICT_QUEUED")
+                self.model_pool.submit(self._generate_final_verdict,job_id)
 
     def _generate_offer_questions(self, job_id, record):
         """At most ONE GPU inference call, overlapping all source I/O.
@@ -904,7 +938,54 @@ class CartResearchJobs:
                         (status,json.dumps(questions,ensure_ascii=False),
                          job_id,index))
             self.live_bus.signal(job_id)
-        self._progress(job_id, "PER_OFFER_MODEL_COMPLETE")
+        # When evidence retrieval completed first, retain the "verdict
+        # queued" status; this question batch is not the end of analysis.
+        with self._db() as db:
+            evidence=db.execute("""SELECT status FROM cart_evidence_runs
+                WHERE job_id=?""",(job_id,)).fetchone()
+            verdict=db.execute("""SELECT status FROM cart_final_verdict
+                WHERE job_id=?""",(job_id,)).fetchone()
+        if (evidence and evidence[0]=="COMPLETE" and
+            verdict and verdict[0]=="QUEUED"):
+            self._progress(job_id,"FINAL_VERDICT_QUEUED")
+        else:
+            self._progress(job_id,"PER_OFFER_MODEL_COMPLETE")
+
+    def _generate_final_verdict(self, job_id):
+        """Synthesize completed evidence once; persist an honest fallback."""
+        from model_verdict import generate_final_verdict, insufficient_verdict
+        with self._db() as db:
+            evidence=db.execute("""SELECT status FROM cart_evidence_runs
+                WHERE job_id=?""",(job_id,)).fetchone()
+            row=db.execute("""SELECT status FROM cart_final_verdict
+                WHERE job_id=?""",(job_id,)).fetchone()
+            if not row or row[0]!="QUEUED" or not evidence or evidence[0]!="COMPLETE":
+                return
+            db.execute("""UPDATE cart_final_verdict SET status='RUNNING'
+                WHERE job_id=?""",(job_id,))
+        self._progress(job_id,"FINAL_VERDICT_RUNNING")
+        # Graph/projection are computed from the same persisted evidence
+        # as the user sees. A model must never rewrite a source receipt.
+        graph={}
+        try:
+            from guided_decision import build_decision_projection
+            from offer_knowledge_graph import build_offer_knowledge_graph
+            record=self.read(job_id)
+            projection=build_decision_projection(record)
+            graph=build_offer_knowledge_graph(projection)
+            result=generate_final_verdict(projection,graph)
+            status="COMPLETE"
+            error=None
+        except (ValueError,KeyError,TypeError,OSError,RuntimeError,
+                TimeoutError) as exc:
+            status="UNAVAILABLE"
+            error=type(exc).__name__
+            result=insufficient_verdict(graph,error)
+        with self._db() as db:
+            db.execute("""UPDATE cart_final_verdict
+                SET status=?,result_json=?,error_type=? WHERE job_id=?""",
+                (status,json.dumps(result,ensure_ascii=False),error,job_id))
+        self._progress(job_id,"FINAL_VERDICT_"+status)
 
     def submit(self, item):
         clean = validate_cart(item)
@@ -1027,15 +1108,19 @@ class CartResearchJobs:
                        (state, result, error, job_id))
         self.live_bus.signal(job_id)
         if state == "READY" and self.runner is research_cart:
-            # Actual evidence retrieval must NOT wait for all local model
-            # questions. Both workers are independent of original READY.
-            self.evidence_pool.submit(self._execute_source_evidence, job_id,
+            # Insert the verdict receipt before any evidence can finish so
+            # SSE cannot mistake an unfinished analysis for a terminal run.
+            with self._db() as db:
+                db.execute("""INSERT INTO cart_final_verdict
+                    (job_id,status,result_json,error_type)
+                    VALUES (?,'QUEUED',NULL,NULL)""",(job_id,))
+            # Source checks are the only prerequisite for the final Qwen
+            # verdict. The previous representative-question model batch used
+            # the SAME inference slot first, timed out, and delayed actual
+            # synthesis. Rule-based evidence gaps remain fully available.
+            self._progress(job_id,"SOURCE_CHECKS_QUEUED")
+            self.evidence_pool.submit(self._execute_source_evidence,job_id,
                                       {"item":clean,"report":report})
-            self._progress(job_id, "PER_OFFER_MODEL_QUEUED")
-            # Never block the status page, job READY state or another research
-            # worker while local Qwen proposes per-offer follow-up questions.
-            self.model_pool.submit(self._generate_offer_questions, job_id,
-                                   {"item": clean, "report": report})
 
     def _work(self, job_id, item):
         self._progress(job_id, "CATALOG_AND_BASE_RESEARCH")
@@ -1085,6 +1170,8 @@ class CartResearchJobs:
                 (job_id,)).fetchone()
             discovery_row=db.execute("""SELECT status,receipt_json FROM
                 cart_source_search WHERE job_id=?""",(job_id,)).fetchone()
+            verdict_row=db.execute("""SELECT status,result_json,error_type FROM
+                cart_final_verdict WHERE job_id=?""",(job_id,)).fetchone()
         model_offers = {
             "offer-{}".format(i): {"state": status,
                 "questions": json.loads(data) if data else []}
@@ -1101,7 +1188,13 @@ class CartResearchJobs:
                        "status":discovery_row[0] if discovery_row
                                 else "NOT_STARTED",
                        "queries_used":0,"leads":[],"query_receipts":[]})
+        final_verdict=(
+            {**(json.loads(verdict_row[1]) if verdict_row[1] else {}),
+             "status":verdict_row[0],
+             "error_type":verdict_row[2]} if verdict_row else
+            {"status":"NOT_SCHEDULED"})
         return {"source_search":source_search,
+                "final_verdict":final_verdict,
                 "item": json.loads(row[0]), "state": row[1],
                 "created": row[2],
                 "report": json.loads(row[3]) if row[3] else None,

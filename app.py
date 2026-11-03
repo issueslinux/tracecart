@@ -495,10 +495,13 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                     stage=snapshot.get("progress_stage") or ""
                     evidence=(snapshot.get("evidence_progress") or {}).get(
                         "status","NOT_STARTED")
+                    verdict_status=(snapshot.get("final_verdict") or {}).get("status")
                     finished=snapshot["state"] in ("FAILED","INTERRUPTED") or (
                         snapshot["state"]=="READY" and
                         evidence=="COMPLETE" and
-                        stage=="PER_OFFER_MODEL_COMPLETE")
+                        ((not verdict_status or verdict_status=="NOT_SCHEDULED") and
+                         stage=="PER_OFFER_MODEL_COMPLETE" or
+                         verdict_status in ("COMPLETE","UNAVAILABLE","INTERRUPTED")))
                     if finished:
                         self.wfile.write(b"event: settled\ndata: {}\n\n")
                         self.wfile.flush()

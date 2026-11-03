@@ -149,7 +149,15 @@ class ProgressiveOfferResearchTests(unittest.TestCase):
                        "evidence_execution.execute_reference_checks",
                        side_effect=quick_check),patch(
                        "offer_question_bank.propose_offer_question_batch",
-                       return_value=({}, {},[])):
+                       return_value=({}, {},[])),patch(
+                       "model_verdict.generate_final_verdict",
+                       return_value={"status":"COMPLETE",
+                         "origin":"LOCAL_LLM_EVIDENCE_SYNTHESIS",
+                         "verdict":"INSUFFICIENT_EVIDENCE",
+                         "summary":"Documentary evidence is incomplete in this isolated test.",
+                         "observations":[],
+                         "next_step":"Verify original seller data.",
+                         "payment_authorized":False}):
                 jobs=CartResearchJobs(str(Path(tmp)/"jobs.sqlite"),
                                       runner=__import__("cart_research").research_cart)
                 try:
@@ -187,6 +195,9 @@ class ProgressiveOfferResearchTests(unittest.TestCase):
                         time.sleep(.025)
                     self.assertEqual(jobs.read(jid)["evidence_progress"]
                                      ["status"],"COMPLETE")
+                    # New runs reserve the only local GPU inference slot for
+                    # the actual final verdict, never a preparatory question batch.
+                    self.assertEqual(jobs.read(jid)["model_offers"],{})
                 finally:
                     release.set()
                     jobs.close()

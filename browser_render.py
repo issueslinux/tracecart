@@ -15,7 +15,10 @@ from urllib.parse import urlsplit
 
 from product_intake import validate_product_url
 
-_LOCK=BoundedSemaphore(1)
+# At most three isolated graphical renders in parallel; network fetches retain
+# their separate 16-worker pool. Other render candidates wait, not vanish.
+MAX_PARALLEL_RENDERS=3
+_LOCK=BoundedSemaphore(MAX_PARALLEL_RENDERS)
 MAX_RENDER_BYTES=1_800_000
 CHALLENGE_MARKERS=(
     b"cf-mitigated",b"captcha",b"verify you are human",
@@ -49,8 +52,10 @@ def rendered_browser_document(url,static_body,runner=None,enabled=None):
     parts=urlsplit(url)
     if parts.scheme!="https" or not parts.hostname or parts.port not in (None,443):
         raise ValueError("UNSAFE_RENDER_URL")
-    if not _LOCK.acquire(blocking=False):
-        raise ValueError("GRAPHICAL_BROWSER_BUSY")
+    # A saturated slot is a temporary capacity condition, not evidence that
+    # the product lacks sources. A bounded wait avoids discarding work.
+    if not _LOCK.acquire(timeout=45):
+        raise ValueError("GRAPHICAL_BROWSER_CAPACITY_LIMIT")
     try:
         pinned_ip=_public_pinned_ipv4(parts.hostname)
         script=Path(__file__).resolve().parent/"browser_render.js"

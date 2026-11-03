@@ -1,6 +1,6 @@
 /* TraceCart read-only offer knowledge graph. No external framework/dependency.
  * Every edge carries a provenance type. Similar titles/values NEVER imply SKU identity.
- * The SVG draws a bounded neighborhood, while the JSON endpoint preserves ALL
+ * The SVG renders ALL saved nodes in a fit-to-view overview, and JSON preserves ALL
  * offers, source-linked observations and their unanswered research dimensions.
  */
 (function () {
@@ -45,6 +45,38 @@
     (graph.nodes||[]).forEach(n=>{types[n.type]=(types[n.type]||0)+1;});
     return types;
   }
+  // Show all available factual observations, not repeated empty questions.
+  // Open gaps and the generic abstention gate remain in the saved graph JSON
+  // and evidence-gap panel, but are not rendered as SVG nodes or connections.
+  function layoutAllNodes(nodes) {
+    const groups=Array.from({length:5},()=>[]);
+    const destinations={offer:0,model_family:1,title_claim:1,
+      derived_claim:1,evidence_facet:1,
+      source_declaration:2,seller_declaration:2,reference_observation:2,
+      fetched_source:3,source_lead:3,indexed_quote:3,source_disagreement:3};
+    const empty=new Set(["verification_gap","research_gap","decision_gate"]);
+    (nodes||[]).forEach(n=>{
+      if(empty.has(n.type))return;
+      const col=Object.prototype.hasOwnProperty.call(destinations,n.type)?
+        destinations[n.type]:4;
+      groups[col].push(n);
+    });
+    const xs=[100,390,740,1090,1430];
+    const layout=new Map();
+    let bottom=0,last=0;
+    groups.forEach((group,col)=>{
+      if(!group.length)return;
+      last=Math.max(last,col);
+      const step=37;
+      group.forEach((node,i)=>{
+        const y=48+i*step;
+        layout.set(node.id,{x:xs[col],y});
+        bottom=Math.max(bottom,y);
+      });
+    });
+    return {layout,bounds:{width:xs[last]+230,height:Math.max(880,bottom+85)}};
+  }
+
   function create(root,graph) {
     if(!graph||graph.schema_version!=="tracecart.offer-knowledge-graph.v1")
       throw Error("Unsupported knowledge graph");
@@ -67,14 +99,15 @@
       byTo.get(e.to).push(e);
     });
     const prior=root._traceCartGraphView||{};
+    // All is the default. Selecting an offer highlights it, never hides nodes.
     let focus=(prior.focus===null||offers.some(n=>n.id===prior.focus))?
-      (prior.focus===undefined?(offers[0]||{}).id||null:prior.focus):
-      (offers[0]||{}).id||null;
+      (prior.focus===undefined?null:prior.focus):null;
     let active=index.has(prior.active)?prior.active:null;
     let scale=Number(prior.scale)||1,tx=Number(prior.tx)||0,
         ty=Number(prior.ty)||0,drag=null;
+    let autoFit=prior.autoFit!==false;
     function remember(){
-      root._traceCartGraphView={focus,active,scale,tx,ty};
+      root._traceCartGraphView={focus,active,scale,tx,ty,autoFit};
     }
     const summary=graph.stats||{};
     region.hidden=false;
@@ -221,10 +254,17 @@
           ol.appendChild(li);
         });
         details.appendChild(ol);
+        const sourceState=d.source_check_status||"NOT_STARTED";
+        const sourceExplanation=sourceState==="NO_MATCHED_INDEPENDENT_SOURCE"?
+          "No matching published facts for this listing (not proof none exist).":
+          sourceState==="GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED"?
+          "Published technical specifications found; exact SKU and tests unverified.":
+          sourceState.startsWith("SOURCE_NOT_VERIFIED_")?
+          "Source retrieval failed its checks; see source tasks.":
+          sourceState.replace(/_/g," ").toLowerCase();
         details.appendChild(el("p","kg-footnote",
-          "Source check: "+(d.source_check_status||"NOT_STARTED")+
-          " · Model batch: "+(d.model_question_status||"NOT_STARTED")+
-          " · Earlier generic question catalogue is not evidence or active work."));
+          "Source evidence: "+sourceExplanation+
+          " · Missing evidence remains visible in the right-hand research panel."));
         return;
       }
       if(selected.type==="title_claim"||selected.type==="derived_claim"){
@@ -307,100 +347,39 @@
     }
 
     function buildLayout() {
-      // Evidence is the center of the graph, not the old 24x12 generic
-      // question catalogue. Preserve the entire saved graph in JSON, but
-      // show all source facts of the focused offer before unsourced leads.
-      const selected=focus&&index.get(focus)&&
-        index.get(focus).type==="offer"?focus:null;
-      const chosen=selected||"offer-0";
-      const isRelevant=new Set();
-      const directRelations=new Set([
-        "SELLER_PAGE_DECLARES","HAS_SOURCE_OBSERVATION",
-        "HAS_DOCUMENTED_FACET","HAS_UNRESOLVED_VERIFICATION_GAP",
-        "INDEXED_PRICE_CLAIM","SOURCE_DISCOVERY_LEAD",
-        "SELLER_PAGE_MODEL_IDENTITY","POTENTIAL_SOURCE_DISCREPANCY",
-      ]);
-      (byFrom.get(chosen)||[]).forEach(e=>{
-        if(directRelations.has(e.relation))isRelevant.add(e.to);
-      });
-      // Every property node is linked to an actual document receipt and
-      // many are also grouped under an evidence facet. Do not cap at
-      // 13 observations as the previous graph did.
-      [...isRelevant].forEach(id=>(byFrom.get(id)||[]).forEach(e=>{
-        if(["FACET_HAS_SOURCE_FACT","OBSERVED_IN_SOURCE",
-            "DISCREPANCY_REQUIRES_SOURCE_REVIEW"].includes(e.relation)){
-          isRelevant.add(e.to);
-        }
-      }));
-      // Publisher claims elsewhere can contradict the input; show actual
-      // discrepancies globally, never silently hide them in seller #4.
-      graph.nodes.filter(n=>n.type==="source_disagreement").slice(0,3)
-        .forEach(n=>isRelevant.add(n.id));
-      const show=(node)=>!selected||isRelevant.has(node.id);
-      const visibleOffers=selected?
-        [index.get(selected),...offers.filter(n=>n.id!==selected).slice(0,5)]:
-        offers;
-      const facets=graph.nodes.filter(n=>(
-        n.type==="evidence_facet"||n.type==="model_family")&&show(n)
-      ).slice(0,12);
-      const documented=graph.nodes.filter(n=>
-        ["source_declaration","seller_declaration","reference_observation"]
-          .includes(n.type)&&show(n)
-      ).slice(0,32);
-      const sources=graph.nodes.filter(n=>
-        ["fetched_source","source_lead"].includes(n.type)&&show(n)
-      ).slice(0,6);
-      const quotes=graph.nodes.filter(n=>n.type==="indexed_quote"&&show(n))
-        .slice(0,5);
-      const discrepancies=graph.nodes.filter(n=>n.type==="source_disagreement"
-        &&isRelevant.has(n.id)).slice(0,3);
-      const questions=graph.nodes.filter(n=>n.type==="verification_gap"
-        &&show(n)).slice(0,6);
-      const specs=graph.nodes.filter(n=>["title_claim","derived_claim"]
-        .includes(n.type));
-      const linked=selected?new Set((byFrom.get(selected)||[])
-        .filter(e=>["TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS"]
-          .includes(e.relation)).map(e=>e.to)):null;
-      const shownSpecs=specs.filter(n=>!selected||linked.has(n.id))
-        .slice(0,7);
-      const layout=new Map();
-      function column(nodes,x,y0,y1){
-        nodes.forEach((n,i)=>{
-          const slot=(i+.5)/Math.max(1,nodes.length);
-          layout.set(n.id,{x,y:y0+(y1-y0)*slot});
-        });
-      }
-      column(visibleOffers,92,28,837);
-      column(facets,355,42,573);
-      column(shownSpecs,355,630,843);
-      column(documented,666,32,844);
-      column(sources,976,35,225);
-      column(quotes,976,239,336);
-      column(discrepancies,976,351,438);
-      column(questions,976,465,848);
+      // Only source-bearing facts, offer records and observed indexed claims
+      // are visible. Empty research questions remain in JSON and the side panel.
+      const {layout,bounds}=layoutAllNodes(graph.nodes);
       const relations=new Set([
         "TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS",
         "HAS_DOCUMENTED_FACET","FACET_HAS_SOURCE_FACT",
-        "OBSERVED_IN_SOURCE","INDEXED_PRICE_CLAIM",
-        "HAS_UNRESOLVED_VERIFICATION_GAP","GAP_BLOCKS_VERIFIED_PURCHASE",
-        "SELLER_PAGE_MODEL_IDENTITY","INDEX_TITLE_MATCHES_DECLARED_MODEL",
+        "OBSERVED_IN_SOURCE","SELLER_PAGE_DECLARES",
+        "HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM",
+        "HAS_UNRESOLVED_VERIFICATION_GAP","SELLER_PAGE_MODEL_IDENTITY",
+        "INDEX_TITLE_MATCHES_DECLARED_MODEL",
         "POTENTIAL_SOURCE_DISCREPANCY","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
         "SOURCE_DISCOVERY_LEAD","DISCOVERED_PAGE_FETCHED_AND_EXTRACTED",
         "SIMILAR_INDEX_MODEL_NAME_LEAD","ARITHMETIC_INPUT",
       ]);
       const visible=edges.filter(e=>layout.has(e.from)&&layout.has(e.to)
         &&relations.has(e.relation));
-      return {layout,visible};
+      return {layout,visible,bounds};
     }
 
     function draw() {
-      const {layout,visible}=buildLayout();
+      const {layout,visible,bounds}=buildLayout();
+      if(autoFit){
+        scale=Math.min(1,(WIDTH-95)/bounds.width,(HEIGHT-75)/bounds.height);
+        tx=(WIDTH-bounds.width*scale)/2;
+        ty=(HEIGHT-bounds.height*scale)/2;
+      }
       root.dataset.visibleGraphNodes=String(layout.size);
       root.dataset.visibleGraphLinks=String(visible.length);
       const count=root.querySelector("#live-graph-count");
       if(count){
         count.textContent=(graph.stats.offers||0)+" offers · "+
-          layout.size+"/"+graph.nodes.length+" nodes visible · "+
+          layout.size+" nodes visible · "+
+          (graph.nodes.length-layout.size)+" empty checks hidden · "+
           visible.length+" displayed links";
       }
       canvas.replaceChildren();
@@ -527,7 +506,8 @@
       buttons.input.setAttribute("aria-pressed",String(focus==="offer-0"));
     }
     function changeZoom(factor,px=WIDTH/2,py=HEIGHT/2) {
-      const next=Math.max(.5,Math.min(3.2,scale*factor));
+      autoFit=false;
+      const next=Math.max(.15,Math.min(5,scale*factor));
       tx=px-(px-tx)*(next/scale);
       ty=py-(py-ty)*(next/scale);
       scale=next;remember();draw();
@@ -539,7 +519,7 @@
     buttons.plus.addEventListener("click",()=>changeZoom(1.2));
     buttons.minus.addEventListener("click",()=>changeZoom(1/1.2));
     buttons.reset.addEventListener("click",()=>{
-      tx=0;ty=0;scale=1;remember();draw();
+      autoFit=true;remember();draw();
     });
     canvas.addEventListener("wheel",event=>{
       if(!event.cancelable)return;
@@ -557,6 +537,7 @@
     canvas.addEventListener("pointermove",event=>{
       if(!drag)return;
       const bounds=canvas.getBoundingClientRect();
+      autoFit=false;
       tx=drag.tx+(event.clientX-drag.x)*WIDTH/bounds.width;
       ty=drag.ty+(event.clientY-drag.y)*HEIGHT/bounds.height;
       remember();draw();
@@ -564,9 +545,12 @@
     canvas.addEventListener("pointerup",()=>{drag=null;});
     canvas.addEventListener("pointercancel",()=>{drag=null;});
     syncButtons();showDetails(active||focus);draw();remember();
+    // Model findings cite these existing immutable graph node IDs; clicking
+    // "Evidence" opens precisely that source/claim in the detail panel.
+    root._traceCartGraphController={select,graph};
     return {select,graph,stats:groupCounts(graph)};
   }
   if(typeof window!=="undefined")window.TraceCartKnowledgeGraph={create};
   if(typeof module!=="undefined"&&module.exports)
-    module.exports={clip,safeUrl,groupCounts};
+    module.exports={clip,safeUrl,groupCounts,layoutAllNodes};
 })();

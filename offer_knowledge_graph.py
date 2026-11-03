@@ -56,7 +56,8 @@ def build_offer_knowledge_graph(projection):
             status in ("RUNNING","QUEUED") or
             (status=="NOT_STARTED" and
              projection.get("model_progress_stage") in
-              ("PER_OFFER_MODEL_QUEUED","PER_OFFER_MODEL_COMPLETE")))
+              ("PER_OFFER_MODEL_QUEUED","PER_OFFER_MODEL_COMPLETE",
+               "SOURCE_CHECKS_QUEUED")))
     # Visible graph must grow from input to each *completed* source check,
     # even while 16 independent network tasks are actively running.
     # Indexed offers are available in the research queue but do not all
@@ -469,6 +470,8 @@ def build_offer_knowledge_graph(projection):
                                llm.get("questions",[])[:6] if isinstance(x,dict)],
             "source_check_status":(evidence.get(oid) or {}).get("status",
                                  "NOT_STARTED"),
+            "input_access_problem":(str(intake.get("access_problem") or "")[:80]
+                                    if oid=="offer-0" else ""),
             "reference_observations":answers,
             "declared_claim_conflicts":disagreements[:12],
             "verified_exact_sku_answers":sum(x["status"]==
