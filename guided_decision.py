@@ -163,6 +163,7 @@ def build_decision_projection(record):
                 "model_progress_stage":record.get("progress_stage") or "QUEUED",
                 "offers": offer_summaries(current, category),
                 "selected_item":item,
+                "browser_claims":record.get("browser_claims") or [],
                 "input_price":record.get("input_price"),
                 "selected_source_intake":((preview or {}).get(
                     "source_intake") or {}),
@@ -318,6 +319,7 @@ def build_decision_projection(record):
         "evidence":evidence,
         "offers":offer_summaries(record,category),
         "selected_item":selected,
+        "browser_claims":record.get("browser_claims") or [],
         "input_price":record.get("input_price"),
         "selected_source_intake":source,
         "source_search":record.get("source_search") or {},

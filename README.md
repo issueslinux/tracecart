@@ -729,6 +729,25 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## Browser Companion claims now appear in the main cart graph (2026-11-03)
+
+A separate test instance with two live MV3-captured products is accessible
+on hexagony-01 at `http://127.0.0.1:8808`: both original cart graphs
+show the source and declared price, and the captures survive a staging
+server restart. See the linked research document for exact cart URLs.
+
+An opt-in Browser Companion snapshot is now persisted in research-only
+SQLite and attached **only to a cart's exact normalized input product URL**.
+The main graph displays the filtered browser document, seller-declared
+title/price/identity fields and explicit SKU/GTIN or declared-price
+discrepancies, all with SHA-256 provenance. It never upgrades those values
+to checkout-confirmed price, same-variant proof or payment authorization.
+The central **Browser capture** link pre-fills the original product URL.
+Completed evidence remains readable after the in-memory queue resets.
+
+See [`docs/BROWSER_COMPANION_CART_GRAPH_2026-11-03.md`](docs/BROWSER_COMPANION_CART_GRAPH_2026-11-03.md).
+The live production service on 8781 is not changed by this research PR.
+
 ## Fast hands-on TraceCart companion demo (2026-11-03)
 
 A separate local TraceCart staging instance at

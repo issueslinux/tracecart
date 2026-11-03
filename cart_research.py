@@ -611,6 +611,15 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_link_safety (
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 result_json TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_browser_observations (
+                capture_id TEXT PRIMARY KEY,
+                source_url TEXT NOT NULL,
+                captured_at TEXT NOT NULL,
+                stored_at TEXT NOT NULL,
+                snapshot_sha256 TEXT NOT NULL,
+                result_json TEXT NOT NULL)""")
+            db.execute("""CREATE INDEX IF NOT EXISTS idx_cart_browser_source
+                ON cart_browser_observations(source_url,captured_at DESC)""")
             db.execute("""CREATE TABLE IF NOT EXISTS cart_input_price_observation (
                 job_id TEXT PRIMARY KEY, price TEXT NOT NULL,
                 currency TEXT NOT NULL, origin TEXT NOT NULL,
@@ -703,6 +712,108 @@ class CartResearchJobs:
                 "payment_authorized":False,
             }
         return self.live_bus.snapshot(job_id,build)
+
+    def store_browser_claim(self, row):
+        """Persist a consented USER_BROWSER receipt, never an input/checkout price.
+
+        Browser claims are associated with *exact normalized original URL*;
+        never attach by fuzzy title, model similarity, indexed alternatives,
+        or merchant domain. Existing cart research is left unchanged.
+        """
+        from product_intake import normalized_product_url
+        from browser_cart_identity import browser_cart_link_key
+        if type(row) is not dict or type(row.get("result")) is not dict:
+            raise ValueError("BROWSER_CLAIM_MISSING_RESULT")
+        result=row["result"]
+        fields=result.get("fields")
+        if (result.get("status") !=
+                "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED" or
+                result.get("acquisition_method") != "USER_BROWSER" or
+                result.get("seller_verified") is not False or
+                result.get("checkout_verified") is not False or
+                type(fields) is not dict or not fields.get("title") or
+                not fields.get("price") or
+                fields.get("currency") not in ("PLN","EUR","USD")):
+            raise ValueError("UNVERIFIED_OR_INCOMPLETE_BROWSER_CLAIM")
+        ident=row.get("id")
+        if type(ident) is not str or not re.fullmatch(r"[a-zA-Z0-9_-]{24}",ident):
+            raise ValueError("INVALID_BROWSER_CAPTURE_ID")
+        # Do not collapse ?variant=... or unknown query parameters onto
+        # the same selected cart URL; preserve their raw source instead.
+        original=row.get("url")
+        if normalized_product_url(result.get("source_url")) != normalized_product_url(original):
+            raise ValueError("BROWSER_CAPTURE_SOURCE_MISMATCH")
+        from product_intake import validate_product_url
+        source=browser_cart_link_key(original) or validate_product_url(original)
+        digest=result.get("snapshot_sha256")
+        when=result.get("acquired_at")
+        if (type(digest) is not str or not re.fullmatch(r"[0-9a-f]{64}",digest) or
+                type(when) is not str or len(when)>50):
+            raise ValueError("INVALID_BROWSER_PROVENANCE")
+        raw=json.dumps(result,ensure_ascii=False,separators=(",",":"))
+        if len(raw.encode("utf8"))>30000:
+            raise ValueError("BROWSER_RECEIPT_TOO_LARGE")
+        now=datetime.now(timezone.utc).isoformat()
+        with self._db() as db:
+            db.execute("""INSERT OR IGNORE INTO cart_browser_observations
+                (capture_id,source_url,captured_at,stored_at,
+                 snapshot_sha256,result_json)
+                VALUES (?,?,?,?,?,?)""",
+                (ident,source,when,now,digest,raw))
+            affected=db.execute("""SELECT id FROM cart_research_jobs
+                WHERE json_extract(item,'$.merchant_url')=?""",(source,)).fetchall()
+        # Wake the main live decision graph when a new source observation
+        # arrives, including for a cart job that is already READY.
+        for (job_id,) in affected[:200]:
+            self.live_bus.signal(job_id)
+        return {"capture_id":ident,"source_url":source,
+                "cart_jobs_signalled":min(len(affected),200),
+                "checkout_verified":False}
+
+    def recent_browser_claim_receipts(self, limit=30):
+        """Previously completed browser receipts remain readable after restart."""
+        if type(limit) is not int or not 1<=limit<=60:
+            raise ValueError("INVALID_BROWSER_RECEIPT_LIMIT")
+        with self._db() as db:
+            rows=db.execute("""SELECT capture_id,source_url,captured_at,result_json
+                FROM cart_browser_observations ORDER BY stored_at DESC LIMIT ?""",
+                (limit,)).fetchall()
+        return [{"id":ident,"url":url,"created_at":when,
+                 "status":"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+                 "result":json.loads(raw)}
+                for ident,url,when,raw in rows]
+
+    def browser_claim_receipt(self, capture_id):
+        if type(capture_id) is not str or not re.fullmatch(
+                r"[a-zA-Z0-9_-]{24}",capture_id):
+            raise ValueError("INVALID_BROWSER_CAPTURE_ID")
+        with self._db() as db:
+            row=db.execute("""SELECT source_url,captured_at,result_json
+                FROM cart_browser_observations WHERE capture_id=?""",
+                (capture_id,)).fetchone()
+        if not row:
+            raise ValueError("BROWSER_CAPTURE_NOT_FOUND")
+        return {"id":capture_id,"url":row[0],"created_at":row[1],
+                "status":"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+                "result":json.loads(row[2])}
+
+    def _browser_claims_for_selected(self, selected):
+        """Latest bounded receipts by source URL; never a price input."""
+        from browser_cart_identity import browser_cart_link_key
+        url=selected.get("merchant_url")
+        if not url:
+            return []
+        try:
+            safe=browser_cart_link_key(url)
+        except (TypeError, ValueError):
+            return []
+        if not safe:
+            return []
+        with self._db() as db:
+            rows=db.execute("""SELECT result_json FROM cart_browser_observations
+                WHERE source_url=? ORDER BY captured_at DESC LIMIT 2""",
+                (safe,)).fetchall()
+        return [json.loads(row[0]) for row in rows]
 
     def _check_input_source(self, job_id, item):
         """Fetch and persist the actual submitted product before alternatives.
@@ -1378,11 +1489,14 @@ class CartResearchJobs:
             "public_source_url":input_price_row[6],
             "checkout_verified":bool(input_price_row[7]),
         } if input_price_row else None)
+        selected=json.loads(row[0])
+        browser_claims=self._browser_claims_for_selected(selected)
         return {"source_search":source_search,
+                "browser_claims":browser_claims,
                 "input_price":input_price,
                 "link_safety":link_safety,
                 "final_verdict":final_verdict,
-                "item": json.loads(row[0]), "state": row[1],
+                "item": selected, "state": row[1],
                 "created": row[2],
                 "report": json.loads(row[3]) if row[3] else None,
                 "error_type": row[4],
