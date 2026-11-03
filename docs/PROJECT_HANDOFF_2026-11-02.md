@@ -1,3 +1,18 @@
+> **SOURCE DISCOVERY + DISCREPANCY ENGINE (2026-11-03):** Optional
+> Brave multi-domain URL discovery (`TRACECART_SOURCE_SEARCH_ENABLED=1`
+> plus operator-managed `BRAVE_API_KEY`), max 6 searches/job, durable
+> SQLite receipt; never repeat paid queries on job reruns. Search hits
+> generate unverified graph leads only, not fabricated source evidence.
+> Cross-category title-vs-document and two-source numeric comparisons
+> generate graph `source_disagreement` with original SHA/URLs and
+> variant/methodology uncertainty. On 13-offer AM27 saved e-bike
+> replay, **1 real published-range discrepancy**: 100 km index title
+> versus 50–85 km OEM *declared* assisted range. No verified exact SKU,
+> independent range test or checkout total. Provider disabled on the
+> host without configured credentials; zero additional charged queries.
+> See [MULTISOURCE_DISCOVERY_AND_DISCREPANCIES_2026-11-03](
+> MULTISOURCE_DISCOVERY_AND_DISCREPANCIES_2026-11-03.md).
+>
 > **LATEST GENERAL SOURCE PIPELINE (2026-11-03):** Replace
 > model-by-model document research with `generic_source_research.py`,
 > which accepts real seller URLs, previously stored source-discovery

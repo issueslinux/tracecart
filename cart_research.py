@@ -598,6 +598,9 @@ class CartResearchJobs:
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 processed INTEGER NOT NULL DEFAULT 0,
                 planned INTEGER NOT NULL DEFAULT 0)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_source_search (
+                job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+                receipt_json TEXT)""")
             db.execute("UPDATE cart_evidence_runs SET status='INTERRUPTED' "
                        "WHERE status='RUNNING'")
             db.execute("UPDATE cart_research_jobs SET state='INTERRUPTED' "
@@ -641,6 +644,7 @@ class CartResearchJobs:
                 "evidence_progress":record.get("evidence_progress",{}),
                 "model_offers":record.get("model_offers",{}),
                 "evidence_offers":record.get("evidence_offers",{}),
+                "source_search":record.get("source_search",{}),
                 "payment_authorized":False,
             }
         return self.live_bus.snapshot(job_id,build)
@@ -658,6 +662,35 @@ class CartResearchJobs:
         item=record.get("item") or {}
         category=category_of(item.get("title") or item.get("merchant_url") or "")
         offers=offer_summaries(record,category)
+        from source_search import search_source_urls,attach_discovery_leads
+        with self._db() as db:
+            prior=db.execute("""SELECT status,receipt_json FROM
+                cart_source_search WHERE job_id=?""",(job_id,)).fetchone()
+            if not prior:
+                db.execute("""INSERT INTO cart_source_search
+                    (job_id,status,receipt_json) VALUES (?,?,NULL)""",
+                    (job_id,"RUNNING"))
+        if prior and prior[1]:
+            discovery=json.loads(prior[1])
+        elif prior:
+            # Another worker's incomplete reservation may be interrupted:
+            # never risk retrying a possibly billed search automatically.
+            discovery={"status":"INTERRUPTED_UNKNOWN_PROVIDER_CHARGE",
+                       "queries_used":0,"leads":[],"query_receipts":[]}
+        else:
+            self.live_bus.signal(job_id)
+            try:
+                discovery=search_source_urls(offers)
+            except (ValueError,TypeError,KeyError,OSError):
+                discovery={"status":"FAILED_NO_SOURCE_LEADS",
+                           "queries_used":0,"leads":[],"query_receipts":[]}
+            with self._db() as db:
+                db.execute("""UPDATE cart_source_search
+                    SET status=?,receipt_json=? WHERE job_id=?""",
+                    (discovery["status"],
+                     json.dumps(discovery,ensure_ascii=False),job_id))
+            self.live_bus.signal(job_id)
+        attach_discovery_leads(offers,discovery)
         cache={}
         cache_lock=threading.Lock()
         def cached_fetch(url,max_bytes,mimes,timeout=10):
@@ -958,6 +991,8 @@ class CartResearchJobs:
             evidence_run=db.execute(
                 "SELECT status,processed,planned FROM cart_evidence_runs WHERE job_id=?",
                 (job_id,)).fetchone()
+            discovery_row=db.execute("""SELECT status,receipt_json FROM
+                cart_source_search WHERE job_id=?""",(job_id,)).fetchone()
         model_offers = {
             "offer-{}".format(i): {"state": status,
                 "questions": json.loads(data) if data else []}
@@ -969,7 +1004,13 @@ class CartResearchJobs:
             "status":evidence_run[0],"processed":evidence_run[1],
             "planned":evidence_run[2]
         } if evidence_run else {"status":"NOT_STARTED","processed":0,"planned":0}
-        return {"item": json.loads(row[0]), "state": row[1],
+        source_search=(json.loads(discovery_row[1]) if discovery_row and
+                       discovery_row[1] else {
+                       "status":discovery_row[0] if discovery_row
+                                else "NOT_STARTED",
+                       "queries_used":0,"leads":[],"query_receipts":[]})
+        return {"source_search":source_search,
+                "item": json.loads(row[0]), "state": row[1],
                 "created": row[2],
                 "report": json.loads(row[3]) if row[3] else None,
                 "error_type": row[4],

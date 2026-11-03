@@ -87,6 +87,27 @@ def build_offer_knowledge_graph(projection):
     count_prices=0
     exact_verified=0
     gap_edges=0
+    discrepancy_count=0
+    search=(projection.get("source_search") or {})
+    search_lead_ids={}
+    for candidate in (search.get("leads") or [])[:24]:
+        if not isinstance(candidate,dict):
+            continue
+        url=candidate.get("url")
+        ident=candidate.get("model_identity") or {}
+        if (not isinstance(url,str) or
+            not isinstance(ident.get("brand"),str) or
+            not isinstance(ident.get("model"),str)):
+            continue
+        lead="lead:"+_key(url)
+        add_node(lead,"source_lead",
+                 str(candidate.get("title") or "Source URL discovered")[:150],
+                 url=url,
+                 status="SEARCH_INDEX_LEAD_NOT_FETCHED_OR_VERIFIED",
+                 exact_sku_matched=False,
+                 identity=ident)
+        search_lead_ids.setdefault((ident["brand"],ident["model"]),[]).append(
+            (lead,url))
     for offer in offers:
         oid=offer["id"]
         kind=offer.get("kind","UNKNOWN")
@@ -97,6 +118,14 @@ def build_offer_knowledge_graph(projection):
                  offer_kind=kind,source=offer.get("source"),
                  url=offer.get("url"),provenance=provenance,
                  question_count=offer.get("question_count",0))
+        if search_lead_ids:
+            from generic_source_research import product_identity
+            identity=product_identity(offer.get("title",""))
+            if identity:
+                key=(identity["brand"],identity["model"])
+                for lead,url in search_lead_ids.get(key,[]):
+                    add_edge(oid,lead,"SOURCE_DISCOVERY_LEAD",
+                        status="URL_ONLY_UNVERIFIED_NO_PRODUCT_RECEIPT")
         specs=read_specs(offer.get("title",""),category)
         # URL title can be truncated/synthetic. All fields are *claims*.
         listing_claims=[]
@@ -201,6 +230,10 @@ def build_offer_knowledge_graph(projection):
                      status=answer_status)
             add_edge(answer_id,source,"OBSERVED_IN_SOURCE",
                      status="FETCHED_DOCUMENT_WITH_SHA256")
+            lead="lead:"+_key(source_url)
+            if lead in vertices:
+                add_edge(lead,source,"DISCOVERED_PAGE_FETCHED_AND_EXTRACTED",
+                    status="DOCUMENT_PRESENT_EXACT_VARIANT_UNVERIFIED")
             if ref.get("dimension") in axes:
                 add_edge(answer_id,dim_ids[axes.index(ref["dimension"])],
                          "INFORMS_DIMENSION",
@@ -222,6 +255,49 @@ def build_offer_knowledge_graph(projection):
             linked_references+=1
             if verified:
                 exact_verified+=1
+        disagreements=(evidence.get(oid) or {}).get(
+            "declared_claim_conflicts") or []
+        for i,disagreement in enumerate(disagreements[:12]):
+            if not isinstance(disagreement,dict):
+                continue
+            kind=disagreement.get("type")
+            if kind not in ("TITLE_VS_PUBLISHED_SPECIFICATION",
+                            "PUBLISHED_SOURCES_DISAGREE"):
+                continue
+            cid="discrepancy:"+oid+":"+_key((kind,i,disagreement.get("parameter"),
+                        disagreement.get("source_url"),
+                        disagreement.get("source_a_sha256")))
+            if kind=="TITLE_VS_PUBLISHED_SPECIFICATION":
+                label=(str(disagreement.get("listing_value","?"))+
+                    " listed vs "+str(disagreement.get("source_value","?"))+
+                    " published")
+            else:
+                label=(str(disagreement.get("source_a_value","?"))+
+                    " vs "+str(disagreement.get("source_b_value","?"))+
+                    " in two documents")
+            add_node(cid,"source_disagreement",label[:155],
+                status=disagreement.get("status"),
+                parameter=disagreement.get("parameter"),
+                verified_exact_variant=False,
+                not_proven_fraud=True,
+                requires_variant_or_test_protocol_confirmation=True)
+            add_edge(oid,cid,"POTENTIAL_SOURCE_DISCREPANCY",
+                status="PUBLISHED_CLAIMS_DIFFER_EXACT_SKU_UNVERIFIED")
+            source_refs=(
+                [(disagreement.get("source_url"),
+                  disagreement.get("source_sha256"))]
+                if kind=="TITLE_VS_PUBLISHED_SPECIFICATION" else
+                [(disagreement.get("source_a_url"),
+                  disagreement.get("source_a_sha256")),
+                 (disagreement.get("source_b_url"),
+                  disagreement.get("source_b_sha256"))])
+            for source_url,digest in source_refs:
+                if isinstance(source_url,str) and isinstance(digest,str):
+                    sid=_source_id(source_url,digest)
+                    if sid in vertices:
+                        add_edge(cid,sid,"DISCREPANCY_REQUIRES_SOURCE_REVIEW",
+                            status="SOURCE_FETCHED_VARIANT_MATCH_OPEN")
+            discrepancy_count+=1
         hints=offer.get("index_model_hints") or []
         for hint in hints[:4]:
             other=hint.get("source_offer")
@@ -242,6 +318,7 @@ def build_offer_knowledge_graph(projection):
             "source_check_status":(evidence.get(oid) or {}).get("status",
                                  "NOT_STARTED"),
             "reference_observations":answers,
+            "declared_claim_conflicts":disagreements[:12],
             "verified_exact_sku_answers":sum(x["status"]==
                         "EXACT_SKU_INDEPENDENTLY_VERIFIED" for x in answers),
             "model_hints":[{"name":h.get("model_hint"),
@@ -269,6 +346,9 @@ def build_offer_knowledge_graph(projection):
             "total_planned_questions":sum(o.get("question_count",0) for o in offers),
             "independent_reference_measurements":len(unique_measurements),
             "documented_product_declarations":len(unique_document_declarations),
+            "unresolved_source_discrepancies":discrepancy_count,
+            "source_discovery_leads":len((projection.get("source_search")
+                                        or {}).get("leads") or []),
             "reference_offer_links":linked_references,
             "verified_exact_sku_answers":exact_verified,
             "verified_checkout_prices":projection.get("evidence",{}).get(
@@ -289,6 +369,8 @@ def build_offer_knowledge_graph(projection):
             "A matching value or related Shopping title does not establish identical model, battery or frame.",
             "Independent reviews of other variants stay reference-only until exact SKU and tested configuration match.",
             "Seller/OEM/third-party page specifications are source declarations, not independent laboratory tests.",
+            "Disagreements between seller and source declarations may indicate different variants, test conditions, or outdated values; they do not prove deception.",
+            "A URL discovered through a paid search index is a lead, not a source observation until the page is independently fetched.",
             "No verified seller checkout price is inferred from indexed quotes.",
             "Knowledge gaps are open investigations, not failed performance tests.",
         ],

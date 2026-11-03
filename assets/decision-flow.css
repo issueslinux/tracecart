@@ -367,3 +367,12 @@ h1 em,h2 em{font-weight:400;font-style:italic;color:var(--accent)}
 
 .kg-node.kg-type-source_declaration circle{fill:#e9f1df;stroke:#659a53}
 .kg-node.kg-type-source_declaration text{fill:#376131}
+
+
+.kg-node.kg-type-source_disagreement circle{fill:#f7dcc7;stroke:#ba6c32;stroke-width:2.5}
+.kg-node.kg-type-source_disagreement text{fill:#a85e29}
+.kg-links .kg-link-warning{stroke:#c07842;stroke-width:2}
+
+
+.kg-node.kg-type-source_lead circle{fill:#edf1f1;stroke:#94a8a8;stroke-dasharray:3 2}
+.kg-node.kg-type-source_lead text{fill:#71827b}

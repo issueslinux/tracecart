@@ -304,6 +304,7 @@ def build_decision_projection(record):
                             else "Retailer page claims",
         "evidence":evidence,
         "offers":offer_summaries(record,category),
+        "source_search":record.get("source_search") or {},
         "model_offers":record.get("model_offers") or {},
         "model_progress_stage":record.get("progress_stage") or "NOT_SCHEDULED",
         "evidence_offers":record.get("evidence_offers") or {},
