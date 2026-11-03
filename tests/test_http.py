@@ -461,6 +461,31 @@ class WebFlowTests(unittest.TestCase):
             "catalog_alternatives_found"],0)
         self.assertNotIn("functional_alternatives",stored["report"]["indexed_shopping"])
 
+    def test_live_json_fallback_returns_same_persisted_state_as_sse(self):
+        fixture=(Path(__file__).resolve().parents[1] /
+                 "examples/live_lenovo_ideapad_index_evidence_2026-11-02.json")
+        saved=json.loads(fixture.read_text(encoding="utf-8"))
+        jid="F"*24
+        with self.server.cart_jobs._db() as db:
+            db.execute("""INSERT INTO cart_research_jobs
+                (id,item,state,created,result,error_type)
+                VALUES (?,?,?,?,?,NULL)""",
+                (jid,json.dumps(saved["item"]),"READY",
+                 "2026-11-03T11:00:00Z",json.dumps(saved["report"])))
+        with urlopen(self.base+"/cart/status/"+jid+"/live.json",timeout=5) as res:
+            self.assertEqual(res.status,200)
+            self.assertIn("application/json",res.headers["Content-Type"])
+            payload=json.load(res)
+        self.assertEqual(payload["state"],"READY")
+        self.assertEqual(payload["graph"]["stats"]["offers"],16)
+        self.assertEqual(len(payload["offer_queue"]),16)
+        self.assertFalse(payload["payment_authorized"])
+        self.server.cart_jobs._progress(jid,"PER_OFFER_MODEL_COMPLETE")
+        with urlopen(self.base+"/cart/status/"+jid+"/live.json",timeout=5) as res:
+            after=json.load(res)
+        self.assertEqual(after["progress_stage"],"PER_OFFER_MODEL_COMPLETE")
+        self.assertEqual(after["graph"]["stats"]["verified_exact_sku_answers"],0)
+
     def test_live_event_stream_is_ram_backed_and_nonblocking(self):
         from time import monotonic
         fixture=(Path(__file__).resolve().parents[1] /

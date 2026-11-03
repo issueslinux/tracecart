@@ -1,3 +1,22 @@
+> **INPUT-FIRST PARALLEL RESEARCH (2026-11-03):**
+> The real RYOBI product URL now leads the graph: input source check
+> starts as soon as URL identity is extracted, in parallel with
+> catalog/Shopping, and generic JSON-LD exact Product.name matching
+> discovers model RPI18-0, EAN and up to 12 verbatim technical
+> properties. Subsequent indexed offers appear incrementally on
+> actual source-task completion (16 concurrent I/O checks), with
+> pending offers visible in the left queue. No re-fetch of the checked
+> input when the main evidence run begins. Slow Qwen stages are no
+> longer in the critical path; one bounded four-model **batch**
+> inference replaces 18 sequential LLM calls, duplicates/over-budget
+> offers are marked terminal SKIPPED rather than WRITING. SSE
+> /cart/status/<id>/live.json periodically repairs missed events;
+> persisted orphaned model statuses become INTERRUPTED_RESTART.
+> Real selected-product no-paid-search replay: **12 sourced properties
+> in 1.9s**, total 5.0s for 1 offer (NOT for 18-offer searches).
+> [PROGRESSIVE_FIRST_PRODUCT_PARALLEL_RUNTIME_2026-11-03](
+> PROGRESSIVE_FIRST_PRODUCT_PARALLEL_RUNTIME_2026-11-03.md).
+>
 > **SOURCE DISCOVERY + DISCREPANCY ENGINE (2026-11-03):** Optional
 > Brave multi-domain URL discovery (`TRACECART_SOURCE_SEARCH_ENABLED=1`
 > plus operator-managed `BRAVE_API_KEY`), max 6 searches/job, durable

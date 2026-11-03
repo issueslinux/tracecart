@@ -265,7 +265,8 @@ def generate_local_ai_questions(item, category, catalog, request=None):
     return result
 
 
-def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
+def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES,
+                  use_local_questions=True):
     """One bounded live research run; never invent price/offer data."""
     item = validate_cart(item)
     category = classify_product(item["title"])
@@ -451,11 +452,14 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES):
     qs = _derive_questions(item, sources["catalog"], sources, category)
     # A failed local model does NOT erase the deterministic decision tree.
     ai_questions, ai_status = [], "SKIPPED"
-    try:
-        ai_questions = generate_local_ai_questions(item, category, sources["catalog"])
-        ai_status = "OK"
-    except (OSError, ValueError, TypeError, KeyError, RuntimeError) as exc:
-        ai_status = "UNAVAILABLE_" + type(exc).__name__
+    if not use_local_questions:
+        ai_status = "DEFERRED_TO_SINGLE_BATCHED_MODEL_WORKER"
+    else:
+        try:
+            ai_questions = generate_local_ai_questions(item, category, sources["catalog"])
+            ai_status = "OK"
+        except (OSError, ValueError, TypeError, KeyError, RuntimeError) as exc:
+            ai_status = "UNAVAILABLE_" + type(exc).__name__
     unique_lower = {x.casefold() for x in qs}
     for proposal in ai_questions:
         if proposal.casefold() not in unique_lower:
@@ -601,6 +605,11 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_source_search (
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 receipt_json TEXT)""")
+            # A model task that was RUNNING in another process is stale;
+            # it cannot remain an eternal WRITING row after a restart.
+            db.execute("""UPDATE cart_offer_model_questions
+                SET status='INTERRUPTED_RESTART'
+                WHERE status IN ('RUNNING','BATCH_RUNNING','QUEUED')""")
             db.execute("UPDATE cart_evidence_runs SET status='INTERRUPTED' "
                        "WHERE status='RUNNING'")
             db.execute("UPDATE cart_research_jobs SET state='INTERRUPTED' "
@@ -638,6 +647,9 @@ class CartResearchJobs:
             graph=build_offer_knowledge_graph(projection)
             return {
                 "state":record["state"],
+                "offer_queue":[{"id":o["id"],"title":o.get("title"),
+                     "kind":o.get("kind"),"url":o.get("url")}
+                    for o in projection.get("offers",[])],
                 "progress_stage":record.get("progress_stage"),
                 "progress_revision":record.get("progress_revision",0),
                 "graph":graph,
@@ -648,6 +660,37 @@ class CartResearchJobs:
                 "payment_authorized":False,
             }
         return self.live_bus.snapshot(job_id,build)
+
+    def _check_input_source(self, job_id, item):
+        """Fetch and persist the actual submitted product before alternatives.
+
+        Starts as soon as the original page identity is extracted, in
+        parallel with catalog/Shopping discovery and before a single Qwen
+        request. The full worker later reuses this source result.
+        """
+        from offer_question_bank import offer_summaries
+        from evidence_execution import execute_reference_checks
+        from similar_tier import category_of
+        category=category_of(item.get("title") or "")
+        offer=offer_summaries({"item":item,"report":{}},category)[0]
+        with self._db() as db:
+            db.execute("""INSERT OR REPLACE INTO cart_offer_evidence
+                (job_id,offer_idx,status,result_json) VALUES (?,?,?,?)""",
+                (job_id,0,"RUNNING",json.dumps({"status":"RUNNING",
+                    "reference_answers":[],"verified_for_exact_offer":0})))
+        self.live_bus.signal(job_id)
+        try:
+            result=execute_reference_checks(offer,category)
+        except (OSError,ValueError,TypeError,KeyError,RuntimeError) as exc:
+            result={"status":"SOURCE_NOT_VERIFIED_"+type(exc).__name__,
+                    "reference_answers":[],"sources_checked":0,
+                    "verified_for_exact_offer":0}
+        with self._db() as db:
+            db.execute("""UPDATE cart_offer_evidence SET status=?,result_json=?
+                WHERE job_id=? AND offer_idx=0""",
+                (result["status"],json.dumps(result,ensure_ascii=False),
+                 job_id))
+        self.live_bus.signal(job_id)
 
     def _execute_source_evidence(self, job_id, record):
         """Bounded real source retrieval; never mutates the original audit.
@@ -712,12 +755,18 @@ class CartResearchJobs:
 
         count=len(offers)
         with self._db() as db:
+            initial=db.execute("""SELECT status FROM cart_offer_evidence
+                WHERE job_id=? AND offer_idx=0""",(job_id,)).fetchone()
+            primary_done=bool(initial and initial[0] not in
+                ("RUNNING","QUEUED","NOT_STARTED"))
             db.execute("""INSERT OR REPLACE INTO cart_evidence_runs
-                (job_id,status,processed,planned) VALUES (?,?,0,?)""",
-                (job_id,"RUNNING",count))
-            # These are actual independently running CHECK tasks, not
-            # fabricated claim-verification answers.
+                (job_id,status,processed,planned) VALUES (?,?,?,?)""",
+                (job_id,"RUNNING",int(primary_done),count))
+            # Keep the real input-document result instead of replacing it
+            # with a fake QUEUED state and re-downloading the same source.
             for index in range(count):
+                if index==0 and primary_done:
+                    continue
                 db.execute("""INSERT OR REPLACE INTO cart_offer_evidence
                     (job_id,offer_idx,status,result_json) VALUES (?,?,?,?)""",
                     (job_id,index,"QUEUED",json.dumps({
@@ -737,7 +786,8 @@ class CartResearchJobs:
                         "verified_for_exact_offer":0}
             return index,result
 
-        completed=0
+        completed=int(primary_done)
+        pending_indices=list(range(1,count)) if primary_done else list(range(count))
         # Parallel SOURCE I/O, not 16 simultaneous GPU inference requests.
         # Per-URL Future de-duplicates remote reads, preserving robots checks.
         # All SQLite status changes are made by the coordinator so 16 worker
@@ -745,20 +795,20 @@ class CartResearchJobs:
         with ThreadPoolExecutor(max_workers=min(16,max(1,count))) as executor:
             running={}
             next_index=0
-            slots=min(16,count)
+            slots=min(16,len(pending_indices))
             running_row=json.dumps({"status":"RUNNING",
                 "reference_answers":[],"verified_for_exact_offer":0})
             # Batch initial status writes, so SQLite never serializes
             # worker *startups* and blocks the intended I/O concurrency.
             with self._db() as db:
-                for i in range(slots):
+                for index in pending_indices[:slots]:
                     db.execute("""UPDATE cart_offer_evidence SET status=?,
                         result_json=? WHERE job_id=? AND offer_idx=?""",
-                        ("RUNNING",running_row,job_id,i))
+                        ("RUNNING",running_row,job_id,index))
             self.live_bus.signal(job_id)
             def dispatch(initial=False):
                 nonlocal next_index
-                i=next_index
+                i=pending_indices[next_index]
                 next_index+=1
                 if not initial:
                     with self._db() as db:
@@ -784,7 +834,7 @@ class CartResearchJobs:
                         db.execute("""UPDATE cart_evidence_runs SET processed=?
                             WHERE job_id=?""",(completed,job_id))
                     self.live_bus.signal(job_id)
-                    if next_index<count:
+                    if next_index<len(pending_indices):
                         dispatch()
         with self._db() as db:
             db.execute("""UPDATE cart_evidence_runs SET status=? WHERE job_id=?""",
@@ -793,29 +843,66 @@ class CartResearchJobs:
         self.live_bus.signal(job_id)
 
     def _generate_offer_questions(self, job_id, record):
-        """Detached from user latency and from payment authorization logic."""
+        """At most ONE GPU inference call, overlapping all source I/O.
+
+        Since local Qwen has one actual inference slot, N simultaneous GPU
+        requests would queue internally. Batch <=4 distinct models, skip
+        duplicate title variants and mark the rest with an explicit terminal
+        budget status. Source workers continue in parallel.
+        """
         from offer_question_bank import (offer_summaries,
-                                         propose_offer_model_questions)
+                                         propose_offer_question_batch)
+        from generic_source_research import product_identity
         from similar_tier import category_of
-        category = category_of((record.get("item") or {}).get("title") or "")
-        offers = offer_summaries(record, category)
-        for index, offer in enumerate(offers):
-            if self.model_stop.is_set():
-                break
-            with self._db() as db:
+        category=category_of((record.get("item") or {}).get("title") or "")
+        offers=offer_summaries(record,category)
+        selected=[]
+        duplicate_of={}
+        seen={}
+        for offer in offers:
+            ident=product_identity(offer.get("title",""))
+            key=((ident["brand"],ident["model"]) if ident else
+                 ("unidentified"," ".join(
+                     offer.get("title","").casefold().split())[:85]))
+            if key in seen:
+                duplicate_of[offer["id"]]=seen[key]
+                continue
+            if len(selected)>=4:
+                continue
+            selected.append(offer)
+            seen[key]=offer["id"]
+        selected_idx={int(o["id"].split("-")[-1]) for o in selected}
+        # One SQLite transaction for all state transitions, and an SSE update
+        # as soon as the single actual inference request starts.
+        with self._db() as db:
+            for index,offer in enumerate(offers):
+                status=("BATCH_RUNNING" if index in selected_idx else
+                    "SKIPPED_DUPLICATE_MODEL" if offer["id"] in duplicate_of else
+                    "SKIPPED_MODEL_BUDGET")
                 db.execute("""INSERT OR REPLACE INTO cart_offer_model_questions
-                    (job_id,offer_idx,status,questions_json) VALUES (?,?,?,NULL)""",
-                    (job_id,index,"RUNNING"))
-            self.live_bus.signal(job_id)
+                    (job_id,offer_idx,status,questions_json) VALUES (?,?,?,?)""",
+                    (job_id,index,status,json.dumps([])))
+        self.live_bus.signal(job_id)
+        if selected:
             try:
-                questions = propose_offer_model_questions(offer, category)
-                status = "OK" if questions else "EMPTY"
+                outputs,_,_=propose_offer_question_batch(
+                    selected,category,max_models=4)
+                failed=False
             except (OSError,ValueError,TypeError,KeyError,RuntimeError) as exc:
-                questions, status = [], "UNAVAILABLE_" + type(exc).__name__
+                outputs={}
+                failure="UNAVAILABLE_"+type(exc).__name__
+                failed=True
             with self._db() as db:
-                db.execute("""UPDATE cart_offer_model_questions
-                    SET status=?,questions_json=? WHERE job_id=? AND offer_idx=?""",
-                    (status,json.dumps(questions,ensure_ascii=False),job_id,index))
+                for offer in selected:
+                    index=int(offer["id"].split("-")[-1])
+                    questions=outputs.get(offer["id"],[])
+                    status=(failure if failed else
+                            "OK" if questions else "EMPTY")
+                    db.execute("""UPDATE cart_offer_model_questions
+                        SET status=?,questions_json=?
+                        WHERE job_id=? AND offer_idx=?""",
+                        (status,json.dumps(questions,ensure_ascii=False),
+                         job_id,index))
             self.live_bus.signal(job_id)
         self._progress(job_id, "PER_OFFER_MODEL_COMPLETE")
 
@@ -885,7 +972,11 @@ class CartResearchJobs:
                 db.execute("UPDATE cart_research_jobs SET item=? WHERE id=?",
                            (json.dumps(clean), job_id))
             self._progress(job_id, "CATALOG_AND_BASE_RESEARCH")
-            report = self.runner(clean)
+            if self.runner is research_cart:
+                # Input source takes precedence on the evidence I/O lane.
+                self.evidence_pool.submit(self._check_input_source,job_id,clean)
+            report = (self.runner(clean,use_local_questions=False)
+                      if self.runner is research_cart else self.runner(clean))
             report["source_intake"] = source
             report["root"]["details"]["source_intake"] = {
                 "url": clean["merchant_url"], "price_status": source["price_status"],
@@ -919,13 +1010,14 @@ class CartResearchJobs:
                 report.pop("sha256", None)
                 report["sha256"] = sha256(json.dumps(
                     report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-            self._progress(job_id, "LLM_SOURCE_QUESTIONS_IN_PROGRESS", report)
-            if report.get("indexed_shopping"):
-                from autonomous_research import enrich_index_research_with_llm
-                report = enrich_index_research_with_llm(report, clean)
-                report.pop("sha256", None)
-                report["sha256"] = sha256(json.dumps(
-                    report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            # Per-offer Qwen work runs later as ONE batched background
+            # request. Do not hold user READY or source checks hostage
+            # to a second sequential LLM in this request path.
+            report["root"]["details"]["post_index_llm_question_generation"] = (
+                "DEFERRED_TO_SINGLE_BATCHED_MODEL_WORKER")
+            report.pop("sha256",None)
+            report["sha256"]=sha256(json.dumps(
+                report,sort_keys=True,separators=(",",":")).encode()).hexdigest()
             self._progress(job_id, "RESEARCH_COMPLETE", report)
             state, result, error = "READY", json.dumps(report, ensure_ascii=False), None
         except Exception as exc:

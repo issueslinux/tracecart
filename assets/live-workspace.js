@@ -32,10 +32,12 @@
   }
   function sourceTasks(data){
     const g=data.graph||{},details=g.offer_details||{},result=data.evidence_offers||{};
+    const offers=(data.offer_queue&&data.offer_queue.length?
+      data.offer_queue.map(o=>[o.id,{title:o.title}]):Object.entries(details));
     const rows=[];
     const weight={RUNNING:0,QUEUED:1,REFERENCE:2,BLOCKED:3};
-    Object.keys(details).forEach(id=>{
-      const d=details[id],entry=result[id]||{},state=entry.status;
+    offers.forEach(([id,d])=>{
+      const entry=result[id]||{},state=entry.status;
       let mode="QUEUED",label="WAITING";
       if(state==="RUNNING"){mode="RUNNING";label="CHECKING";}
       else if(state==="QUEUED"){mode="QUEUED";label="QUEUED";}
@@ -43,7 +45,10 @@
         mode="REFERENCE";label=(entry.reference_answers||[]).some(x=>
           x.source_kind==="INDEPENDENT_TEST")?"REVIEW FOUND":"SPECIFICATIONS";
       }
-      else if(state){mode="BLOCKED";label="NO MATCHED SOURCE";}
+      else if(state){
+        mode="BLOCKED";
+        label=state.startsWith("INTERRUPTED")?"INTERRUPTED":"NO MATCHED SOURCE";
+      }
       rows.push({
         key:"#"+(Number(id.split("-")[1])+1),
         title:d.title||"Product",
@@ -57,20 +62,26 @@
         mode,state:label,weight:weight[mode],
       });
     });
-    rows.sort((a,b)=>a.weight-b.weight||
-      Number(a.key.slice(1))-Number(b.key.slice(1)));
+    rows.sort((a,b)=>(a.key==="#1"?-1:b.key==="#1"?1:
+        a.weight-b.weight||Number(a.key.slice(1))-Number(b.key.slice(1))));
     return rows.slice(0,20);
   }
   function questionTasks(data){
     const g=data.graph||{},details=g.offer_details||{},model=data.model_offers||{};
     const running=[],open=[],answered=[],proposed=[];
+    let batchReported=false;
     for(const [id,d] of Object.entries(details)){
       const idx=Number(id.split("-")[1])+1;
       const ml=model[id]||{};
-      if(ml.state==="RUNNING"){
-        running.push({key:"#"+idx+" · MODEL",title:"Generating source questions",
-          detail:"Local model question generation · rate-limited worker, not evidence.",
-          state:"WRITING",mode:"RUNNING"});
+      if(["RUNNING","BATCH_RUNNING"].includes(ml.state) &&
+          data.progress_stage!=="PER_OFFER_MODEL_COMPLETE"){
+        if(!batchReported){
+          running.push({key:"QWEN · BATCH",
+            title:"One batched request for distinct product models",
+            detail:"Single inference call · independent source checks run separately.",
+            state:"INFERENCE",mode:"RUNNING"});
+          batchReported=true;
+        }
       } else if(ml.state==="OK") {
         for(const q of (ml.questions||[]).slice(0,2)){
           proposed.push({key:"#"+idx+" · QWEN",title:q.question,
@@ -131,10 +142,9 @@
     const app=$("decision-app");
     if(!app||!window.TraceCartKnowledgeGraph)return;
     const status=$("job-state"),form=$("product-form"),button=form.querySelector("button");
-    let loadedVersion=-1,gotData=false,graphFingerprint="",source;
+    let gotData=false,graphFingerprint="",source,lastEventAt=Date.now();
     function show(snapshot,id){
-      if(id!==undefined&&String(id)===String(loadedVersion))return;
-      if(id!==undefined)loadedVersion=id;
+      if(id!==undefined)lastEventAt=Date.now();
       gotData=true;
       const graph=snapshot.graph;
       const fingerprint=JSON.stringify(graph&&[graph.nodes,graph.edges,
@@ -144,14 +154,15 @@
         window.TraceCartKnowledgeGraph.create(app,graph);
       }
       const stats=graph&&graph.stats||{};
-      $("live-graph-count").textContent=(graph.nodes||[]).length+
-        " nodes · "+(graph.edges||[]).length+" links · "+
-        (stats.verified_exact_sku_answers||0)+" exact answers";
+      $("live-graph-count").textContent=
+        (stats.offers||0)+"/"+(stats.total_discovered_offers||stats.offers||0)+
+        " offers · "+(graph.nodes||[]).length+" nodes · "+
+        (graph.edges||[]).length+" links";
       const activity=snapshot.evidence_progress||{};
       const pendingSource=Object.values(snapshot.evidence_offers||{})
         .filter(x=>["RUNNING","QUEUED"].includes(x.status)).length;
       const workingModel=Object.values(snapshot.model_offers||{})
-        .filter(x=>x.state==="RUNNING").length;
+        .filter(x=>["RUNNING","BATCH_RUNNING"].includes(x.state)).length;
       const sources=sourceTasks(snapshot),questions=questionTasks(snapshot);
       const search=snapshot.source_search||{};
       if(search.status==="RUNNING"){
@@ -167,11 +178,19 @@
       $("live-source-count").textContent=pendingSource?
         pendingSource+" checking":String(sources.length);
       $("live-question-count").textContent=workingModel?
-        questions.length+" · "+workingModel+" writing":String(questions.length);
+        questions.length+" · 1 model batch":String(questions.length);
       renderItems($("live-source-tasks"),sources);
       renderItems($("live-question-tasks"),questions);
       const phase=snapshot.progress_stage||snapshot.state||"STARTING";
-      status.textContent=phase==="PER_OFFER_MODEL_COMPLETE"?"Ready":
+      const researchDone=snapshot.state==="READY" &&
+        (snapshot.evidence_progress||{}).status==="COMPLETE" &&
+        phase==="PER_OFFER_MODEL_COMPLETE";
+      status.textContent=researchDone?"Ready":
+        phase==="SOURCE_FETCH"?"Reading input page":
+        snapshot.state==="READY"&&
+        (snapshot.evidence_progress||{}).status==="RUNNING"?
+          "Checking "+(snapshot.evidence_progress.processed||0)+"/"+
+          (snapshot.evidence_progress.planned||0)+" offers":
         phase.replace(/_/g," ").toLowerCase();
       $("live-evidence-status").textContent=
         (stats.independent_reference_measurements||0)+
@@ -205,6 +224,25 @@
         .catch(()=>{status.textContent="Unavailable";});
       return;
     }
+    // The source is authoritative, but a periodic same-origin snapshot
+    // repairs stuck states after lost events or server restarts. Poll only
+    // if no SSE update was received recently, not on every graph tick.
+    const fallbackUrl=app.dataset.live+".json";
+    let polling=false,unloaded=false;
+    const refresh=setInterval(()=>{
+      if(unloaded||polling||Date.now()-lastEventAt<6500)return;
+      polling=true;
+      fetch(fallbackUrl,{cache:"no-store"})
+        .then(r=>{if(!r.ok)throw Error("live snapshot unavailable");
+                  return r.json();})
+        .then(snapshot=>{
+          if(unloaded)return;
+          show(snapshot);
+          lastEventAt=Date.now();
+        })
+        .catch(()=>{})
+        .finally(()=>{polling=false;});
+    },3200);
     source=new EventSource(app.dataset.live,{withCredentials:false});
     source.addEventListener("graph",event=>{
       try{show(JSON.parse(event.data),event.lastEventId);}catch(_){
@@ -221,7 +259,10 @@
       else if(source.readyState===EventSource.CLOSED)
         status.textContent="Stream disconnected";
     };
-    window.addEventListener("pagehide",()=>{if(source)source.close();});
+    window.addEventListener("pagehide",()=>{
+      unloaded=true;clearInterval(refresh);
+      if(source)source.close();
+    });
   }
   if(typeof module!=="undefined"&&module.exports)
     module.exports={sourceTasks,questionTasks,emptyGraph};

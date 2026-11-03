@@ -48,7 +48,25 @@ def build_offer_knowledge_graph(projection):
     queries are made. Unknown values never turn into inferred attributes;
     speculative matches are never identity edges.
     """
-    offers=(projection.get("offers") or [])[:MAX_OFFERS]
+    available_offers=(projection.get("offers") or [])[:MAX_OFFERS]
+    current_evidence=projection.get("evidence_offers") or {}
+    status=(projection.get("evidence_progress") or {}).get(
+        "status","NOT_STARTED")
+    active=(projection.get("state") in ("RUNNING","QUEUED") or
+            status in ("RUNNING","QUEUED") or
+            (status=="NOT_STARTED" and
+             projection.get("model_progress_stage") in
+              ("PER_OFFER_MODEL_QUEUED","PER_OFFER_MODEL_COMPLETE")))
+    # Visible graph must grow from input to each *completed* source check,
+    # even while 16 independent network tasks are actively running.
+    # Indexed offers are available in the research queue but do not all
+    # burst into the graph before anyone has processed their page.
+    if active:
+        offers=[o for i,o in enumerate(available_offers)
+                if i==0 or (current_evidence.get(o["id"]) or {}).get(
+                    "status") not in (None,"QUEUED","RUNNING","NOT_STARTED")]
+    else:
+        offers=available_offers
     category=projection.get("category") or "UNKNOWN"
     axes=AXES.get(category,AXES["OTHER"])
     evidence=projection.get("evidence_offers") or {}
@@ -336,6 +354,7 @@ def build_offer_knowledge_graph(projection):
         "offer_details":details,
         "stats":{
             "offers":len(offers),
+            "total_discovered_offers":len(available_offers),
             "unique_title_claim_values":sum(n["type"]=="title_claim" for n in
                                              vertices.values()),
             "title_claim_links":count_titles,

@@ -64,6 +64,40 @@ class GeneralSourceTests(unittest.TestCase):
                 self.assertTrue(all(not x["verified_for_exact_offer"]
                                     for x in result["claims"]))
 
+    def test_user_selected_ryobi_name_matches_its_own_schema_product(self):
+        # User URL displays a marketing name without machine type RPI18-0,
+        # but the exact same name and real SKU are present on the page.
+        title="Kompresor wysokociśnieniowy 18V ONE+"
+        raw=product_page(title,"RPI18-0",[
+            ("Napięcie/Moc","18V"),("Kod EAN","4892210230478"),
+            ("Pojemność akumulatora [Ah]","-"),
+            ("Waga (bez akumulatora)","0.6"),
+            ("Wyposażenie standardowe","Igła do piłek sportowych"),
+        ])
+        parsed=parse_source_claims(raw,{"title":title},"COMPRESSOR",
+            "https://maker.example.org/compressors/rpi18-0/",
+            "DIRECT_SELLER_LINK")
+        self.assertEqual(parsed["identity"],
+            "EXACT_SOURCE_PRODUCT_NAME_VARIANT_AT_CHECKOUT_UNVERIFIED")
+        self.assertGreaterEqual(len(parsed["claims"]),4)
+        self.assertTrue(any(x["source_property"]=="model" and x["value"]=="RPI18-0"
+                            for x in parsed["claims"]))
+        self.assertTrue(any(x["source_property"]=="Kod EAN"
+                            and x["value"]=="4892210230478"
+                            for x in parsed["claims"]))
+        self.assertTrue(any(x["source_property"]=="Napięcie/Moc"
+                            and x["property_family"]=="voltage"
+                            for x in parsed["claims"]))
+        self.assertFalse(any(x["value"]=="-" for x in parsed["claims"]))
+        self.assertTrue(all(not x["verified_for_exact_offer"]
+                            for x in parsed["claims"]))
+        wrong=product_page("Kompresor wysokociśnieniowy 18V OTHER",
+                           "RPI18-0",[("Napięcie/Moc","18V")])
+        rejected=parse_source_claims(wrong,{"title":title},"COMPRESSOR",
+            "https://maker.example.org/compressors/other/",
+            "DIRECT_SELLER_LINK")
+        self.assertEqual(rejected["claims"],[])
+
     def test_html_table_and_definition_list_without_jsonld(self):
         raw=(b"<html><h1>Brand Alpha123 laptop</h1><table>"
              b"<tr><th>RAM memory</th><td>16 GB</td></tr>"

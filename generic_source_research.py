@@ -49,6 +49,10 @@ PROPERTY_KEYS=(
     ("brakes",("brake","hamulc")),
     ("warranty",("warranty","gwaranc")),
     ("model",("model","mpn","sku")),
+    ("barcode",("ean","gtin","barcode","kod ean")),
+    ("accessories",("included","akcesoria","wyposazenie","w zestawie")),
+    ("charging",("charger","charging","ladowarka","ladowania")),
+    ("vibration",("vibration","wibracji","wibracja")),
     ("cpu",("cpu","processor","procesor","chipset")),
     ("gpu",("gpu","graphics","grafik","vram")),
     ("network",("connectivity","network","wifi","wi-fi","bluetooth")),
@@ -287,6 +291,10 @@ def _properties(doc,product=None):
 
 def _field_family(name):
     normal=" ".join(_words(name))
+    if ("halas" in normal or "akustyczn" in normal):
+        return "noise"
+    if "napiecie" in normal or "voltage" in normal:
+        return "voltage"
     for group,tokens in PROPERTY_KEYS:
         if any(re.search(r"\b"+re.escape(token)+r"\b",normal) for token in tokens):
             return group
@@ -303,6 +311,14 @@ def _document_identity(doc,offer,product=None):
         if listing["model"] in hwords:
             return "EXACT_MODEL_TOKEN_IN_PRODUCT_HEADER_RETAIL_SKU_UNVERIFIED"
         return "DOCUMENT_MODEL_NOT_IN_PRODUCT_HEADER"
+    # URL-submitted products often have a generic marketing title without a
+    # machine model token, but their Product JSON-LD has the EXACT same name,
+    # plus an explicit SKU and model. The original item title is from this
+    # actual page; reject weaker lookalike sidebar/product names.
+    if (product and isinstance(product.get("name"),str)
+            and _words(product["name"])==_words(offer.get("title"))
+            and len(_words(product["name"]))>=3):
+        return "EXACT_SOURCE_PRODUCT_NAME_VARIANT_AT_CHECKOUT_UNVERIFIED"
     title_tokens=set(_words(offer.get("title")))
     headers=set(_words(header))
     significant=[x for x in title_tokens if len(x)>3 and
@@ -320,8 +336,10 @@ def parse_source_claims(raw,offer,category,source_url,source_kind):
     scored=[]
     for product in products:
         status=_document_identity(doc,offer,product)
-        if status.startswith("EXACT_MODEL") or status.startswith("TITLE_TEXT"):
-            scored.append((0 if status.startswith("EXACT_MODEL") else 1,product,status))
+        if (status.startswith("EXACT_MODEL") or
+            status.startswith("EXACT_SOURCE_PRODUCT") or
+            status.startswith("TITLE_TEXT")):
+            scored.append((0 if status.startswith("EXACT_") else 1,product,status))
     scored.sort(key=lambda row:row[0])
     product=scored[0][1] if scored else None
     identity=scored[0][2] if scored else _document_identity(doc,offer)
@@ -332,10 +350,20 @@ def parse_source_claims(raw,offer,category,source_url,source_kind):
     props=_properties(doc,product)
     picked=[]
     for key,val in props:
+        if val.strip().casefold() in ("-","—","?","n/a","null",
+                                       "nie podano","unknown"):
+            continue
         group=_field_family(key)
         if group is None:continue
         picked.append((group,key,val))
-        if len(picked)>=MAX_CLAIMS:break
+    # Present the SKU/EAN, electrical and functional specs before noise
+    # uncertainty fields. Every fact remains a verbatim page declaration.
+    rank={"model":0,"barcode":1,"voltage":2,"power":3,
+          "battery":4,"pressure":5,"weight":6,"size":7,
+          "storage":8,"memory":9,"accessories":10,
+          "noise":11,"vibration":12}
+    picked.sort(key=lambda v:rank.get(v[0],20))
+    picked=picked[:MAX_CLAIMS]
     if not picked:
         return {"status":"SOURCE_NO_STRUCTURED_PRODUCT_PROPERTIES",
                 "claims":[],"identity":identity}
