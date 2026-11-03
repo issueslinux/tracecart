@@ -48,54 +48,33 @@
   // Show all available factual observations, not repeated empty questions.
   // Open gaps and the generic abstention gate remain in the saved graph JSON
   // and evidence-gap panel, but are not rendered as SVG nodes or connections.
-  // The overview is a purchase-comparison diagram, not a dump of every
-  // DB index node. Prices and advertised title facts are drawn *inside*
-  // their offer cards; open generic missing checks and summary price nodes
-  // are not duplicated as circles. Every source-bearing node remains
-  // present in the diagram or source detail drawer, and full JSON is unchanged.
-  function layoutAllNodes(nodes,options={}) {
-    const singleColumn=options.singleColumn===true;
-    const cols=singleColumn?1:2;
-    const offers=(nodes||[]).filter(n=>n.type==="offer")
-      .sort((a,b)=>(Number(a.ordinal)||Number(a.id.split("-")[1])+1)-
-                    (Number(b.ordinal)||Number(b.id.split("-")[1])+1));
-    const evidence=(nodes||[]).filter(n=>[
-      "title_claim","derived_claim","evidence_facet","model_family",
-      "source_declaration","seller_declaration","reference_observation",
-      "fetched_source","source_disagreement","source_lead",
-    ].includes(n.type));
-    const layout=new Map();
-    let bottom=0;
-    if(offers.length){
-      const selected=offers.find(o=>o.id==="offer-0")||offers[0];
-      layout.set(selected.id,{x:55,y:56,w:970,h:87,kind:"input"});
-      bottom=143;
-      let slot=0;
-      offers.forEach(offer=>{
-        if(offer.id===selected.id)return;
-        const col=slot%cols,row=Math.floor(slot/cols);
-        const y=196+row*112;
-        layout.set(offer.id,{x:55+col*515,y,w:singleColumn?1004:475,
-                             h:94,kind:"offer"});
-        bottom=Math.max(bottom,y+91);
-        slot++;
-      });
-    }
-    const topEvidence=bottom+96;
-    // Shared title attributes are meaningful, as are actual fetched
-    // documents. A source value is NEVER dropped just for lacking a laptop
-    // field or because the input is an unknown product category.
-    evidence.forEach((item,i)=>{
-      const col=i%cols,row=Math.floor(i/cols);
-      const y=topEvidence+row*72;
-      layout.set(item.id,{x:55+col*515,y,w:singleColumn?1004:475,h:60,
-                           kind:"evidence"});
-      bottom=Math.max(bottom,y+60);
+  function layoutAllNodes(nodes) {
+    const groups=Array.from({length:5},()=>[]);
+    const destinations={offer:0,model_family:1,title_claim:1,
+      derived_claim:1,evidence_facet:1,
+      source_declaration:2,seller_declaration:2,reference_observation:2,
+      fetched_source:3,source_lead:3,indexed_quote:3,source_disagreement:3};
+    const empty=new Set(["verification_gap","research_gap","decision_gate"]);
+    (nodes||[]).forEach(n=>{
+      if(empty.has(n.type))return;
+      const col=Object.prototype.hasOwnProperty.call(destinations,n.type)?
+        destinations[n.type]:4;
+      groups[col].push(n);
     });
-    return {layout,bounds:{width:1090,height:Math.max(880,bottom+72)},
-            evidenceStart:evidence.length?topEvidence:null,
-            offerCount:offers.length,
-            sourceCount:evidence.length};
+    const xs=[100,390,740,1090,1430];
+    const layout=new Map();
+    let bottom=0,last=0;
+    groups.forEach((group,col)=>{
+      if(!group.length)return;
+      last=Math.max(last,col);
+      const step=37;
+      group.forEach((node,i)=>{
+        const y=48+i*step;
+        layout.set(node.id,{x:xs[col],y});
+        bottom=Math.max(bottom,y);
+      });
+    });
+    return {layout,bounds:{width:xs[last]+230,height:Math.max(880,bottom+85)}};
   }
 
   function create(root,graph) {
@@ -198,6 +177,17 @@
             d.indexed_price.value+" "+(d.indexed_price.currency||"")+
             " · NOT a current seller checkout price"));
         else details.appendChild(el("p","kg-quote","Checkout price: NOT VERIFIED"));
+        if(d.browser_observation){
+          const b=d.browser_observation;
+          const price=b.declared_price&&b.currency
+            ? b.declared_price+" "+b.currency : "NOT VERIFIED";
+          details.appendChild(el("p","kg-quote",
+            "Browser seller-declared price: "+price+" · "+(b.status||"")+
+            " · exact variant and checkout NOT VERIFIED"));
+          if(b.price_differs_from_index)
+            details.appendChild(el("p","kg-missing",
+              "⚠ Indexed price differs from browser observation."));
+        }
         if(d.url)details.appendChild(external("Open listing pointer ↗",d.url));
         if((d.claims||[]).length){
           details.appendChild(el("h4","","Title-only parameters · unverified"));
@@ -368,101 +358,88 @@
     }
 
     function buildLayout() {
-      const singleColumn=region.clientWidth<720;
-      region.classList.toggle("kg-narrow-network",singleColumn);
-      const box=layoutAllNodes(graph.nodes,{singleColumn});
-      const {layout,bounds}=box;
+      // Only source-bearing facts, offer records and observed indexed claims
+      // are visible. Empty research questions remain in JSON and the side panel.
+      const {layout,bounds}=layoutAllNodes(graph.nodes);
       const relations=new Set([
-        "ALTERNATIVE_INDEX_LEAD","TITLE_MENTIONS",
-        "CALCULATED_FROM_TITLE_CLAIMS","HAS_DOCUMENTED_FACET",
-        "FACET_HAS_SOURCE_FACT","OBSERVED_IN_SOURCE",
-        "SELLER_PAGE_DECLARES","HAS_SOURCE_OBSERVATION",
-        "SELLER_PAGE_MODEL_IDENTITY","INDEX_TITLE_MATCHES_DECLARED_MODEL",
+        "TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS",
+        "HAS_DOCUMENTED_FACET","FACET_HAS_SOURCE_FACT",
+        "OBSERVED_IN_SOURCE","SELLER_PAGE_DECLARES",
+        "HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM",
+        "HAS_UNRESOLVED_VERIFICATION_GAP","SELLER_PAGE_MODEL_IDENTITY",
+        "INDEX_TITLE_MATCHES_DECLARED_MODEL",
         "POTENTIAL_SOURCE_DISCREPANCY","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
         "SOURCE_DISCOVERY_LEAD","DISCOVERED_PAGE_FETCHED_AND_EXTRACTED",
         "SIMILAR_INDEX_MODEL_NAME_LEAD","ARITHMETIC_INPUT",
+        "ALTERNATIVE_INDEX_LEAD",
         "BROWSER_OBSERVED_SELECTED_URL","BROWSER_PAGE_DECLARES",
         "OBSERVED_IN_FILTERED_BROWSER_PROJECTION",
         "BROWSER_IDENTITY_DISAGREEMENT","CONFLICT_OBSERVED_IN_BROWSER_SOURCE",
-        "BROWSER_PRICE_DISAGREEMENT"
+        "BROWSER_PRICE_DISAGREEMENT",
+        "INDEXED_OFFER_VISITED_IN_BROWSER","INDEXED_SELLER_BROWSER_CHECK_STATE",
+        "INDEXED_SELLER_PAGE_DECLARES","BROWSER_INDEX_FIELD_SOURCE",
+        "INDEXED_VS_BROWSER_VARIANT_CONFLICT","TITLE_CONFLICT_SOURCE",
+        "INDEXED_VS_BROWSER_PRICE_DISAGREEMENT",
+        "POSSIBLE_RELATED_PRODUCT_CATALOG_LEAD",
       ]);
       const visible=edges.filter(e=>layout.has(e.from)&&layout.has(e.to)
         &&relations.has(e.relation));
-      return {...box,layout,visible,bounds};
+      return {layout,visible,bounds};
     }
 
     function draw() {
-      const {layout,visible,bounds,evidenceStart,offerCount,sourceCount}=buildLayout();
-      // Use a vertically scrollable *full-size* network. Fitting 50+ nodes
-      // into a single 300px-high view makes every label unreadable.
+      const {layout,visible,bounds}=buildLayout();
       if(autoFit){
-        scale=Math.min(1.1,(WIDTH-28)/bounds.width);
+        scale=Math.min(1,(WIDTH-95)/bounds.width,(HEIGHT-75)/bounds.height);
         tx=(WIDTH-bounds.width*scale)/2;
-        ty=12;
+        ty=(HEIGHT-bounds.height*scale)/2;
       }
       root.dataset.visibleGraphNodes=String(layout.size);
       root.dataset.visibleGraphLinks=String(visible.length);
       const count=root.querySelector("#live-graph-count");
       if(count){
-        count.textContent=offerCount+" offers · "+
-          sourceCount+" source/title facts · "+
-          (graph.stats?.unverified_index_quotes||0)+
-          " index prices shown on cards · open checks in audit";
+        count.textContent=(graph.stats.offers||0)+" offers · "+
+          layout.size+" nodes visible · "+
+          (graph.nodes.length-layout.size)+" empty checks hidden · "+
+          visible.length+" displayed links";
       }
       canvas.replaceChildren();
-      const viewHeight=Math.max(HEIGHT,Math.ceil(bounds.height*Math.max(1,scale)));
-      canvas.setAttribute("viewBox","0 0 "+WIDTH+" "+viewHeight);
-      const actualWidth=canvas.parentElement.clientWidth||800;
-      canvas.style.height=Math.max(420,Math.ceil(actualWidth*viewHeight/WIDTH))+"px";
-      canvas.style.minHeight="0";
+      canvas.setAttribute("viewBox","0 0 "+WIDTH+" "+HEIGHT);
       const viewport=svg("g",{"class":"kg-canvas-group",
-        "transform":"translate("+tx+" "+ty+") scale("+scale+")"});
-      const sections=svg("g",{"class":"kg-section-headings"});
-      const heading=(y,label)=>{
-        const text=svg("text",{"x":55,"y":y,
-          "class":"kg-section-title"});
-        text.textContent=label;
-        sections.appendChild(text);
-      };
-      heading(37,"SELECTED PRODUCT");
-      if(offerCount>1)heading(180,"ALTERNATIVE LISTINGS · TITLE CLAIMS, NOT VERIFIED SELLER PRICES");
-      if(evidenceStart!==null)
-        heading(evidenceStart-25,"ATTRIBUTES & EVIDENCE · ORIGINAL SOURCE PROVENANCE RETAINED");
-      viewport.appendChild(sections);
+                                "transform":"translate("+tx+" "+ty+") scale("+scale+")"});
       const lines=svg("g",{"class":"kg-links"});
       visible.forEach(e=>{
         const a=layout.get(e.from),b=layout.get(e.to);
-        const alternative=e.relation==="ALTERNATIVE_INDEX_LEAD";
         const related=!focus||e.from===focus||e.to===focus||
           (active&&(e.from===active||e.to===active));
-        const ax=a.x+a.w/2,ay=a.y+a.h;
-        const bx=b.x+b.w/2,by=b.y;
         const path=svg("path",{
-          d:"M"+ax+" "+ay+" C"+ax+" "+(ay+by)/2+" "+
-            bx+" "+(ay+by)/2+" "+bx+" "+by,
-          "class":"kg-link "+
-             (alternative?"kg-link-alternative":
-              e.relation==="TITLE_MENTIONS"?"kg-link-claim":
-              e.relation==="POTENTIAL_SOURCE_DISCREPANCY"?
-              "kg-link-warning":"kg-link-provenance")+
-             (related?"":" kg-muted"),
+          d:"M"+a.x+" "+a.y+" C"+(a.x+b.x)/2+" "+a.y+" "+
+            (a.x+b.x)/2+" "+b.y+" "+b.x+" "+b.y,
+          "class":"kg-link "+(e.relation==="TITLE_MENTIONS"||
+            e.relation==="CALCULATED_FROM_TITLE_CLAIMS"?
+            "kg-link-claim":e.relation==="EVIDENCE_NEEDED"||
+            e.relation==="RESEARCH_GAP_PREVENTS_VERIFIED_DECISION"?
+            "kg-link-gap":e.relation==="INDEXED_PRICE_CLAIM"?
+            "kg-link-quote":e.relation==="POTENTIAL_SOURCE_DISCREPANCY"?
+            "kg-link-warning":e.relation==="OBSERVED_IN_SOURCE"?
+            "kg-link-provenance":"kg-link-evidence")+
+            (related?"":" kg-muted"),
           "data-relation":e.relation,
-          "stroke-dasharray":alternative?"5 7":
-            e.relation==="TITLE_MENTIONS"?"3 5":"none",
+          "stroke-dasharray":e.relation==="TITLE_MENTIONS"||
+            e.relation==="CALCULATED_FROM_TITLE_CLAIMS"?"5 4":
+            e.relation==="EVIDENCE_NEEDED"?"2 5":"none"
         });
-        const tooltip=svg("title");
-        tooltip.textContent=e.relation.replace(/_/g," ")+
-          " · "+(e.status||"unverified");
-        path.appendChild(tooltip);
-        lines.appendChild(path);
+        const title=svg("title");
+        title.textContent=e.relation.replace(/_/g," ")+" · "+
+          (e.status||"unverified");
+        path.appendChild(title);lines.appendChild(path);
       });
       viewport.appendChild(lines);
       const points=svg("g",{"class":"kg-nodes"});
       [...layout.entries()].forEach(([id,p])=>{
-        const item=index.get(id),isOffer=item.type==="offer";
-        const d=isOffer?graph.offer_details[id]||{}:{};
+        const item=index.get(id), isOffer=item.type==="offer";
         const g=svg("g",{
-          "class":"kg-node kg-card-node kg-type-"+item.type+
+          "class":"kg-node kg-type-"+item.type+
             (id===focus?" kg-selected":"")+
             (id===active?" kg-active":"")+
             (justAdded.has(id)?" kg-added":""),
@@ -470,74 +447,65 @@
           "aria-label":item.type+": "+item.label,
           "data-node-id":id,
           "transform":"translate("+p.x+" "+p.y+")"});
-        g.appendChild(svg("rect",{
-          x:0,y:0,width:p.w,height:p.h,rx:9,
-          "class":"kg-card-bg"
-        }));
-        if(isOffer){
-          const input=id==="offer-0";
-          const title=svg("text",{"x":14,"y":input?44:43,
-                                "class":"kg-card-title"});
-          title.textContent=clip(item.label,input?76:39);
-          g.appendChild(title);
-          const marker=svg("text",{"x":14,"y":18,
-                               "class":"kg-card-eyebrow"});
-          marker.textContent=input?"INPUT · SELECTED PRODUCT":
-            "#"+String(item.ordinal).padStart(2,"0")+" · SEARCH-INDEX LISTING";
-          g.appendChild(marker);
-          const price=d.indexed_price;
-          const seenPrice=(input&&d.input_price&&d.input_price.price)?
-            d.input_price.price+" "+d.input_price.currency:
-            price?price.value+" "+(price.currency||""):"PRICE UNKNOWN";
-          const cost=svg("text",{"x":p.w-13,"y":18,
-            "text-anchor":"end","class":"kg-card-price"+
-              (input?" kg-card-input-price":"")});
-          cost.textContent=seenPrice;
-          g.appendChild(cost);
-          const values=(d.title_facts||[])
-            .filter(f=>!f.key.startsWith("spec_"))
-            .map(f=>f.label);
-          const meaningful=values.length?values:
-            (d.claims||[]).slice(0,3).map(c=>c.label+": "+c.value);
-          const facts=svg("text",{"x":14,"y":input?67:67,
-                              "class":"kg-card-subtitle"});
-          facts.textContent=clip(meaningful.slice(0,4).join(" · ")||
-            "No comparable quantity/variant declared in listing title",input?92:43);
-          g.appendChild(facts);
-          if(!input&&d.unit_price){
-            const unit=svg("text",{"x":p.w-13,"y":p.h-8,
-              "text-anchor":"end","class":"kg-card-unit"});
-            unit.textContent=d.unit_price.amount+" "+d.unit_price.currency+
-              "/"+d.unit_price.per+" · INDEXED ONLY";
-            g.appendChild(unit);
-          }
-          if(input&&d.input_price){
-            const inputNote=svg("text",{"x":p.w-13,"y":p.h-9,
-              "text-anchor":"end","class":"kg-card-unit"});
-            inputNote.textContent="Price observed; checkout NOT verified";
-            g.appendChild(inputNote);
-          }
-        }else{
-          const eyebrow=svg("text",{"x":13,"y":18,
-                                  "class":"kg-card-eyebrow"});
-          eyebrow.textContent=item.type.replace(/_/g," ").toUpperCase()+
-            " · "+(item.claim_status==="UNVERIFIED_TITLE_LABEL"?
-                   "TITLE ONLY":"SOURCE DATA");
-          g.appendChild(eyebrow);
-          const value=svg("text",{"x":13,"y":43,
-                                   "class":"kg-card-fact"});
-          const display=item.source_property?
-            item.source_property+": "+(item.value||item.label):
-            item.label;
-          value.textContent=clip(display,44);
-          g.appendChild(value);
+        const circle=svg("circle",{"r":isOffer?(item.ordinal===1?11:8):6});
+        g.appendChild(circle);
+        const text=svg("text",{"x":isOffer?17:12,"y":4});
+        const short={
+          power_w:"motor W",battery_ah:"battery Ah",
+          battery_voltage_v:"battery V",battery_wh:"energy Wh",
+          wheel_in:"wheel inches",gears:"gear count",
+          speed_kmh:"claimed km/h",claimed_range_km:"range km",
+          ram_gb:"RAM GB",capacity_gb:"storage GB",
+          cpu_family:"CPU family",display_technology:"panel"
+        };
+        let display=clip(item.label,item.type==="verification_gap"?33:36);
+        if(item.type==="source_declaration")
+          display=clip((item.source_property?
+            item.source_property+": ":"")+(item.value||item.label),43);
+        if(item.type==="evidence_facet")display=clip(item.label,29);
+        if(item.type==="seller_declaration")display=clip(item.label,43);
+        if(item.type==="verification_gap"){
+          const missing={
+            identity:"Exact model?",
+            seller_variant:"Seller variant?",
+            technical:"Technical specs?",
+            independent_test:"Independent test?",
+            operating:"Performance test?",
+            contents:"Kit contents?",
+            warranty:"Warranty terms?",
+            repair:"Parts & repairs?",
+            checkout:"Checkout total?",
+            legality:"Road-use proof?",
+            compatibility:"Compatibility test?",
+          };
+          display=missing[item.dimension]||clip(item.label,24);
+        }
+        if(item.type==="title_claim"||item.type==="derived_claim")
+          display=clip(String(item.value)+" · "+
+            (short[item.parameter]||item.parameter)+
+            (item.type==="derived_claim"?" (calculated)":""),34);
+        if(item.type==="indexed_quote")
+          display="Index: "+clip(item.label,22);
+        text.textContent=isOffer?
+          "#"+String(item.ordinal).padStart(2,"0")+" "+clip(item.label,29):
+          display;
+        g.appendChild(text);
+        if(isOffer&&item.id===focus){
+          const d=graph.offer_details[item.id]||{};
+          const facts=(d.source_coverage||{}).documented_field_count||0;
+          const open=(d.high_impact_questions||[]).length;
+          const caption=svg("text",{"x":17,"y":21,
+            "class":"kg-offer-caption"});
+          caption.textContent=facts+" published specs · "+open+" checks left";
+          g.appendChild(caption);
         }
         const label=svg("title");
-        label.textContent=item.label+(isOffer&&d.indexed_price?
-          "\nIndex price: "+d.indexed_price.value+" "+d.indexed_price.currency:"")+
-          (isOffer&&d.unit_price?
-          "\nUnit quote: "+d.unit_price.amount+" "+d.unit_price.currency+
-          "/"+d.unit_price.per:"");
+        const view=isOffer?graph.offer_details[id]||{}:{};
+        const b=view.browser_observation;
+        label.textContent=item.label+(b
+          ?"\nBrowser: "+(b.declared_price&&b.currency
+            ?b.declared_price+" "+b.currency:b.status)+
+            " · declared, NOT checkout verified":"");
         g.appendChild(label);
         g.addEventListener("click",()=>select(id));
         g.addEventListener("keydown",event=>{
@@ -547,8 +515,7 @@
         });
         points.appendChild(g);
       });
-      viewport.appendChild(points);
-      canvas.appendChild(viewport);
+      viewport.appendChild(points);canvas.appendChild(viewport);
       justAdded.clear();
     }
 
@@ -573,24 +540,20 @@
       scale=next;remember();draw();
     }
     buttons.all.addEventListener("click",()=>{
-      focus=null;active=null;autoFit=true;remember();showDetails(null);syncButtons();draw();
-      canvas.parentElement.scrollTop=0;
+      focus=null;active=null;remember();showDetails(null);syncButtons();draw();
       root.dispatchEvent(new Event("tracecart:selection-changed"));});
     buttons.input.addEventListener("click",()=>select("offer-0"));
     buttons.plus.addEventListener("click",()=>changeZoom(1.2));
     buttons.minus.addEventListener("click",()=>changeZoom(1/1.2));
     buttons.reset.addEventListener("click",()=>{
       autoFit=true;remember();draw();
-      canvas.parentElement.scrollTop=0;
     });
     canvas.addEventListener("wheel",event=>{
-      // Normal wheel scrolls the long graph. Ctrl/Meta+wheel zooms.
-      if(!event.cancelable||(!event.ctrlKey&&!event.metaKey))return;
+      if(!event.cancelable)return;
       event.preventDefault();
       const b=canvas.getBoundingClientRect();
-      const boxHeight=Number((canvas.getAttribute("viewBox")||"").split(/\s+/)[3])||HEIGHT;
       const px=(event.clientX-b.left)*WIDTH/b.width,
-            py=(event.clientY-b.top)*boxHeight/b.height;
+            py=(event.clientY-b.top)*HEIGHT/b.height;
       changeZoom(event.deltaY<0?1.13:1/1.13,px,py);
     },{passive:false});
     canvas.addEventListener("pointerdown",event=>{
