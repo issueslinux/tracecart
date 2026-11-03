@@ -53,63 +53,65 @@ def _question(id_, title, options, detail):
 
 
 def questions_for(category):
-    if category == "LAPTOP":
+    """English-only optional buyer questions; the live workflow is autonomous."""
+    if category=="LAPTOP":
         return [
-            _question("usage","Do czego potrzebujesz laptopa?",[
-                ("office","Codzienna praca","Przeglądarka, dokumenty, spotkania."),
-                ("coding","Programowanie i aplikacje","Zgodność narzędzi i środowiska ma znaczenie."),
-                ("demanding","Gry lub wymagające aplikacje","Weryfikujemy GPU, wydajność i zgodność."),
-            ],"Inne zastosowanie zmienia to, które cechy są najważniejsze."),
-            _question("priority","Co ma największe znaczenie?",[
-                ("price","Możliwie dobra cena","Szukamy wartości, odrzucając podejrzane ceny."),
-                ("balanced","Rozsądny kompromis","Cena i porównywalna konfiguracja."),
-                ("screen","Ekran i komfort pracy","OLED/IPS nie traktujemy jako tożsame."),
-            ],"To wybór użytkownika, nie dowód jakości produktu."),
-            _question("compatibility","Czy potrzebujesz programów zgodnych z x86?",[
-                ("x86","Tak, zgodność x86 jest ważna","Intel/AMD zamiast niezweryfikowanej kompatybilności ARM."),
-                ("arm","Nie, ARM może być OK","Można uwzględnić modele Snapdragon."),
-                ("unknown","Nie wiem","Nie deklarujemy zgodności aplikacji bez sprawdzenia."),
-            ],"Snapdragon X wykorzystuje ARM; nie każde narzędzie Windows x86 działa identycznie."),
-            _question("verification","Czy sprawdziłeś cenę i warunki konkretnej oferty?",[
-                ("yes","Tak, osobiście w sklepie","Zapisujemy Twoją deklarację, nie weryfikację TraceCart."),
-                ("no","Jeszcze nie","Cena z Google Shopping może być błędna lub nieaktualna."),
-                ("unavailable","Strona jest niedostępna","Nie uznajemy ceny indeksowanej za potwierdzoną."),
-            ],"Bez sprawdzenia ceny, wariantu, gwarancji i dostępności nie ma pewnej decyzji zakupowej."),
+            _question("usage","What will you use the laptop for?",[
+                ("office","Everyday work","Browser, documents and meetings."),
+                ("coding","Programming and apps","Software compatibility matters."),
+                ("demanding","Gaming or demanding applications",
+                 "Check graphics, performance and compatibility."),
+            ],"Your use case changes the relevant trade-offs."),
+            _question("priority","What matters most?",[
+                ("price","Best value","Look for value; flag suspicious quotes."),
+                ("balanced","Balanced choice","Price and comparable specifications."),
+                ("screen","Screen and comfort","OLED and IPS are not interchangeable."),
+            ],"Your preference is not proof of product quality."),
+            _question("compatibility","Do you need x86 app compatibility?",[
+                ("x86","Yes","Intel/AMD may avoid unverified ARM compatibility."),
+                ("arm","No, ARM can work","Snapdragon models can be considered."),
+                ("unknown","Not sure","Do not claim compatibility without testing."),
+            ],"Not every Windows x86 tool behaves identically on ARM."),
+            _question("verification","Have you checked the seller's checkout terms?",[
+                ("yes","Yes, personally","This is your statement, not TraceCart verification."),
+                ("no","Not yet","Shopping-index prices can be stale."),
+                ("unavailable","The page is blocked","Index prices remain unverified."),
+            ],"Verify the exact variant, warranty, shipping and final price."),
         ]
-    if category == "E_BIKE":
+    if category=="E_BIKE":
         return [
-            _question("usage","Jak będziesz używać roweru?",[
-                ("commute","Codzienne dojazdy","Praktyczny zasięg, niezawodność i serwis."),
-                ("trails","Szutry i trasy terenowe","Hamulce, napęd i geometria mają znaczenie."),
-                ("leisure","Rekreacyjnie","Komfort i rzeczywisty zasięg."),
-            ],"Same deklarowane 100 km nie potwierdza osiągów."),
-            _question("priority","Co jest ważniejsze?",[
-                ("price","Cena","Szukanie tańszych, ale porównywalnych opcji."),
-                ("balanced","Parametry i cena","Bateria, silnik, koła oraz wyposażenie."),
-                ("quality","Serwis i trwałość","Gwarancja, hamulce i jakość ogniw."),
-            ],"W indeksie rzadko znajdziemy wiarygodne testy komponentów."),
-            _question("verification","Czy potwierdziłeś konkretną ofertę?",[
-                ("yes","Tak, ręcznie","Twoja deklaracja nie jest niezależnym dowodem."),
-                ("no","Nie","Wróć do strony sprzedawcy po aktualną cenę."),
-                ("unavailable","Nie mogę otworzyć oferty","Cena w indeksie pozostaje niepotwierdzona."),
-            ],"Wymagana także kontrola serwisu i pochodzenia akumulatora."),
+            _question("usage","How will you use the e-bike?",[
+                ("commute","Daily commuting","Practical range, reliability and service."),
+                ("trails","Off-road paths","Brakes, drivetrain and geometry matter."),
+                ("leisure","Leisure","Comfort and measured real-world range."),
+            ],"An advertised 100 km range is not a measured result."),
+            _question("priority","What is most important?",[
+                ("price","Price","Look for cheaper comparable products."),
+                ("balanced","Specifications and price","Battery, motor and components."),
+                ("quality","Service and durability","Warranty and cell quality."),
+            ],"Product-index listings rarely contain rigorous component tests."),
+            _question("verification","Have you verified the seller's offer?",[
+                ("yes","Manually","Your statement is not an independent test."),
+                ("no","Not yet","Check the current seller price."),
+                ("unavailable","The page is inaccessible","Price remains unverified."),
+            ],"Service options and battery origin also matter."),
         ]
     return [
-        _question("usage","Jaki jest Twój cel?",[
-            ("same","Szukam tańszego podobnego produktu","Inna marka/model może spełniać podobną funkcję."),
-            ("quality","Szukam lepszej jakości","Potrzebne testy i dane o trwałości."),
-            ("research","Chcę porównać możliwości","Pokazujemy dostępne źródła i braki dowodów."),
-        ],"Nie trzeba wybierać identycznego SKU."),
-        _question("priority","Jak wybierasz?",[
-            ("price","Cena","Bez potwierdzenia nie uznajemy niskiego indeksu za okazję."),
-            ("balanced","Cena i parametry","Porównywalne funkcje, a nie tylko numer modelu."),
-            ("quality","Trwałość i gwarancja","Wymaga rzetelnych niezależnych testów."),
-        ],"Nie wnioskujemy o jakości z samej ceny."),
-        _question("verification","Czy sam sprawdziłeś warunki wybranej oferty?",[
-            ("yes","Tak, w sklepie","Tylko deklaracja użytkownika."),
-            ("no","Nie","Indeks wyszukiwarki jest wskazówką."),
-            ("unavailable","Strona niedostępna","Wynik wymaga dodatkowej weryfikacji."),
-        ],"TraceCart nie wykonuje zakupów ani płatności."),
+        _question("usage","What is your goal?",[
+            ("same","A cheaper similar product","A different brand or model may work."),
+            ("quality","Better quality","Independent testing is needed."),
+            ("research","Compare alternatives","Show findings and evidence gaps."),
+        ],"An identical SKU is not required for functional alternatives."),
+        _question("priority","How would you choose?",[
+            ("price","Price","Unverified low quotes are not proven bargains."),
+            ("balanced","Price and features","Comparable functions, not just model codes."),
+            ("quality","Durability and warranty","Needs independent corroboration."),
+        ],"Price alone does not establish quality."),
+        _question("verification","Have you checked the final terms?",[
+            ("yes","At the store","Your statement is not independent verification."),
+            ("no","Not yet","A search index is only a lead."),
+            ("unavailable","Page inaccessible","More verification is required."),
+        ],"TraceCart does not execute payments."),
     ]
 
 
@@ -161,6 +163,7 @@ def build_decision_projection(record):
                 "model_progress_stage":record.get("progress_stage") or "QUEUED",
                 "offers": offer_summaries(current, category),
                 "selected_item":item,
+                "input_price":record.get("input_price"),
                 "selected_source_intake":((preview or {}).get(
                     "source_intake") or {}),
                 "model_offers":record.get("model_offers") or {},
@@ -315,6 +318,7 @@ def build_decision_projection(record):
         "evidence":evidence,
         "offers":offer_summaries(record,category),
         "selected_item":selected,
+        "input_price":record.get("input_price"),
         "selected_source_intake":source,
         "source_search":record.get("source_search") or {},
         "final_verdict":record.get("final_verdict") or {"status":"NOT_SCHEDULED"},
@@ -327,11 +331,11 @@ def build_decision_projection(record):
         "research":build_research_path(report, selected, candidates[:MAX_CANDIDATES], evidence),
         "candidates":candidates[:MAX_CANDIDATES],
         "research_questions":[
-            "Czy cena jest aktualna, bez abonamentu i dotyczy wskazanego wariantu?",
-            "Czy parametry i zgodność oprogramowania są potwierdzone u producenta?"
+            "Is the price current, non-subscription, and for this exact variant?",
+            "Are specifications and software compatibility confirmed by the manufacturer?"
             if category=="LAPTOP" else
-            "Czy istotne parametry są potwierdzone poza tytułem oferty?",
-            "Czy warunki zwrotu, gwarancja i reputacja sprzedawcy są udokumentowane?",
+            "Are the key specifications documented beyond the indexed title?",
+            "Are returns, warranty and merchant reputation independently documented?",
         ],
         "warnings":reasons,
         "decision_boundary":"NO_AUTOMATIC_PAYMENT_OR_VERIFIED_CHEAPEST_CLAIM",

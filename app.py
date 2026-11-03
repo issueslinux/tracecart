@@ -90,87 +90,87 @@ def shopping_alternatives_panel(shopping):
     if not data:
         return ""
     statuses = {
-        "SIMILAR_TECHNICAL_TIER_INDEX_ONLY": "Zbliżone parametry",
-        "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK": "Możliwa alternatywa — sprawdź parametry",
+        "SIMILAR_TECHNICAL_TIER_INDEX_ONLY": "Similar advertised specifications",
+        "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK": "Possible alternative — check specifications",
     }
     bands = {
-        "SIMILAR_INDEX_PRICE_BAND": "Podobny przedział cenowy",
-        "LOWER_INDEX_PRICE_BAND": "Niższy przedział cenowy",
-        "HIGHER_INDEX_PRICE_BAND": "Wyższy przedział cenowy",
-        "PRICE_BAND_UNDETERMINED": "Przedział cenowy nieustalony",
+        "SIMILAR_INDEX_PRICE_BAND": "Similar indexed price band",
+        "LOWER_INDEX_PRICE_BAND": "Lower indexed price band",
+        "HIGHER_INDEX_PRICE_BAND": "Higher indexed price band",
+        "PRICE_BAND_UNDETERMINED": "Price band unknown",
     }
     rows = []
     for offer in data.get("ranked_alternatives", []):
         assessment = offer["comparison"]
         link = offer.get("merchant_url") or offer.get("shopping_lookup_url")
-        label = ("przejdź do sklepu" if offer.get("merchant_url")
-                 else "wyszukaj w Google Shopping")
+        label = ("Open retailer listing" if offer.get("merchant_url")
+                 else "Search Google Shopping")
         link_html = ('<a href="{}" target="_blank" rel="noopener noreferrer">'
-                     '{}</a>'.format(h(link), h(label))) if link else "Brak odnośnika"
+                     '{}</a>'.format(h(link), h(label))) if link else "No link available"
         qualities = assessment.get("matched_features", [])
         differences = assessment.get("different_features", [])
         missing = assessment.get("unconfirmed_features", [])
         description = (
-            "<b>Podobne:</b> " +
-            (", ".join(h(x) for x in qualities[:5]) or "brak wystarczających danych")
+            "<b>Comparable features:</b> " +
+            (", ".join(h(x) for x in qualities[:5]) or "insufficient evidence")
         )
         if differences:
-            description += "<br><b>Różnice:</b> " + ", ".join(
+            description += "<br><b>Differences:</b> " + ", ".join(
                 h(x) for x in differences[:3])
         if missing:
-            description += "<br><b>Nieznane:</b> " + ", ".join(
+            description += "<br><b>Unknown:</b> " + ", ".join(
                 h(x) for x in missing[:4])
         if assessment.get("condition_difference"):
-            description += "<br><b>Stan:</b> " + h(assessment["condition_difference"])
+            description += "<br><b>Condition:</b> " + h(assessment["condition_difference"])
         anomaly = offer.get("index_price_anomaly")
         if anomaly == "SUSPICIOUS_LOW_PRICE_VS_PEER_MEDIAN_NOT_VERIFIED":
-            description += "<br><strong>UWAGA: podejrzanie niska cena w indeksie!</strong>"
+            description += "<br><strong>WARNING: suspiciously low indexed quote!</strong>"
         score = assessment.get("technical_score")
-        score_text = (str(score) + "/100 – tylko zgodność opisów"
-                      if score is not None else "brak danych")
+        score_text = (str(score) + "/100 — listing-title similarity only"
+                      if score is not None else "not enough data")
         rows.append(
             '<tr><td><b>{}</b><br>{}<br>{}</td>'
             '<td><strong>{} {}</strong><br>{}</td>'
             '<td>{}<br>{}</td>'
             '<td>{}</td></tr>'.format(
                 h(offer["source"]), h(offer["title"]), link_html,
-                h(offer.get("indexed_price") or "brak"), h(offer.get("currency") or ""),
-                h(bands.get(assessment.get("price_band"), "Nieustalone")),
+                h(offer.get("indexed_price") or "unavailable"), h(offer.get("currency") or ""),
+                h(bands.get(assessment.get("price_band"), "Unknown")),
                 h(statuses.get(assessment["status"], assessment["status"])),
                 h(score_text), description))
     selected_specs = data.get("selected_declared_specs", {})
     from similar_tier import PUBLIC_SPEC_NAMES, _display_spec
     basics = ", ".join("{} {}".format(PUBLIC_SPEC_NAMES.get(key, key),
                                       _display_spec(key, value))
-                       for key, value in selected_specs.items()) or "niewystarczające dane"
+                       for key, value in selected_specs.items()) or "insufficient data"
     price_info = (
-        "Punkt odniesienia: {} {} ({})".format(
+        "Price reference: {} {} ({})".format(
             h(data["price_reference"]), h(data.get("price_reference_currency") or ""),
-            "cena zadeklarowana na stronie wejściowej" if
+            "selected seller-declared price" if
             data["price_reference_provenance"] == "INPUT_SELLER_DECLARED_NOT_CHECKOUT"
-            else "szacowana mediana cen podobnych ofert z indeksu")
+            else "estimated median of comparable indexed prices")
         if data.get("price_reference") is not None
-        else "Nieustalony punkt odniesienia dla cen – brak wiarygodnej ceny wejściowej i danych o porównywalnych ofertach")
+        else "No price reference: input seller price or comparable indexed quotes are unavailable")
     if not rows:
-        table = ("<p>Nie ma dość danych, aby wskazać alternatywy o podobnych "
-                 "parametrach. Wszystkie wyniki wyszukiwania są poniżej.</p>")
+        table = ("<p>Not enough data to identify technically comparable alternatives. "
+                 "All indexed results are listed below.</p>")
     else:
         table = (
-            "<table><tr><th>Produkt i źródło</th><th>Indeksowana cena i segment</th>"
-            "<th>Ocena podobieństwa</th><th>Porównane parametry</th></tr>{}</table>"
+            "<table><tr><th>Product and source</th><th>Indexed price and tier</th>"
+            "<th>Similarity rating</th><th>Compared specifications</th></tr>{}</table>"
         ).format("".join(rows))
     counts = data.get("status_counts", {})
     return (
-        '<section><div class="tag">PODOBNA PÓŁKA · NIE TYLKO TEN SAM MODEL</div>'
-        '<h2>Alternatywne produkty o zbliżonych możliwościach</h2>'
-        '<p>Produkt wejściowy: {}. Parametry znalezione w nazwie: {}.</p>'
-        '<p>{}. Podobne technicznie: <b>{}</b>, możliwe alternatywy '
-        'z brakującymi parametrami: <b>{}</b>.</p>{}'
-        '<p class="warning">To orientacyjna zgodność danych w tytułach ofert, '
-        '<strong>nie niezależna ocena jakości</strong> i nie potwierdzenie '
-        'ceny konkretnego sprzedawcy. Inny model lub marka są dozwolone. '
-        'Zasięg roweru i akumulator mogą być deklaracjami marketingowymi. '
-        'Półka cenowa z indeksu Google nie jest ceną w koszyku.</p></section>'
+        '<section><div class="tag">SIMILAR SPECIFICATIONS · DIFFERENT MODELS WELCOME</div>'
+        '<h2>Functional alternatives at a comparable technical tier</h2>'
+        '<p>Input product: {}. Specifications extracted from the title: {}.</p>'
+        '<p>{}. Technically similar: <b>{}</b>, possible alternatives '
+        'with missing specifications: <b>{}</b>.</p>{}'
+        '<p class="warning">These are only similarities between indexed listing titles, '
+        '<strong>NOT independent quality testing</strong> and NOT verification of '
+        'any retailer checkout price. Other models/brands can be functional alternatives. '
+        'E-bike range and battery specifications may be marketing claims. '
+        'Google Shopping price tiers are not verified checkout totals.</p></section>'
     ).format(
         h(data.get("category_label")), h(basics), price_info,
         h(counts.get("SIMILAR_TECHNICAL_TIER_INDEX_ONLY", 0)),
@@ -200,7 +200,7 @@ def shopping_search_panel(report):
             continue
         link = group.get("index_product_url") or group.get("index_search_url")
         source = (('{} <a href="{}" rel="noopener noreferrer" target="_blank">'
-                   '(szukaj w Google Shopping)</a>'.format(
+                   '(Search Google Shopping)</a>'.format(
                        h(group["source"]), h(link))) if link else
                   h(group["source"]))
         group_rows.append(
@@ -419,6 +419,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{DECISION_URL}}":"","{{LIVE_URL}}":"",
             "{{KNOWLEDGE_GRAPH_URL}}":"","{{AUDIT_URL}}":"",
             "{{RAW_URL}}":"","{{PRODUCT_URL}}":"",
+            "{{INPUT_PRICE_ACTION}}":"","{{INPUT_PRICE_VALUE}}":"",
+            "{{INPUT_PROMOTION_CODE}}":"",
         }.items():
             tmpl=tmpl.replace(key,h(value))
         payload=tmpl.encode("utf-8")
@@ -534,6 +536,9 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{RAW_URL}}":"/cart/status/"+job_id+".json",
             "{{SHORT_ID}}":job_id[:8],
             "{{PRODUCT_URL}}":(result.get("item") or {}).get("merchant_url") or "",
+            "{{INPUT_PRICE_ACTION}}":"/cart/status/"+job_id+"/input-price",
+            "{{INPUT_PRICE_VALUE}}":(result.get("input_price") or {}).get("price") or "",
+            "{{INPUT_PROMOTION_CODE}}":(result.get("input_price") or {}).get("promotion_code") or "",
         }
         for key,value in substitutions.items():
             tmpl=tmpl.replace(key,h(value))
@@ -990,14 +995,14 @@ https://www.adafruit.com/product/3400</textarea></label>
                            automatic_discovery_panel(report))
         indexed=report.get("indexed_shopping") or {}
         note=(
-            '<section><h2>Ważne: różne źródła mają osobne liczniki</h2>'
-            '<p><strong>catalog_alternatives_found</strong> liczy tylko rekordy '
-            'z katalogu OPF: <b>{}</b>. Wyszukiwarka Google Shopping '
-            'zwróciła <b>{}</b> kart produktów i <b>{}</b> indeksowanych '
-            'odnośników do sklepów. Żaden z tych odnośników nie potwierdza '
-            'ostatecznej ceny zakupu ani niezależnej jakości produktu.</p>'
+            '<section><h2>Important: evidence sources have separate counts</h2>'
+            '<p><strong>catalog_alternatives_found</strong> counts only records '
+            'from the OPF catalog: <b>{}</b>. Google Shopping '
+            'returned <b>{}</b> product cards and <b>{}</b> indexed '
+            'retailer links. None of these links establishes '
+            'a final checkout total or independently measured product quality.</p>'
             '<p><a class="btn" href="/cart/status/{}">'
-            'Przejdź do interaktywnego drzewa decyzji</a></p></section>'
+            'Open interactive product decision graph</a></p></section>'
         ).format(h(len(sources.get("catalog") or [])),
                  h(len(indexed.get("search_result_groups") or [])),
                  h(len(indexed.get("indexed_offers") or [])),h(job_id))
@@ -1347,10 +1352,25 @@ https://www.adafruit.com/product/3400</textarea></label>
             return self.cart_event_api()
         try:
             form = self.form()
-            if self.path == "/cart/add":
+            if self.path.startswith("/cart/status/") and self.path.endswith("/input-price"):
+                job_id=self.path[len("/cart/status/"):-len("/input-price")]
+                # Input only; never claim a user-visible price was fetched.
+                self.server.cart_jobs.set_input_price(
+                    job_id,form.get("observed_price",""),
+                    form.get("observed_currency","PLN"),
+                    promotion_code=form.get("promotion_code") or None)
+                self.server.cart_jobs.refresh_price_comparison(job_id)
+                self.send_response(303)
+                self.send_header("Location","/cart/status/"+job_id)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+            elif self.path == "/cart/add":
                 if form.get("product_url"):
                     job_id = self.server.cart_jobs.submit_url(
-                        form["product_url"])
+                        form["product_url"],form.get("observed_price") or None,
+                        form.get("observed_currency","PLN"),
+                        form.get("promotion_code") or None)
                 else:
                     # Historical JSON demo path kept for existing integration tests.
                     item = {k: form.get(k, "") for k in (

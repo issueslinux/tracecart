@@ -608,6 +608,18 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_final_verdict (
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 result_json TEXT, error_type TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_link_safety (
+                job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+                result_json TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_input_price_observation (
+                job_id TEXT PRIMARY KEY, price TEXT NOT NULL,
+                currency TEXT NOT NULL, origin TEXT NOT NULL,
+                recorded_at TEXT NOT NULL,
+                promotion_code TEXT, valid_until TEXT,
+                public_source_url TEXT,
+                checkout_verified INTEGER NOT NULL DEFAULT 0)""")
+            db.execute("""UPDATE cart_link_safety SET status='INTERRUPTED'
+                WHERE status='RUNNING'""")
             # Never leave a durable LLM verdict marked RUNNING after a
             # process restart. Do not silently rerun model inference.
             db.execute("""UPDATE cart_final_verdict
@@ -624,6 +636,7 @@ class CartResearchJobs:
             db.execute("UPDATE cart_research_jobs SET state='INTERRUPTED' "
                        "WHERE state IN ('QUEUED','RUNNING')")
         self.evidence_pool = ThreadPoolExecutor(max_workers=1)
+        self.safety_pool = ThreadPoolExecutor(max_workers=2)
         self.evidence_stop = threading.Event()
         self.model_pool = ThreadPoolExecutor(max_workers=1)
         self.model_stop = threading.Event()
@@ -667,6 +680,8 @@ class CartResearchJobs:
                 "evidence_offers":record.get("evidence_offers",{}),
                 "source_search":record.get("source_search",{}),
                 "final_verdict":record.get("final_verdict",{"status":"NOT_SCHEDULED"}),
+                "input_price":record.get("input_price"),
+                "link_safety":record.get("link_safety",{"status":"NOT_STARTED"}),
                 "payment_authorized":False,
             }
         return self.live_bus.snapshot(job_id,build)
@@ -860,6 +875,10 @@ class CartResearchJobs:
                     self.live_bus.signal(job_id)
                     if next_index<len(pending_indices):
                         dispatch()
+        # Technical domain screening is a separate bounded worker. It must
+        # never delay source completion or the final purchase assessment.
+        if not self.evidence_stop.is_set():
+            self.safety_pool.submit(self._check_link_safety,job_id,offers,discovery)
         with self._db() as db:
             db.execute("""UPDATE cart_evidence_runs SET status=? WHERE job_id=?""",
                        ("INTERRUPTED" if self.evidence_stop.is_set()
@@ -875,6 +894,45 @@ class CartResearchJobs:
             if verdict and verdict[0]=="QUEUED":
                 self._progress(job_id,"FINAL_VERDICT_QUEUED")
                 self.model_pool.submit(self._generate_final_verdict,job_id)
+
+    def _check_link_safety(self,job_id,offers,discovery):
+        """Independent safety signals; never a verified merchant guarantee."""
+        # Assess every available indexed seller/source link independently of
+        # whether the seller HTML was accessible. No redirects, payments,
+        # bot challenges or remote merchant content are requested here.
+        if not self.evidence_stop.is_set():
+            with self._db() as db:
+                db.execute("""INSERT OR REPLACE INTO cart_link_safety
+                    (job_id,status,result_json) VALUES (?,'RUNNING',NULL)""",
+                    (job_id,))
+            self.live_bus.signal(job_id)
+            try:
+                from link_safety import assess_links
+                source_links=[x.get("url") for x in discovery.get("leads",[])
+                              if isinstance(x,dict) and x.get("url")]
+                with self._db() as db:
+                    receipts=db.execute("""SELECT result_json FROM
+                        cart_offer_evidence WHERE job_id=?""",(job_id,)).fetchall()
+                for (raw,) in receipts:
+                    receipt=json.loads(raw)
+                    for attempt in receipt.get("attempted_sources") or []:
+                        if isinstance(attempt,dict) and attempt.get("resolved_url"):
+                            source_links.append(attempt["resolved_url"])
+                    for answer in receipt.get("reference_answers") or []:
+                        if isinstance(answer,dict) and answer.get("source_url"):
+                            source_links.append(answer["source_url"])
+                safety=assess_links(offers,source_links)
+            except (OSError,ValueError,TypeError,KeyError,RuntimeError) as exc:
+                safety={"status":"INCONCLUSIVE","links":[],
+                        "error_type":type(exc).__name__,
+                        "merchant_legitimacy_verified":False,
+                        "disclaimer":"Link screening failed; safety cannot be established."}
+            with self._db() as db:
+                db.execute("""UPDATE cart_link_safety
+                    SET status=?,result_json=? WHERE job_id=?""",
+                    (safety["status"],json.dumps(safety,ensure_ascii=False),
+                     job_id))
+            self.live_bus.signal(job_id)
 
     def _generate_offer_questions(self, job_id, record):
         """At most ONE GPU inference call, overlapping all source I/O.
@@ -999,15 +1057,104 @@ class CartResearchJobs:
         self.pool.submit(self._work, job_id, clean)
         return job_id
 
-    def submit_url(self, product_url):
+    @staticmethod
+    def _validated_observed_price(price,currency="PLN"):
+        from decimal import Decimal,InvalidOperation
+        raw=str(price or "").replace("\u00a0","").replace("\u202f","").replace(" ","").replace(",",".")
+        if len(raw)>18 or currency not in ("PLN","EUR","USD"):
+            raise ValueError("Invalid observed price currency or format")
+        try:
+            value=Decimal(raw)
+        except (InvalidOperation,ValueError):
+            raise ValueError("Invalid observed price")
+        if not value.is_finite() or value<Decimal("0.01") or value>Decimal("1000000"):
+            raise ValueError("Observed price outside allowed range")
+        if value.as_tuple().exponent<-2:
+            raise ValueError("Observed price supports at most two decimal places")
+        return str(value.quantize(Decimal("0.01")))
+
+    def set_input_price(self,job_id,price,currency="PLN",
+                        origin="USER_OBSERVED_NOT_VERIFIED",
+                        promotion_code=None,valid_until=None,public_source_url=None):
+        import re
+        from datetime import datetime,timezone
+        from product_intake import normalized_product_url
+        if not re.fullmatch(r"[a-zA-Z0-9_-]{18,40}",job_id or ""):
+            raise ValueError("Invalid job ID")
+        amount=self._validated_observed_price(price,currency)
+        if origin not in ("USER_OBSERVED_NOT_VERIFIED",
+                          "EXTERNAL_OFFICIAL_RETAILER_LISTING_NOT_CHECKOUT"):
+            raise ValueError("Unsupported price provenance")
+        if promotion_code is not None and (len(promotion_code)>40 or not
+                re.fullmatch(r"[A-Za-z0-9_-]{1,40}",promotion_code)):
+            raise ValueError("Invalid promotion code")
+        if valid_until is not None:
+            try:datetime.fromisoformat(valid_until)
+            except ValueError:raise ValueError("Invalid promotion expiration date")
+        if public_source_url:
+            public_source_url=normalized_product_url(public_source_url)
+        with self._db() as db:
+            exists=db.execute("SELECT state FROM cart_research_jobs WHERE id=?",
+                              (job_id,)).fetchone()
+            if not exists:raise ValueError("Unknown research job")
+            db.execute("""INSERT INTO cart_input_price_observation(
+                job_id,price,currency,origin,recorded_at,promotion_code,
+                valid_until,public_source_url,checkout_verified)
+                VALUES (?,?,?,?,?,?,?,?,0)
+                ON CONFLICT(job_id) DO UPDATE SET
+                price=excluded.price,currency=excluded.currency,
+                origin=excluded.origin,recorded_at=excluded.recorded_at,
+                promotion_code=excluded.promotion_code,
+                valid_until=excluded.valid_until,
+                public_source_url=excluded.public_source_url,
+                checkout_verified=0""",
+                (job_id,amount,currency,origin,
+                 datetime.now(timezone.utc).isoformat(),
+                 promotion_code,valid_until,public_source_url))
+        self.live_bus.signal(job_id)
+        return {"price":amount,"currency":currency,"origin":origin,
+                "promotion_code":promotion_code,"valid_until":valid_until,
+                "public_source_url":public_source_url,"checkout_verified":False}
+
+    def refresh_price_comparison(self,job_id):
+        """Recalculate deterministic value cards, retaining the Qwen verdict."""
+        from guided_decision import build_decision_projection
+        from offer_knowledge_graph import build_offer_knowledge_graph
+        from model_verdict import insufficient_verdict
+        record=self.read(job_id)
+        if record["state"]!="READY":return False
+        prior=record.get("final_verdict") or {}
+        if prior.get("status") not in ("COMPLETE","UNAVAILABLE"):
+            return False
+        projection=build_decision_projection(record)
+        graph=build_offer_knowledge_graph(projection)
+        comparison=insufficient_verdict(graph,projection=projection)
+        original=dict(prior)
+        for field in ("summary","observations","purchase_insights","next_step"):
+            original[field]=comparison[field]
+        original.pop("error_type",None)
+        original["comparison_refreshed_from_price_observation"]=True
+        with self._db() as db:
+            db.execute("""UPDATE cart_final_verdict SET result_json=?
+                WHERE job_id=?""",(json.dumps(original,ensure_ascii=False),job_id))
+        self.live_bus.signal(job_id)
+        return True
+
+    def submit_url(self, product_url,observed_price=None,currency="PLN",
+                   promotion_code=None):
         from product_intake import normalized_product_url
         url = normalized_product_url(product_url)
+        if observed_price is not None and str(observed_price).strip():
+            self._validated_observed_price(observed_price,currency)
         job_id = secrets.token_urlsafe(18)
         with self._db() as db:
             db.execute("INSERT INTO cart_research_jobs(id,item,state,created) VALUES (?,?,?,?)",
                        (job_id, json.dumps({"merchant_url": url,
                                              "intake": "URL_EXTRACTION_PENDING"}),
                         "QUEUED", datetime.now(timezone.utc).isoformat()))
+        if observed_price is not None and str(observed_price).strip():
+            self.set_input_price(job_id,observed_price,currency,
+                                 promotion_code=promotion_code)
         self._progress(job_id, "QUEUED")
         self.pool.submit(self._work_url, job_id, url)
         return job_id
@@ -1173,6 +1320,12 @@ class CartResearchJobs:
                 cart_source_search WHERE job_id=?""",(job_id,)).fetchone()
             verdict_row=db.execute("""SELECT status,result_json,error_type FROM
                 cart_final_verdict WHERE job_id=?""",(job_id,)).fetchone()
+            safety_row=db.execute("""SELECT status,result_json FROM
+                cart_link_safety WHERE job_id=?""",(job_id,)).fetchone()
+            input_price_row=db.execute("""SELECT price,currency,origin,recorded_at,
+                promotion_code,valid_until,public_source_url,checkout_verified
+                FROM cart_input_price_observation WHERE job_id=?""",
+                (job_id,)).fetchone()
         model_offers = {
             "offer-{}".format(i): {"state": status,
                 "questions": json.loads(data) if data else []}
@@ -1194,7 +1347,22 @@ class CartResearchJobs:
              "status":verdict_row[0],
              "error_type":verdict_row[2]} if verdict_row else
             {"status":"NOT_SCHEDULED"})
+        link_safety=(
+            {**(json.loads(safety_row[1]) if safety_row[1] else {}),
+             "status":safety_row[0]} if safety_row else
+            {"status":"NOT_STARTED","links":[],
+             "merchant_legitimacy_verified":False})
+        input_price=({
+            "price":input_price_row[0],"currency":input_price_row[1],
+            "origin":input_price_row[2],"recorded_at":input_price_row[3],
+            "promotion_code":input_price_row[4],
+            "valid_until":input_price_row[5],
+            "public_source_url":input_price_row[6],
+            "checkout_verified":bool(input_price_row[7]),
+        } if input_price_row else None)
         return {"source_search":source_search,
+                "input_price":input_price,
+                "link_safety":link_safety,
                 "final_verdict":final_verdict,
                 "item": json.loads(row[0]), "state": row[1],
                 "created": row[2],
@@ -1214,3 +1382,4 @@ class CartResearchJobs:
         self.pool.shutdown(wait=True)
         self.model_pool.shutdown(wait=True)
         self.evidence_pool.shutdown(wait=True)
+        self.safety_pool.shutdown(wait=True)

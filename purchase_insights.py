@@ -46,11 +46,11 @@ def _title_highlights(title,category):
     result=[]
     if category=="LAPTOP":
         for pattern,label in (
-            (r"\b120\s*hz\b","matryca 120 Hz (deklaracja w tytule)"),
-            (r"\bips\b","matryca IPS (deklaracja w tytule)"),
-            (r"\b(?:dotyk|touchscreen|touch)\b","ekran dotykowy (deklaracja w tytule)"),
+            (r"\b120\s*hz\b","120 Hz display (advertised in listing title)"),
+            (r"\bips\b","IPS display (advertised in listing title)"),
+            (r"\b(?:dotyk|touchscreen|touch)\b","Touchscreen (advertised in listing title)"),
             (r"\b(?:win(?:dows)?\s*11\s*pro|w11\s*pro)\b",
-             "Windows 11 Pro (deklaracja w tytule)"),
+             "Windows 11 Pro (advertised in listing title)"),
         ):
             if re.search(pattern,t):result.append(label)
     return result[:3]
@@ -65,6 +65,9 @@ def build_purchase_insights(projection,graph=None):
     title=selected.get("title") or projection.get("title") or ""
     cat=category_of(title)
     selected_specs=read_specs(title,cat)
+    if cat in ("UNKNOWN","ACCESSORY"):
+        from generic_value import generic_unit_value
+        return generic_unit_value(projection)
     ranked=[]
     rejected=[]
     all_relevant=[]
@@ -179,14 +182,14 @@ def build_purchase_insights(projection,graph=None):
             row["market_reference_kind"]="MEDIAN_OF_COMPARABLE_INDEX_QUOTES"
             row["market_reference_price"]=_money(anchor,selected_currency)
             row["vs_index_median"]=(
-                "poniżej mediany ofert indeksowych o "+_money(delta,selected_currency)
+                 "below the indexed peer median by "+_money(delta,selected_currency)
                 if delta>0 else
-                "powyżej mediany ofert indeksowych o "+_money(-delta,selected_currency)
-                if delta<0 else "na poziomie mediany cen indeksowych")
+                 "above the indexed peer median by "+_money(-delta,selected_currency)
+                if delta<0 else "at the indexed peer median")
         else:
             row["market_reference_kind"]="NO_VALID_COMPARABLE_PRICE_MEDIAN"
             row["market_reference_price"]=None
-            row["vs_index_median"]="brak wiarygodnego punktu odniesienia"
+            row["vs_index_median"]="no reliable price reference"
         if row["tier"]=="SIMILAR_TITLE_SPEC_TIER":
             strong_options.append((row,amount))
         else:
@@ -199,49 +202,116 @@ def build_purchase_insights(projection,graph=None):
     tradeoffs.sort(key=lambda x:(x[1],x[0]["offer_id"]))
     top=[r for r,_ in strong_options[:MAX_OPTIONS]]
     extra=[r for r,_ in tradeoffs[:MAX_TRADEOFFS]]
-    input_price=_number(selected.get("indexed_price"))
+    # A promotion can make the input product substantially cheaper than
+    # prices indexed before the coupon. Never replace that input price with
+    # an unrelated product median. Manual/user-reported observations remain
+    # explicitly unverified until checkout.
+    observed=projection.get("input_price") or {}
+    from_source=projection.get("selected_item") or {}
+    source_intake=projection.get("selected_source_intake") or {}
+    input_price=_number(observed.get("price"))
+    input_currency=observed.get("currency")
+    input_provenance=observed.get("origin")
+    if input_price is None and source_intake.get("price_status")=="SELLER_DECLARED":
+        input_price=_number(from_source.get("price"))
+        input_currency=from_source.get("currency")
+        input_provenance="FETCHED_SELLER_DECLARATION_NOT_CHECKOUT"
+    if input_price is None:
+        input_currency=None
+        input_provenance="NOT_AVAILABLE"
+    input_price_label=(_money(input_price,input_currency) if input_price and
+                       input_currency in ("PLN","EUR","USD") else None)
+    promotion=observed.get("promotion_code")
+    promotion_until=observed.get("valid_until")
+    if input_price_label:
+        for item,amount in clean:
+            if item["currency"]!=input_currency:continue
+            diff=amount-input_price
+            item["relative_to_selected_price"]=_money(abs(diff),input_currency)
+            item["vs_selected_price"]=(
+                "higher than selected price by "+_money(diff,input_currency)
+                if diff>0 else
+                "below selected price by "+_money(-diff,input_currency)
+                if diff<0 else
+                "equal to selected price")
+            item["price_comparison_basis"]=input_provenance
+        # Higher prices are NOT the "best value" shortlist unless there is
+        # independently supported proof of a meaningful improvement.
+        expensive_options=[r for r,amount in strong_options
+                           if r["currency"]==input_currency and amount>=input_price]
+        expensive_options.sort(key=lambda r:Decimal(r["price"]))
+        top=[r for r in top if r["currency"]==input_currency and
+             _number(r["price"])<input_price]
+        extra=[r for r in extra if r["currency"]==input_currency and
+               _number(r["price"])<input_price]
+    else:
+        expensive_options=[]
     # The submitted seller page may be HTTP 403. Even if its listing title
     # and an indexed price happen to match, no checkout has been verified.
-    if top:
+    if input_price_label and not top and not extra:
+        status="SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS"
+        higher=expensive_options[0] if expensive_options else None
+        message=(
+            "The selected product is listed at "+input_price_label+
+            (" with promotion code "+promotion if promotion else "")+
+            (" (listed as valid through "+promotion_until+")" if promotion_until else "")+
+            ". None of the currently comparable indexed listings is cheaper."
+        )
+        if higher:
+            message+=(" The lowest comparable indexed quote is "+
+                      _money(_number(higher["price"]),higher["currency"])+
+                      " ("+higher["vs_selected_price"]+
+                      "), with no documented advantage justifying that premium.")
+        message+=(" Verify coupon eligibility and delivered checkout total before purchase.")
+    elif top:
         first=top[0]
         message=(
-            "Warto sprawdzić ofertę "+first["title"]+" — "+
-            _money(_number(first["price"]),first["currency"])+
-            " w indeksie wyszukiwania. Z tytułu wynika podobna konfiguracja: "+
+            ("Potentially cheaper comparable listing: " if input_price_label else
+             "Comparable indexed listing (savings unknown): ")+first["title"]+
+            " — "+_money(_number(first["price"]),first["currency"])+
+            ". Similar advertised specifications: "+
             ", ".join(first["matched_features"][:3])+". "
-            "Cena NIE jest potwierdzoną kwotą zakupu. "
+            "The indexed price is not a verified checkout amount. "
         )
-        if not input_price:
-            message+=(
-                "Cena produktu wejściowego nie została pobrana ze sklepu, "
-                "więc nie da się uczciwie stwierdzić, że ta oferta jest od niego tańsza."
-            )
+        if input_price_label:
+            message+=("Selected seller price is "+input_price_label+
+                      " ("+str(input_provenance)+"); differences may change in checkout.")
         else:
             message+=(
-                "Cena oferty wejściowej także wymaga weryfikacji w koszyku, "
-                "zanim można ogłosić oszczędność."
-            )
-        status="COMPARABLE_INDEX_OFFERS_FOUND"
+                "The selected seller price is unavailable; no confirmed "
+                "saving can be calculated.")
+        status=("CHEAPER_INDEX_COMPARABLE_LEADS" if input_price_label else
+                "COMPARABLE_INDEX_OFFERS_FOUND")
     elif extra:
         message=(
-            "Znaleziono oferty o częściowo podobnych parametrach, "
-            "ale różnice w specyfikacji nie pozwalają traktować ich jako "
-            "równoważnych produktów. Ceny są jedynie z indeksu wyszukiwania."
-        )
-        status="TRADEOFF_ONLY"
+            "Lower-priced but technically different listings were found. "
+            "They are not equivalent products; compare the specification trade-offs "
+            "and verify both prices before purchase.")
+        status="CHEAPER_BUT_DIFFERENT_INDEX_LEADS"
+    elif strong_options:
+        message=(
+            "Comparable products were found in the search index, but no "
+            "selected-store price baseline is available. They are NOT confirmed "
+            "cheaper or better value. Provide a seller-observed price or find "
+            "a permitted primary offer price before ranking by savings.")
+        status="INPUT_PRICE_UNKNOWN_NO_VALUE_RECOMMENDATION"
     else:
         message=(
-            "Wśród dostępnych wyników nie znaleziono ofert z wystarczającą "
-            "liczbą wspólnych parametrów, aby porównać stosunek ceny do "
-            "specyfikacji. To nie oznacza, że tańsze zamienniki nie istnieją."
-        )
+            "No available listing has enough explicitly comparable "
+            "specifications for a meaningful value comparison. "
+            "This does not prove cheaper alternatives do not exist.")
         status="NO_RELIABLE_COMPARABLE_INDEX_LEADS"
     return {
         "status":status,"selected_title":_text(title,175),
         "category":cat,
         "selected_price_verified":False,
-        "selected_price_available_in_seller_page":False,
-        "pricing_basis":"UNVERIFIED_SEARCH_INDEX_ONLY",
+        "selected_price":input_price_label,
+        "selected_price_source":input_provenance,
+        "selected_price_available_in_seller_page":(
+            input_provenance=="FETCHED_SELLER_DECLARATION_NOT_CHECKOUT"),
+        "promotion_code":promotion,
+        "promotion_valid_until":promotion_until,
+        "pricing_basis":"SELECTED_UNVERIFIED_PRICE_VS_UNVERIFIED_INDEX_QUOTES",
         "market_reference":(_money(anchor,selected_currency)
                             if anchor is not None else None),
         "market_reference_provenance":("PEER_MEDIAN_SEARCH_INDEX_NOT_SELLER"
@@ -249,10 +319,11 @@ def build_purchase_insights(projection,graph=None):
         "headline":message,
         "options":top,
         "tradeoffs":extra,
+        "higher_priced_comparables":expensive_options[:4],
         "suspicious_price_quotes":anomalies[:8],
         "comparable_count":len(strong_options),
         "tradeoff_count":len(tradeoffs),
         "total_offers_seen":len(offers),
-        "disclaimer":"Indeksowe ceny i tytuły nie potwierdzają dostępności, wysyłki, wariantu ani zakupu.",
+        "disclaimer":"Indexed prices and titles do not verify stock, shipping, exact variant or checkout total.",
         "payment_authorized":False,
     }

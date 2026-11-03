@@ -80,7 +80,7 @@ class BikeSearchFallbackTests(unittest.TestCase):
         html = shopping_search_panel(report)
         self.assertIn("2469.05", html)
         self.assertIn("2469.00", html)
-        self.assertIn("szukaj w Google Shopping", html)
+        self.assertIn("Search Google Shopping", html)
         self.assertIn("ONLY_GOOGLE_SHOPPING_CARDS_DETAIL_FAILED", html)
         self.assertIn("SEARCH INDEX ONLY", html)
 

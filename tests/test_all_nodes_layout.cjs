@@ -27,7 +27,7 @@ test("all informational nodes are visible without selecting an offer",()=>{
   const path=require("node:path");
   const src=fs.readFileSync(path.join(__dirname,"../assets/offer-graph.js"),"utf8");
   assert.match(src,/prior.focus===undefined\?null:prior.focus/);
-  assert.match(src,/const \{layout,bounds\}=layoutAllNodes\(graph.nodes\)/);
+  assert.match(src,/const box=layoutAllNodes\(graph.nodes,\{singleColumn\}\)/);
   assert.ok(!src.includes("const visibleOffers=selected?"));
   assert.ok(src.includes("autoFit=true;remember();draw();"));
 });

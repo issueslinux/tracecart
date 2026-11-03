@@ -10,13 +10,13 @@ import re
 import unicodedata
 
 CATEGORY_LABELS = {
-    "E_BIKE": "rower elektryczny", "BICYCLE": "rower bez potwierdzonego napędu",
-    "E_SCOOTER": "hulajnoga elektryczna", "SSD": "dysk SSD",
-    "SMARTPHONE": "smartfon", "HEADPHONES": "słuchawki",
-    "COMPRESSOR": "kompresor", "PRINTER": "drukarka",
-    "SMARTWATCH": "zegarek sportowy/smartwatch",
-    "ROUTER": "router", "LAPTOP": "laptop", "POWER_TOOL": "elektronarzędzie",
-    "ACCESSORY": "akcesorium / część", "UNKNOWN": "kategoria nieustalona",
+    "E_BIKE": "electric bicycle", "BICYCLE": "bicycle (motor not confirmed)",
+    "E_SCOOTER": "electric scooter", "SSD": "SSD drive",
+    "SMARTPHONE": "smartphone", "HEADPHONES": "headphones",
+    "COMPRESSOR": "compressor", "PRINTER": "printer",
+    "SMARTWATCH": "sports watch/smartwatch",
+    "ROUTER": "router", "LAPTOP": "laptop", "POWER_TOOL": "power tool",
+    "ACCESSORY": "accessory / part", "UNKNOWN": "category unknown",
 }
 
 # Spec weight describes the importance of comparing the explicit title fields,
@@ -44,17 +44,17 @@ CORE_SPECS = {"E_BIKE": ("power_w", "battery_ah", "battery_wh"),
               "E_SCOOTER": ("power_w", "battery_ah", "battery_wh"),
               "BICYCLE": ("wheel_in",)}
 PUBLIC_SPEC_NAMES = {
-    "power_w": "moc silnika", "battery_ah": "pojemność akumulatora (Ah)",
-    "battery_wh": "nominalna energia akumulatora (Wh)",
-    "battery_voltage_v": "napięcie akumulatora",
-    "wheel_in": "rozmiar koła (cale)", "gears": "liczba przełożeń",
-    "speed_kmh": "deklarowana prędkość", "claimed_range_km": "deklarowany zasięg",
-    "bike_style": "typ roweru", "pressure_bar": "maksymalne ciśnienie",
-    "tank_l": "zbiornik (litry)", "capacity_gb": "pojemność pamięci",
-    "ssd_form": "typ/nośnik SSD",
-    "ram_gb": "pamięć RAM", "cpu_family": "rodzina procesora",
-    "cpu_tier": "klasa procesora",
-    "display_technology": "typ matrycy", "screen_in": "przekątna ekranu",
+    "power_w": "motor power", "battery_ah": "battery capacity (Ah)",
+    "battery_wh": "nominal battery energy (Wh)",
+    "battery_voltage_v": "battery voltage",
+    "wheel_in": "wheel size (inches)", "gears": "gears",
+    "speed_kmh": "advertised speed", "claimed_range_km": "advertised range",
+    "bike_style": "bike style", "pressure_bar": "maximum pressure",
+    "tank_l": "tank (litres)", "capacity_gb": "storage capacity",
+    "ssd_form": "SSD form factor",
+    "ram_gb": "RAM", "cpu_family": "CPU architecture",
+    "cpu_tier": "CPU tier",
+    "display_technology": "display technology", "screen_in": "screen diagonal",
 }
 STATUS_SIMILAR = "SIMILAR_TECHNICAL_TIER_INDEX_ONLY"
 STATUS_POSSIBLE = "POSSIBLE_ALTERNATIVE_NEEDS_SPEC_CHECK"
@@ -384,10 +384,10 @@ def evaluate_alternative(selected_title, candidate_title):
                     core_partial = True
     if "battery_ah" in base and "battery_wh" not in base:
         result["unconfirmed_features"].append(
-            "energia baterii (Wh) – brak napięcia w opisie produktu wejściowego")
+            "battery energy (Wh) — baseline voltage not stated")
     elif "battery_wh" in base and "battery_wh" not in target:
         result["unconfirmed_features"].append(
-            "energia baterii (Wh) – brak napięcia lub Ah w opisie alternatywy")
+            "battery energy (Wh) — alternative voltage or Ah missing")
     score = round(100 * achieved / possible) if possible else None
     result["technical_score"] = score
     result["evidence_dimensions_compared"] = covered
@@ -457,12 +457,12 @@ def enrich_alternatives(selected, indexed_offers, shopping_cards):
                     and selected_condition != "NOT_STATED"
                     and selected_condition != claimed_condition):
                 comparison["condition_difference"] = (
-                    "Różny deklarowany stan produktu: nowy / używany lub odnowiony")
+                    "Different advertised condition: new vs used/refurbished")
                 if comparison["status"] == STATUS_SIMILAR:
                     comparison["status"] = STATUS_POSSIBLE
             elif claimed_condition == "USED_OR_REFURBISHED_TITLE_CLAIM":
                 comparison["condition_difference"] = (
-                    "Produkt używany/odnowiony – nie porównuj ceny z nowym bez sprawdzenia")
+                    "Used/refurbished: do not compare its price with a new item unchecked")
             entry["functional_alternative"] = comparison
             price = _price(entry.get("current_price_indexed") if kind == "INDEXED_STORE_LINK"
                            else entry.get("indexed_price"))
