@@ -188,6 +188,19 @@
                  " · SHA "+(a.source_sha256||"").slice(0,16)+"…",
             url:a.source_url,
           })));
+        if((d.declared_claim_conflicts||[]).length){
+          details.appendChild(el("h4","","Unresolved source discrepancies · "+
+            d.declared_claim_conflicts.length));
+          d.declared_claim_conflicts.forEach(c=>{
+            const p=el("p","kg-missing",
+              (c.type==="PUBLISHED_SOURCES_DISAGREE"?
+               c.source_a_value+" vs "+c.source_b_value+" · two published sources":
+               c.listing_value+" listed vs "+c.source_value+" in document")+
+              " · potential model variant or methodology difference, NOT proved fraud.");
+            details.appendChild(p);
+            if(c.source_url)details.appendChild(external("Check source ↗",c.source_url));
+          });
+        }
         if((d.model_hints||[]).length){
           details.appendChild(el("h4","","Possible model leads · index only"));
           (d.model_hints||[]).forEach(h=>{
@@ -276,6 +289,7 @@
       const gaps=graph.nodes.filter(n=>n.type==="research_gap");
       const observations=graph.nodes.filter(n=>
         ["reference_observation","source_declaration","fetched_source",
+         "source_disagreement","source_lead",
          "indexed_quote","decision_gate"].includes(n.type));
       const selected=focus&&index.get(focus)&&
         index.get(focus).type==="offer"?focus:null;
@@ -302,14 +316,18 @@
         .forEach(e=>gapIds.add(e.to));
       const shownGaps=selected?gaps.filter(n=>gapIds.has(n.id)):gaps.slice(0,3);
       const related=selected?(byFrom.get(selected)||[])
-        .filter(e=>["HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM"]
-           .includes(e.relation)).map(e=>e.to):
+        .filter(e=>["HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM",
+                    "POTENTIAL_SOURCE_DISCREPANCY",
+                    "SOURCE_DISCOVERY_LEAD"].includes(e.relation))
+        .map(e=>e.to):
         observations.filter(n=>["reference_observation","source_declaration",
-                                  "indexed_quote"].includes(n.type)).map(n=>n.id);
+                       "source_disagreement","source_lead","indexed_quote"]
+                       .includes(n.type)).map(n=>n.id);
       const seen=new Set(related);
       seen.add("decision:abstain");
       related.forEach(id=>(byFrom.get(id)||[])
-        .filter(e=>e.relation==="OBSERVED_IN_SOURCE")
+        .filter(e=>["OBSERVED_IN_SOURCE","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
+                     "DISCOVERED_PAGE_FETCHED_AND_EXTRACTED"].includes(e.relation))
         .forEach(e=>seen.add(e.to)));
       const shownEvidence=observations.filter(n=>seen.has(n.id)).slice(0,13);
       const layout=new Map();
@@ -327,6 +345,8 @@
         ["TITLE_MENTIONS","CALCULATED_FROM_TITLE_CLAIMS",
          "EVIDENCE_NEEDED","HAS_SOURCE_OBSERVATION","INDEXED_PRICE_CLAIM",
          "RESEARCH_GAP_PREVENTS_VERIFIED_DECISION",
+         "POTENTIAL_SOURCE_DISCREPANCY","DISCREPANCY_REQUIRES_SOURCE_REVIEW",
+         "SOURCE_DISCOVERY_LEAD","DISCOVERED_PAGE_FETCHED_AND_EXTRACTED",
          "OBSERVED_IN_SOURCE","INFORMS_DIMENSION",
          "SIMILAR_INDEX_MODEL_NAME_LEAD"].includes(e.relation));
       return {layout,visible};
@@ -353,7 +373,8 @@
             "kg-link-claim":e.relation==="EVIDENCE_NEEDED"||
             e.relation==="RESEARCH_GAP_PREVENTS_VERIFIED_DECISION"?
             "kg-link-gap":e.relation==="INDEXED_PRICE_CLAIM"?
-            "kg-link-quote":"kg-link-evidence")+
+            "kg-link-quote":e.relation==="POTENTIAL_SOURCE_DISCREPANCY"?
+            "kg-link-warning":"kg-link-evidence")+
             (related?"":" kg-muted"),
           "data-relation":e.relation,
           "stroke-dasharray":e.relation==="TITLE_MENTIONS"||

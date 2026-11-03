@@ -5,6 +5,26 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-03: multi-domain source discovery and discrepancy checks
+
+TraceCart now supports bounded **cross-domain research URL discovery** for
+multiple brand/model identities through an explicitly enabled Brave provider
+(`BRAVE_API_KEY` + `TRACECART_SOURCE_SEARCH_ENABLED=1`).
+The provider has **at most six queries per job** and stores its receipt in
+SQLite, so reruns and restarts cannot silently repeat billed requests.
+Without both settings no search API call occurs. Index hits become
+`source_lead` graph nodes and must pass the existing robot-checked
+source/document identity gate before creating a real evidence link.
+
+A general source-comparison engine also checks compatible published
+numeric claims in e-bikes, laptops, smartphones, SSDs and compressors:
+title-vs-source and source-vs-source differences are labeled as
+**unresolved model/measurement discrepancies**, never proof of a
+seller's deception, test outcome, exact SKU or checkout price.
+The saved AM27 rower analysis now flags its 100 km index title versus
+the manufacturer family's 50–85 km *declared* assist range.
+[Configuration, provenance and real replay](docs/MULTISOURCE_DISCOVERY_AND_DISCREPANCIES_2026-11-03.md).
+
 ## 2026-11-03: general-source investigation for products across categories
 
 The research workers now use a **single robots-aware structured

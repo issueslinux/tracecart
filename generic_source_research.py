@@ -522,10 +522,15 @@ def execute_generic_sources(offer,category,fetch=None,enable_brand_discovery=Tru
     if not rows:
         return {"status":"NO_MATCHED_GENERAL_PRODUCT_SOURCE",
                 "reference_answers":[],"verified_for_exact_offer":0,
-                "sources_checked":0,"attempted_sources":attempted}
+                "sources_checked":0,"attempted_sources":attempted,
+                "declared_claim_conflicts":[]}
+    from source_discrepancies import find_source_discrepancies
+    visible=rows[:18]
+    discrepancies=find_source_discrepancies(offer,category,visible)
     return {"status":"GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED",
-            "reference_answers":rows[:18],"verified_for_exact_offer":0,
+            "reference_answers":visible,"verified_for_exact_offer":0,
             "sources_checked":len(docs),
             "attempted_sources":attempted,
+            "declared_claim_conflicts":discrepancies,
             "independent_tests":0,
             "documented_declarations":len(rows)}

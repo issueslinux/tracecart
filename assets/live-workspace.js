@@ -90,6 +90,14 @@
           state:independent?"REFERENCE":"DECLARED",mode:"REFERENCE",
         });
       }
+      for(const c of (e.declared_claim_conflicts||[]).slice(0,2)){
+        answered.push({key:"#"+idx+" · DISCREPANCY",
+          title:(c.type==="PUBLISHED_SOURCES_DISAGREE"?
+            String(c.source_a_value)+" vs "+String(c.source_b_value):
+            String(c.listing_value)+" vs "+String(c.source_value)),
+          detail:"Two published claims differ · variant/test conditions unresolved.",
+          state:"CHECK SOURCES",mode:"BLOCKED"});
+      }
       for(const q of (d.high_impact_questions||[]).slice(0,5)){
         open.push({key:"#"+idx+" · P0",title:q.question,
           detail:"Source evidence required; not answered.",
@@ -145,6 +153,17 @@
       const workingModel=Object.values(snapshot.model_offers||{})
         .filter(x=>x.state==="RUNNING").length;
       const sources=sourceTasks(snapshot),questions=questionTasks(snapshot);
+      const search=snapshot.source_search||{};
+      if(search.status==="RUNNING"){
+        sources.unshift({key:"DISCOVERY",title:"Searching external sources",
+          detail:"Bounded, provider-backed model discovery; not an evidence test.",
+          state:"SEARCHING",mode:"RUNNING"});
+      } else if((search.leads||[]).length){
+        sources.unshift({key:"DISCOVERY",
+          title:search.leads.length+" source URLs located",
+          detail:"Unverified leads; each page requires independent fetch and SKU check.",
+          state:"INDEX LEADS",mode:"QUEUED"});
+      }
       $("live-source-count").textContent=pendingSource?
         pendingSource+" checking":String(sources.length);
       $("live-question-count").textContent=workingModel?
@@ -157,7 +176,8 @@
       $("live-evidence-status").textContent=
         (stats.independent_reference_measurements||0)+
         " independent test values · "+(stats.documented_product_declarations||0)+
-        " sourced declarations · "+(stats.verified_exact_sku_answers||0)+
+        " sourced declarations · "+(stats.unresolved_source_discrepancies||0)+
+        " source discrepancies · "+(stats.verified_exact_sku_answers||0)+
         " verified exact variants · "+
         (stats.verified_checkout_prices||0)+" verified checkout prices";
     }

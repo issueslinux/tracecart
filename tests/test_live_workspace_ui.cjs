@@ -51,3 +51,37 @@ test("placeholder opens before any backend request; no invented evidence",()=>{
   assert.ok(frontend.includes("Source evidence required"));
   assert.ok(!frontend.includes("innerHTML"));
 });
+
+
+test("source discrepancies and search leads are shown as unresolved research, not verified",()=>{
+  const data={
+    ...example,
+    source_search:{status:"COMPLETE",queries_used:2,
+      leads:[{url:"https://review.example.org/test",status:"UNVERIFIED_UNFETCHED"}]},
+    evidence_offers:{
+      "offer-0":{status:"GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED",
+        reference_answers:[{
+          source_kind:"BRAND_SITE_DECLARATIONS_NOT_INDEPENDENT_TESTS",
+          finding:"Published assist range: 50-85 km",
+        }],
+        declared_claim_conflicts:[{
+          type:"TITLE_VS_PUBLISHED_SPECIFICATION",
+          listing_value:"100 km",source_value:"50-85 km",
+          status:"POTENTIAL_DIFFERENT_VARIANT_OR_TEST_CONDITIONS",
+        }]},
+      "offer-1":{status:"NO_MATCHED_GENERAL_PRODUCT_SOURCE",
+        reference_answers:[]},
+    },
+  };
+  const questions=live.questionTasks(data);
+  const issue=questions.find(x=>x.state==="CHECK SOURCES");
+  assert.ok(issue);
+  assert.ok(issue.title.includes("100 km"));
+  assert.ok(!questions.some(x=>x.state==="VERIFIED"));
+  const sources=live.sourceTasks(data);
+  assert.ok(sources.some(x=>x.state==="SPECIFICATIONS"));
+  assert.ok(!sources.some(x=>x.state==="INDEPENDENT TEST VERIFIED"));
+  const css=fs.readFileSync(path.join(__dirname,"../assets/decision-flow.css"),"utf8");
+  assert.ok(css.includes("kg-type-source_disagreement"));
+  assert.ok(css.includes("kg-type-source_lead"));
+});
