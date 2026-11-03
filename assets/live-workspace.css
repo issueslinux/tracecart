@@ -293,3 +293,7 @@ body.live-page{font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-se
   .live-footer nav{gap:6px}
   .live-footer nav a,.live-footer nav button{max-width:100%;font-size:10px}
 }
+/* Unmerged research-stage controls, not part of the small renderer hotfix. */
+.verify-indexed-form{display:inline-flex;align-items:center;margin:0}
+.verify-indexed-form[action=""]{display:none}
+.verify-indexed-form button:disabled{opacity:1;cursor:not-allowed}

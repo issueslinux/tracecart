@@ -39,7 +39,8 @@ globalThis.fetch=async (u,options)=>{
   assert.ok(u.startsWith("http://127.0.0.1:8765/api/browser-companion/"));
   assert.equal(options.headers.Authorization,"Bearer "+token);
   if(u.endsWith("/next")){
-    const job=next;next=null;
+    const job=Array.isArray(next) ? (next.shift() || null) : next;
+    if (!Array.isArray(next)) next=null;
     return {ok:true,json:async()=>({job})};
   }
   receipt=JSON.parse(options.body);
@@ -51,7 +52,7 @@ await import("./companion_worker.mjs");
 function tick() {
   return new Promise((resolve,reject)=>{
     const timeout=setTimeout(()=>reject(Error("No receipt")),3000);
-    ack=(payload)=>{clearTimeout(timeout);resolve(payload);};
+    ack=(payload)=>{clearTimeout(timeout);setTimeout(()=>resolve(payload),45);};
     onAlarm({name:"tracecart-queued-research"});
   });
 }
@@ -105,6 +106,92 @@ test("permission revoked during capture discards extracted fields",async()=>{
     assert.equal(executed,executedBefore+1);
   } finally {chrome.permissions.contains=prev;}
 });
+test("three different sellers run truly concurrently, never more than three",async()=>{
+  config={...config,enabled:true};
+  permit=true;
+  const urls=[
+    "https://store.example.org/product/parallel-1",
+    "https://store.example.org/product/parallel-2",
+    "https://store.example.org/product/parallel-3",
+    "https://store.example.org/product/parallel-4"
+  ];
+  // The browser worker sees a bounded, four-URL user submission.
+  next=urls.map((url,i)=>({job_id:"parallel-job-"+i,url}));
+  const savedGet=chrome.tabs.get,savedCreate=chrome.tabs.create;
+  const savedExecute=chrome.scripting.executeScript;
+  const savedFetch=globalThis.fetch;
+  const savedRemove=chrome.tabs.remove;
+  let open=0,maxOpen=0,concurrentReached;
+  const reached=new Promise(resolve=>{concurrentReached=resolve;});
+  let unblock;
+  const gate=new Promise(resolve=>{unblock=resolve;});
+  const receipts=[];
+  chrome.tabs.create=async ({url})=>{
+    open++;maxOpen=Math.max(maxOpen,open);
+    if(maxOpen===3) concurrentReached();
+    await gate;
+    return {id:100+open,url};
+  };
+  chrome.tabs.get=async ()=>({status:"complete",url:source});
+  chrome.tabs.remove=async ()=>{open--;};
+  chrome.scripting.executeScript=async()=>[{result:{
+    url:source,captured_at:new Date().toISOString(),
+    price_origin:"DIRECT_OFFER_PRICE",snapshot:{
+      "@type":"Product",name:"Example",
+      offers:{"@type":"Offer",price:"12.00",priceCurrency:"PLN"}
+    }
+  }}];
+  // This test isolates queue concurrency; set each selected URL's browser
+  // page URL to the exact URL of that job through a tab-id map.
+  const tabURLs=new Map();
+  let tabID=200;
+  chrome.tabs.create=async({url})=>{
+    const id=++tabID;
+    tabURLs.set(id,url);
+    open++;maxOpen=Math.max(maxOpen,open);
+    if(maxOpen===3) concurrentReached();
+    await gate;
+    return{id,url};
+  };
+  chrome.tabs.get=async id=>({status:"complete",url:tabURLs.get(id)});
+  chrome.scripting.executeScript=async({target:{tabId}})=>[{result:{
+    url:tabURLs.get(tabId),captured_at:new Date().toISOString(),
+    price_origin:"DIRECT_OFFER_PRICE",snapshot:{
+      "@type":"Product",name:"Example",
+      offers:{"@type":"Offer",price:"12.00",priceCurrency:"PLN"}
+    }
+  }}];
+  globalThis.fetch=async(u,options)=>{
+    assert.ok(u.startsWith("http://127.0.0.1:8765/api/browser-companion/"));
+    assert.equal(options.headers.Authorization,"Bearer "+token);
+    if(u.endsWith("/next"))return{ok:true,json:async()=>({job:next.shift()||null})};
+    const value=JSON.parse(options.body);receipts.push(value);
+    return{ok:true,json:async()=>({status:"EXTRACTED"})};
+  };
+  chrome.tabs.remove=async(id)=>{tabURLs.delete(id);open--;};
+  try {
+    onAlarm({name:"tracecart-queued-research"});
+    await Promise.race([reached,new Promise((_,reject)=>
+      setTimeout(()=>reject(Error("Three tab overlap not reached")),3000))]);
+    assert.equal(open,3);
+    assert.equal(maxOpen,3);
+    unblock();
+    for(let i=0;i<30&&receipts.length<4;i++)
+      await new Promise(resolve=>setTimeout(resolve,100));
+    assert.equal(receipts.length,4);
+    assert.equal(new Set(receipts.map(x=>x.url)).size,4);
+    assert.ok(maxOpen<=3);
+    assert.equal(open,0);
+    assert.ok(receipts.every(x=>x.error===null && x.snapshot.offers.price==="12.00"));
+  } finally {
+    unblock();next=null;
+    chrome.tabs.create=savedCreate;chrome.tabs.get=savedGet;
+    chrome.scripting.executeScript=savedExecute;
+    chrome.tabs.remove=savedRemove;globalThis.fetch=savedFetch;
+    await new Promise(resolve=>setTimeout(resolve,60));
+  }
+});
+
 test("disabled configuration never polls the broker",async()=>{
   config={...config,enabled:false};
   let calls=0;

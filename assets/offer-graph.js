@@ -184,6 +184,13 @@
           details.appendChild(el("p","kg-quote",
             "Browser seller-declared price: "+price+" · "+(b.status||"")+
             " · exact variant and checkout NOT VERIFIED"));
+          if(b.promotion){
+            const c=b.promotion;
+            details.appendChild(el("p","kg-quote",
+              "Conditional price with code "+c.code+": "+c.price+
+              " "+c.currency+(c.valid_until?" · until "+c.valid_until:"")+
+              ". Code application and checkout total NOT verified."));
+          }
           if(b.price_differs_from_index)
             details.appendChild(el("p","kg-missing",
               "⚠ Indexed price differs from browser observation."));
@@ -380,6 +387,7 @@
         "INDEXED_SELLER_PAGE_DECLARES","BROWSER_INDEX_FIELD_SOURCE",
         "INDEXED_VS_BROWSER_VARIANT_CONFLICT","TITLE_CONFLICT_SOURCE",
         "INDEXED_VS_BROWSER_PRICE_DISAGREEMENT",
+        "CONDITIONAL_BROWSER_PROMOTION",
         "POSSIBLE_RELATED_PRODUCT_CATALOG_LEAD",
       ]);
       const visible=edges.filter(e=>layout.has(e.from)&&layout.has(e.to)

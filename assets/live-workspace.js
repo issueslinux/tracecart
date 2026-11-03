@@ -53,9 +53,8 @@
       const capacity=direct.find(a=>a.browser_status==="GRAPHICAL_BROWSER_CAPACITY_LIMIT");
       const hasFacts=(entry.reference_answers||[]).length>0;
       const directUrl=direct.find(a=>a.url)?.url || d.url || null;
-      // Research may have completed before indexed seller URLs were found.
-      // No evidence job was scheduled for such links; show NOT VERIFIED,
-      // not a fake, indefinitely WAITING browser check.
+      // A finished research job may acquire new index offers later.
+      // Those offers have NO fetch/evidence task; never show endless WAITING.
       let mode="QUEUED",label="WAITING",detail="Scheduled for source checking.";
       if(complete&&!state){
         mode="BLOCKED";
@@ -64,6 +63,9 @@
           ?"Shopping search card with no direct seller URL; no page to visit."
           :"Indexed seller URL found. Browser verification has not yet been authorized.";
       }
+      const offerIdx=Number(id.split("-")[1]);
+      const browserCheck=(data.indexed_browser_checks||[]).find(c=>
+        c.offer_idx===offerIdx && id!=="offer-0");
       if(state==="RUNNING"){
         mode="RUNNING";label="CHECKING";detail="Fetching eligible source pages.";
       }else if(state==="QUEUED"){
@@ -103,6 +105,20 @@
           "Source was checked; no product facts matched the listed model.":
           "Source check was interrupted.";
       }
+      if(browserCheck){
+        const b=browserCheck.browser_claim||{};
+        const amount=b.fields?.price && b.fields?.currency
+          ? b.fields.price+" "+b.fields.currency : "";
+        const status=browserCheck.status||"QUEUED";
+        mode=["QUEUED","IN_PROGRESS"].includes(status)?"RUNNING":
+          status==="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"?"REFERENCE":"BLOCKED";
+        label=status==="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"
+          ?"BROWSER CAPTURED":status==="IN_PROGRESS"?"CHECKING":
+          status==="QUEUED"?"QUEUED":"BROWSER: "+status;
+        detail=amount
+          ?"Browser seller-declared price: "+amount+"; exact variant and checkout unverified."
+          :"No verified browser price. "+status;
+      }
       const row={key:"#"+(Number(id.split("-")[1])+1),
         title:d.title||"Product",detail,mode,state:label,weight:weight[mode]};
       // An index search card is useful in the graph, but not a browser task.
@@ -130,6 +146,20 @@
         " listings share an already checked seller URL",
         detail:"Duplicate source checks are collapsed here; the separate product and indexed-price nodes remain in the graph.",
         mode:"BLOCKED",state:"SAME URL",weight:weight.BLOCKED});
+    }
+    const promotions=(g.nodes||[]).filter(node=>
+      node.provenance==="BROWSER_VISIBLE_CONDITIONAL_PRICE" &&
+      node.parameter==="coupon_price_with_code");
+    if(promotions.length){
+      promotions.slice(0,4).forEach(node=>rows.unshift({
+        key:"COUPON",title:"Conditional "+node.value+" "+
+          (node.currency||"")+" · code "+node.promotion_code,
+        detail:"Automatically observed in the authorized store browser. "+
+          "The coupon must be entered and accepted in checkout; "+
+          (node.valid_until?"listed expiry "+node.valid_until+". ":"")+
+          "The delivered total is NOT verified.",
+        mode:"REFERENCE",state:"CODE REQUIRED",weight:weight.REFERENCE
+      }));
     }
     const browserPages=(g.nodes||[]).filter(node=>
       node.source_kind==="USER_BROWSER_FILTERED_PROJECTION");
@@ -600,6 +630,101 @@
       const sources=sourceTasks(snapshot),
         questions=questionTasks(snapshot,(app._traceCartGraphView||{}).focus||
           "offer-0");
+      const auto=snapshot.browser_auto_batch||{};
+      if(["QUEUED","COMPLETE","COMPLETE_WITH_FAILURES",
+          "INTERRUPTED_ON_RESTART"].includes(auto.status)){
+        sources.unshift({key:"AUTO BROWSER",title:
+          (auto.status==="QUEUED"?"Automatic browser queue: ":
+           auto.status==="COMPLETE"?"Completed browser checks: ":
+           auto.status==="COMPLETE_WITH_FAILURES"?"Browser checks partly blocked: ":
+           "Browser jobs interrupted on restart: ")+
+          (auto.queued_count||0)+" page(s)",
+          detail:"Browser checks start only for sites granted permissions "+
+            "in Chromium. No CAPTCHA bypass or checkout.",
+          mode:auto.status==="COMPLETE_WITH_FAILURES"?"BLOCKED":"REFERENCE",
+          state:auto.status,weight:2});
+      }else if(auto.status==="SKIPPED_QUEUE_FULL"){
+        sources.unshift({key:"AUTO BROWSER",title:"Automatic browser queue is full",
+          detail:"Some pages were not added. Review existing browser jobs "+
+            "and retry only after they finish.",
+          mode:"BLOCKED",state:"CAPACITY",weight:3});
+      }
+      const checks=snapshot.indexed_browser_checks||[];
+      const eligible=(snapshot.offers||[]).filter(x=>
+        x.kind==="INDEXED_SELLER_LINK"&&x.url).length;
+      const verifyButton=$("verify-indexed-button");
+      if(verifyButton){
+        const working=checks.some(x=>["QUEUED","IN_PROGRESS"].includes(x.status));
+        const failures=checks.filter(x=>x.status!=="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED");
+        verifyButton.disabled=eligible===0||working;
+        verifyButton.textContent=working
+          ?"Browser checks running · "+checks.length
+          :checks.length
+          ?(failures.length?"Retry "+failures.length+" failed browser visits":
+             "Refresh "+checks.length+" browser seller prices")
+          :eligible
+          ?"Verify "+eligible+" indexed seller pages (3 parallel)"
+          :"No direct seller URLs to verify";
+      }
+      if(checks.length){
+        const complete=checks.filter(x=>x.status==="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED").length;
+        const errors=checks.filter(x=>!["QUEUED","IN_PROGRESS",
+          "PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"].includes(x.status)).length;
+        sources.unshift({
+          key:"BROWSER INDEX",title:complete+"/"+checks.length+
+            " indexed store pages captured · "+errors+" inaccessible/failed",
+          detail:"Three concurrent browser tabs maximum. Only separately authorized merchant origins are visited. Cards without seller URLs cannot be fetched.",
+          state:complete===checks.length?"CAPTURED":"VERIFYING",mode:"REFERENCE"
+        });
+      }else if((snapshot.offers||[]).some(x=>x.kind==="INDEXED_SELLER_LINK")){
+        sources.unshift({
+          key:"BROWSER INDEX",title:"Store URLs ready for browser verification",
+          detail:"Use the Verify indexed retailer offers button. Each shop needs its own Chrome permission; indexed prices are not current seller checks.",
+          state:"AWAITING USER",mode:"QUEUED"
+        });
+      }
+      const shopping=snapshot.shopping_search_status||"";
+      const shoppingRefresh=(snapshot.shopping_refresh||{}).status||"NOT_STARTED";
+      const shopButton=$("shopping-search-button");
+      if(shopButton){
+        const missing=shopping==="SKIPPED_NO_SERPAPI_API_KEY";
+        const running=["QUEUED","RUNNING"].includes(shoppingRefresh);
+        shopButton.disabled=missing||running;
+        shopButton.textContent=running?"Searching Shopping index…"
+          :missing?"Configure Shopping provider first"
+          :"Search / refresh alternative offers";
+      }
+      if(shopping==="SKIPPED_NO_SERPAPI_API_KEY"||
+         shopping==="SEARCH_NOT_STARTED"){
+        sources.unshift({
+          key:"SHOPPING",title:"No competitor search was performed",
+          detail:"No Shopping-index provider is configured for this research. "+
+            "Open Shopping discovery to enable it; zero alternatives here does "+
+            "NOT mean competitors do not exist.",
+          state:"NOT SEARCHED",mode:"BLOCKED"
+        });
+      }else if(shopping==="SKIPPED_DAILY_QUERY_BUDGET"){
+        sources.unshift({
+          key:"SHOPPING",title:"Shopping discovery paused: daily API cap",
+          detail:"The local daily paid-provider request cap was reached. "+
+            "Existing cached index evidence is retained.",
+          state:"API CAP",mode:"BLOCKED"
+        });
+      }else if(shopping.startsWith("FAILED_")){
+        sources.unshift({
+          key:"SHOPPING",title:"Shopping provider search failed",
+          detail:"Provider returned no usable data or an error. Do not "+
+            "interpret this as no alternative offers.",
+          state:"FAILED",mode:"BLOCKED"
+        });
+      }else if(shopping&&shopping!=="NOT_STARTED"){
+        sources.unshift({
+          key:"SHOPPING",title:"Shopping-index search: "+shopping,
+          detail:"Search-index cards and seller URLs are only leads. "+
+            "Browser checks require separate user-granted merchant permissions.",
+          state:"INDEX SCANNED",mode:"REFERENCE"
+        });
+      }
       const search=snapshot.source_search||{};
       if(search.status==="RUNNING"){
         sources.unshift({key:"DISCOVERY",title:"Searching external sources",
@@ -719,8 +844,8 @@
           lastSnapshot.state==="INTERRUPTED"?"Research interrupted":
           v.status==="COMPLETE"?"Verdict ready":
           v.status==="STALE_AFTER_SHOPPING_REFRESH"
-          ?"Offers updated · previous verdict needs refreshing"
-          :"Research finished")+
+            ?"Offers updated · previous verdict needs refreshing"
+            :"Research finished")+
           " · "+(e.processed||0)+"/"+(e.planned||0)+" checked";
       }
     });

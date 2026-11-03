@@ -587,6 +587,12 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_research_jobs (
                 id TEXT PRIMARY KEY, item TEXT NOT NULL, state TEXT NOT NULL,
                 created TEXT NOT NULL, result TEXT, error_type TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_shopping_refresh (
+                job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+                updated_at TEXT NOT NULL, error_type TEXT)""")
+            db.execute("""UPDATE cart_shopping_refresh SET
+                status='INTERRUPTED_ON_RESTART'
+                WHERE status IN ('QUEUED','RUNNING')""")
             db.execute("""CREATE TABLE IF NOT EXISTS cart_research_progress (
                 job_id TEXT PRIMARY KEY, stage TEXT NOT NULL,
                 revision INTEGER NOT NULL DEFAULT 0, preview TEXT)""")
@@ -611,6 +617,32 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_link_safety (
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 result_json TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_index_browser_jobs (
+                cart_job_id TEXT NOT NULL, offer_idx INTEGER NOT NULL,
+                capture_id TEXT NOT NULL UNIQUE, source_url TEXT NOT NULL,
+                seller TEXT NOT NULL, indexed_price TEXT, currency TEXT,
+                indexed_title TEXT NOT NULL, indexed_identity_status TEXT,
+                status TEXT NOT NULL, queued_at TEXT NOT NULL,
+                finished_at TEXT, PRIMARY KEY(cart_job_id, offer_idx))""")
+            db.execute("""CREATE INDEX IF NOT EXISTS idx_index_browser_cart
+                ON cart_index_browser_jobs(cart_job_id, offer_idx)""")
+            db.execute("""UPDATE cart_index_browser_jobs
+                SET status='INTERRUPTED_ON_RESTART'
+                WHERE status IN ('QUEUED','IN_PROGRESS')""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_browser_auto_settings (
+                id INTEGER PRIMARY KEY CHECK (id=1),
+                enabled INTEGER NOT NULL DEFAULT 0)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_browser_auto_batches (
+                cart_job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
+                updated_at TEXT NOT NULL, queued_count INTEGER NOT NULL DEFAULT 0)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_browser_auto_tasks (
+                capture_id TEXT PRIMARY KEY, cart_job_id TEXT NOT NULL,
+                source_url TEXT NOT NULL, status TEXT NOT NULL)""")
+            db.execute("""UPDATE cart_browser_auto_tasks SET
+                status='INTERRUPTED_ON_RESTART'
+                WHERE status IN ('QUEUED','IN_PROGRESS')""")
+            db.execute("""UPDATE cart_browser_auto_batches SET
+                status='INTERRUPTED_ON_RESTART' WHERE status='QUEUED'""")
             db.execute("""CREATE TABLE IF NOT EXISTS cart_browser_observations (
                 capture_id TEXT PRIMARY KEY,
                 source_url TEXT NOT NULL,
@@ -708,10 +740,315 @@ class CartResearchJobs:
                 "source_search":record.get("source_search",{}),
                 "final_verdict":verdict,
                 "input_price":record.get("input_price"),
+                "browser_auto_batch":self.browser_auto_batch_status(job_id),
                 "link_safety":record.get("link_safety",{"status":"NOT_STARTED"}),
                 "payment_authorized":False,
             }
         return self.live_bus.snapshot(job_id,build)
+
+    def request_shopping_refresh(self, job_id):
+        """Explicitly rerun shopping discovery for a previously saved cart."""
+        from shopping_provider_config import read_provider_key
+        key,_=read_provider_key(self.db_path)
+        if not key:
+            raise ValueError("SHOPPING_PROVIDER_NOT_CONFIGURED")
+        record=self.read(job_id)
+        if record["state"]!="READY" or not record.get("report"):
+            raise ValueError("CART_NOT_READY_TO_RESEARCH")
+        now=datetime.now(timezone.utc).isoformat()
+        with self._db() as db:
+            row=db.execute("""SELECT status FROM cart_shopping_refresh
+                WHERE job_id=?""",(job_id,)).fetchone()
+            if row and row[0] in ("QUEUED","RUNNING"):
+                raise ValueError("SHOPPING_REFRESH_ALREADY_ACTIVE")
+            db.execute("""INSERT INTO cart_shopping_refresh
+                (job_id,status,updated_at,error_type) VALUES (?,'QUEUED',?,NULL)
+                ON CONFLICT(job_id) DO UPDATE SET status='QUEUED',
+                  updated_at=excluded.updated_at,error_type=NULL""",(job_id,now))
+        self.pool.submit(self._refresh_shopping_job,job_id)
+        self.live_bus.signal(job_id)
+
+    def shopping_refresh_status(self, job_id):
+        with self._db() as db:
+            row=db.execute("""SELECT status,updated_at,error_type
+                FROM cart_shopping_refresh WHERE job_id=?""",(job_id,)).fetchone()
+        return ({"status":row[0],"updated_at":row[1],
+                 "error_type":row[2]} if row else {"status":"NOT_STARTED"})
+
+    def _refresh_shopping_job(self, job_id):
+        with self._db() as db:
+            db.execute("""UPDATE cart_shopping_refresh SET status='RUNNING'
+                WHERE job_id=?""",(job_id,))
+        self.live_bus.signal(job_id)
+        state="COMPLETE"
+        error=None
+        try:
+            from copy import deepcopy
+            record=self.read(job_id)
+            report=deepcopy(record["report"])
+            clean=record["item"]
+            # A later manual refresh replaces, never duplicates, the old
+            # Google Shopping tree node while preserving all other evidence.
+            children=report.get("root",{}).get("children") or []
+            report["root"]["children"]=[
+                row for row in children if row.get("id")!="cart-indexed-shopping"]
+            result=self._attach_shopping_search(report,clean,job_id)
+            status=(result.get("indexed_shopping") or {}).get("status")
+            if status=="SKIPPED_DAILY_QUERY_BUDGET":
+                state="SKIPPED_DAILY_QUERY_BUDGET"
+            else:
+                result.pop("sha256",None)
+                result["sha256"]=sha256(json.dumps(
+                    result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+                with self._db() as db:
+                    db.execute("UPDATE cart_research_jobs SET result=? WHERE id=?",
+                               (json.dumps(result,ensure_ascii=False),job_id))
+                    db.execute("""UPDATE cart_final_verdict
+                        SET status='STALE_AFTER_SHOPPING_REFRESH'
+                        WHERE job_id=? AND status='COMPLETE'""",(job_id,))
+        except Exception as exc:
+            state="FAILED"
+            error=type(exc).__name__
+        with self._db() as db:
+            db.execute("""UPDATE cart_shopping_refresh SET status=?,
+               error_type=?,updated_at=? WHERE job_id=?""",
+               (state,error,datetime.now(timezone.utc).isoformat(),job_id))
+        self.live_bus.signal(job_id)
+        if state=="COMPLETE" and self.browser_auto_enabled():
+            callback=getattr(self,"on_research_ready",None)
+            if callback:
+                try:callback(job_id)
+                except (ValueError, RuntimeError, OSError):
+                    self.mark_browser_auto_batch(job_id,"SKIPPED_QUEUE_FULL")
+
+    def browser_auto_enabled(self):
+        with self._db() as db:
+            row=db.execute("SELECT enabled FROM cart_browser_auto_settings WHERE id=1").fetchone()
+        return bool(row and row[0])
+
+    def set_browser_auto_enabled(self, enabled):
+        if type(enabled) is not bool:
+            raise ValueError("INVALID_AUTOMATIC_BROWSER_SETTING")
+        with self._db() as db:
+            db.execute("""INSERT INTO cart_browser_auto_settings (id,enabled)
+                VALUES (1,?) ON CONFLICT(id) DO UPDATE SET
+                enabled=excluded.enabled""",(int(enabled),))
+        return {"enabled":enabled,"requires_browser_host_permission":True}
+
+    def link_browser_auto_tasks(self, job_id, urls, capture_ids):
+        if not urls or len(urls)!=len(capture_ids) or len(urls)>12:
+            raise ValueError("INVALID_BROWSER_AUTO_LINKS")
+        with self._db() as db:
+            db.executemany("""INSERT INTO cart_browser_auto_tasks
+              (capture_id,cart_job_id,source_url,status)
+              VALUES (?,?,?,'QUEUED')""",
+              [(capture_id,job_id,url) for url,capture_id in zip(urls,capture_ids)])
+
+    def finish_browser_auto_task(self, capture_id, status):
+        terminal={"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+          "SITE_PERMISSION_REQUIRED","REDIRECTED","ACCESS_CHALLENGE",
+          "NO_STRUCTURED_PRODUCT","MULTIPLE_PRODUCTS_AMBIGUOUS",
+          "CONFLICTING_PRODUCT_IDENTITY","CONFLICTING_OFFER_EVIDENCE",
+          "TAB_TIMEOUT","BROWSER_ERROR"}
+        if status not in terminal:
+            return
+        with self._db() as db:
+            row=db.execute("""SELECT cart_job_id FROM cart_browser_auto_tasks
+                WHERE capture_id=?""",(capture_id,)).fetchone()
+            if not row:
+                return
+            job_id=row[0]
+            db.execute("""UPDATE cart_browser_auto_tasks SET status=?
+                WHERE capture_id=?""",(status,capture_id))
+            counts=db.execute("""SELECT
+                 SUM(CASE WHEN status IN ('QUEUED','IN_PROGRESS') THEN 1 ELSE 0 END),
+                 SUM(CASE WHEN status !=
+                   'PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED'
+                    THEN 1 ELSE 0 END)
+                FROM cart_browser_auto_tasks WHERE cart_job_id=?""",
+                (job_id,)).fetchone()
+            if counts[0]==0:
+                final="COMPLETE_WITH_FAILURES" if counts[1] else "COMPLETE"
+                db.execute("""UPDATE cart_browser_auto_batches SET status=?,
+                    updated_at=? WHERE cart_job_id=?""",
+                    (final,datetime.now(timezone.utc).isoformat(),job_id))
+        self.live_bus.signal(job_id)
+
+    def browser_auto_batch_status(self, job_id):
+        with self._db() as db:
+            row=db.execute("""SELECT status,queued_count FROM cart_browser_auto_batches
+                WHERE cart_job_id=?""",(job_id,)).fetchone()
+        return {"status":row[0],"queued_count":row[1]} if row else {
+            "status":"NOT_REQUESTED","queued_count":0}
+
+    def mark_browser_auto_batch(self, job_id, status, count=0):
+        if status not in ("QUEUED","SKIPPED_NO_PERMISSION",
+                          "SKIPPED_QUEUE_FULL","NO_ELIGIBLE_URLS"):
+            raise ValueError("INVALID_AUTOMATIC_BROWSER_BATCH_STATUS")
+        with self._db() as db:
+            db.execute("""INSERT INTO cart_browser_auto_batches
+              (cart_job_id,status,updated_at,queued_count) VALUES (?,?,?,?)
+              ON CONFLICT(cart_job_id) DO UPDATE SET
+                status=excluded.status,updated_at=excluded.updated_at,
+                queued_count=excluded.queued_count""",
+              (job_id,status,datetime.now(timezone.utc).isoformat(),count))
+        self.live_bus.signal(job_id)
+
+    def shopping_provider_status(self):
+        """Safe UI status. Never return a key or authenticated provider URL."""
+        from shopping_provider_config import read_provider_key, provider_usage
+        key,source=read_provider_key(self.db_path)
+        return {"configured":bool(key),"configured_via":source,
+                "provider":"SERPAPI_GOOGLE_SHOPPING",
+                **provider_usage(self.db_path)}
+
+    def configure_shopping_provider(self, value):
+        from shopping_provider_config import save_provider_key
+        save_provider_key(self.db_path,value)
+        return self.shopping_provider_status()
+
+    def disable_shopping_provider(self):
+        from shopping_provider_config import disable_provider_key
+        disable_provider_key(self.db_path)
+        return self.shopping_provider_status()
+
+    def _attach_shopping_search(self, report, item, job_id):
+        """Always report whether retailer discovery actually ran."""
+        from shopping_provider_config import read_provider_key, reserve_provider_budget
+        from search_first import search_serpapi_shopping, attach_shopping_evidence
+        key,_=read_provider_key(self.db_path)
+        if not key:
+            report["indexed_shopping"]=search_serpapi_shopping(item,api_key="")
+            return report
+        if not reserve_provider_budget(self.db_path,job_id):
+            skipped=search_serpapi_shopping(item,api_key="")
+            skipped["status"]="SKIPPED_DAILY_QUERY_BUDGET"
+            report["indexed_shopping"]=skipped
+            return report
+        result=search_serpapi_shopping(item,api_key=key)
+        return attach_shopping_evidence(report,item,result)
+
+    def indexed_browser_targets(self, cart_job_id):
+        """Only saved Google Shopping *seller URLs*, never lookup/search cards."""
+        from product_intake import validate_product_url
+        record=self.read(cart_job_id)
+        indexed=((record.get("report") or {}).get("indexed_shopping") or {})
+        targets=[]
+        seen=set()
+        for idx, row in enumerate((indexed.get("indexed_offers") or [])[:24],1):
+            if not isinstance(row,dict) or not row.get("merchant_url"):
+                continue
+            try:
+                url=validate_product_url(row["merchant_url"])
+            except (TypeError,ValueError):
+                continue
+            from urllib.parse import urlsplit
+            host=(urlsplit(url).hostname or "").casefold()
+            if (host.startswith("google.") or ".google." in host or
+                    host=="serpapi.com" or host.endswith(".serpapi.com")):
+                # Google product/search pages are index cards, not directly
+                # observed merchant offers.
+                continue
+            if url in seen:
+                continue
+            seen.add(url)
+            targets.append({
+                "offer_idx":idx, "url":url,
+                "seller":str(row.get("seller") or "")[:100],
+                "title":str(row.get("title") or "")[:200],
+                "indexed_price":row.get("current_price_indexed"),
+                "currency":row.get("currency"),
+                "indexed_identity_status":str(row.get("identity_status") or "")[:100],
+            })
+            if len(targets)>=12:
+                break
+        return targets
+
+    def register_index_browser_batch(self, cart_job_id, targets, capture_ids):
+        """Record an explicitly user-queued set of exact indexed seller URLs."""
+        if not targets or len(targets)!=len(capture_ids) or len(targets)>12:
+            raise ValueError("INVALID_INDEX_BROWSER_BATCH")
+        # Ensure target indices and exact URLs originated from the saved job.
+        valid={(x["offer_idx"],x["url"]) for x in
+               self.indexed_browser_targets(cart_job_id)}
+        if any((x["offer_idx"],x["url"]) not in valid
+               for x in targets):
+            raise ValueError("STALE_INDEX_BROWSER_TARGETS")
+        now=datetime.now(timezone.utc).isoformat()
+        with self._db() as db:
+            for row, ident in zip(targets,capture_ids):
+                db.execute("""INSERT INTO cart_index_browser_jobs
+                    (cart_job_id,offer_idx,capture_id,source_url,seller,
+                     indexed_price,currency,indexed_title,indexed_identity_status,
+                     status,queued_at) VALUES (?,?,?,?,?,?,?,?,?,'QUEUED',?)
+                    ON CONFLICT(cart_job_id,offer_idx) DO UPDATE SET
+                      capture_id=excluded.capture_id,
+                      source_url=excluded.source_url,
+                      indexed_price=excluded.indexed_price,
+                      currency=excluded.currency,
+                      indexed_title=excluded.indexed_title,
+                      indexed_identity_status=excluded.indexed_identity_status,
+                      status='QUEUED',queued_at=excluded.queued_at,
+                      finished_at=NULL""",
+                    (cart_job_id,row["offer_idx"],ident,row["url"],row["seller"],
+                     row["indexed_price"],row["currency"],row["title"],
+                     row["indexed_identity_status"],now))
+        self.live_bus.signal(cart_job_id)
+
+    def mark_index_browser_in_progress(self, capture_id):
+        with self._db() as db:
+            rows=db.execute("""SELECT cart_job_id FROM cart_index_browser_jobs
+                WHERE capture_id=? AND status='QUEUED'""",
+                (capture_id,)).fetchall()
+            db.execute("""UPDATE cart_index_browser_jobs SET status='IN_PROGRESS'
+                WHERE capture_id=? AND status='QUEUED'""",(capture_id,))
+        for (cart_job_id,) in rows:
+            self.live_bus.signal(cart_job_id)
+
+    def finish_index_browser_task(self, capture_id, status):
+        """Persist terminal browser outcome, including inaccessible merchants."""
+        if type(status) is not str or len(status)>85:
+            raise ValueError("INVALID_BROWSER_STATUS")
+        with self._db() as db:
+            rows=db.execute("""SELECT cart_job_id FROM cart_index_browser_jobs
+                WHERE capture_id=?""",(capture_id,)).fetchall()
+            db.execute("""UPDATE cart_index_browser_jobs SET status=?,
+                finished_at=? WHERE capture_id=? AND
+                status IN ('QUEUED','IN_PROGRESS')""",
+                (status,datetime.now(timezone.utc).isoformat(),capture_id))
+        for (cart_job_id,) in rows:
+            self.live_bus.signal(cart_job_id)
+
+    def index_browser_checks(self, cart_job_id):
+        """Bounded per-offer status, with optional completed source projection."""
+        from browser_cart_identity import browser_cart_link_key
+        with self._db() as db:
+            rows=db.execute("""SELECT offer_idx,capture_id,source_url,seller,
+                indexed_price,currency,indexed_title,indexed_identity_status,
+                status,queued_at,finished_at
+                FROM cart_index_browser_jobs WHERE cart_job_id=?
+                ORDER BY offer_idx LIMIT 12""",(cart_job_id,)).fetchall()
+            result=[]
+            for row in rows:
+                (idx,capture_id,url,seller,indexed_price,currency,title,
+                 index_status,status,queued,finished)=row
+                claim=db.execute("""SELECT source_url,result_json FROM
+                    cart_browser_observations WHERE capture_id=?""",
+                    (capture_id,)).fetchone()
+                outcome=None
+                if claim:
+                    parsed=json.loads(claim[1])
+                    receipt_key=browser_cart_link_key(claim[0])
+                    requested_key=browser_cart_link_key(url)
+                    if receipt_key and receipt_key==requested_key:
+                        outcome=parsed
+                result.append({"offer_idx":idx,"capture_id":capture_id,
+                               "url":url,"seller":seller,"indexed_title":title,
+                               "indexed_price":indexed_price,"currency":currency,
+                               "index_identity_status":index_status,
+                               "status":status,"queued_at":queued,
+                               "finished_at":finished,"browser_claim":outcome})
+        return result
 
     def store_browser_claim(self, row):
         """Persist a consented USER_BROWSER receipt, never an input/checkout price.
@@ -1353,10 +1690,7 @@ class CartResearchJobs:
             # merchant prices even if the selected marketplace URL is HTTP 403.
             # No provider key -> no paid queries or invented offers. Indexed
             # prices are separate from directly verified seller declarations.
-            if os.environ.get("SERPAPI_API_KEY"):
-                from search_first import search_serpapi_shopping, attach_shopping_evidence
-                indexed = search_serpapi_shopping(clean)
-                report = attach_shopping_evidence(report, clean, indexed)
+            report=self._attach_shopping_search(report,clean,job_id)
             # Automatic offer discovery can run only on public URLs already
             # returned by an authorized search provider. Keep the background
             # cart task bounded and do not invent search results if no key.
@@ -1384,6 +1718,13 @@ class CartResearchJobs:
             db.execute("UPDATE cart_research_jobs SET state=?,result=?,error_type=? WHERE id=?",
                        (state, result, error, job_id))
         self.live_bus.signal(job_id)
+        if state=="READY" and self.browser_auto_enabled():
+            callback=getattr(self,"on_research_ready",None)
+            if callback:
+                try:
+                    callback(job_id)
+                except (ValueError, RuntimeError, OSError):
+                    self.mark_browser_auto_batch(job_id,"SKIPPED_QUEUE_FULL")
         if state == "READY" and self.runner is research_cart:
             # Insert the verdict receipt before any evidence can finish so
             # SSE cannot mistake an unfinished analysis for a terminal run.
@@ -1406,12 +1747,8 @@ class CartResearchJobs:
         try:
             report = self.runner(item)
             self._progress(job_id, "BASE_RESEARCH_AVAILABLE", report)
-            if (os.environ.get("SERPAPI_API_KEY")
-                    and isinstance(report.get("root"), dict)
-                    and report["root"].get("children")):
-                from search_first import search_serpapi_shopping, attach_shopping_evidence
-                indexed = search_serpapi_shopping(item)
-                report = attach_shopping_evidence(report, item, indexed)
+            if isinstance(report.get("root"),dict) and report["root"].get("children"):
+                report=self._attach_shopping_search(report,item,job_id)
             self._progress(job_id, "RESEARCH_COMPLETE", report)
             state = "READY"
             result = json.dumps(report, ensure_ascii=False)
@@ -1423,6 +1760,12 @@ class CartResearchJobs:
             db.execute("UPDATE cart_research_jobs SET state=?,result=?,error_type=? WHERE id=?",
                        (state, result, error, job_id))
         self.live_bus.signal(job_id)
+        if state=="READY" and self.browser_auto_enabled():
+            callback=getattr(self,"on_research_ready",None)
+            if callback:
+                try:callback(job_id)
+                except (ValueError, RuntimeError, OSError):
+                    self.mark_browser_auto_batch(job_id,"SKIPPED_QUEUE_FULL")
 
     def read(self, job_id):
         if not isinstance(job_id, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{18,40}", job_id):
@@ -1493,6 +1836,8 @@ class CartResearchJobs:
         browser_claims=self._browser_claims_for_selected(selected)
         return {"source_search":source_search,
                 "browser_claims":browser_claims,
+                "indexed_browser_checks":self.index_browser_checks(job_id),
+                "shopping_refresh":self.shopping_refresh_status(job_id),
                 "input_price":input_price,
                 "link_safety":link_safety,
                 "final_verdict":final_verdict,

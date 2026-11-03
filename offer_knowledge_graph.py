@@ -285,6 +285,27 @@ def build_offer_knowledge_graph(projection):
             source_facet("offer-0",family,nid)
             add_edge(nid,sid,"OBSERVED_IN_FILTERED_BROWSER_PROJECTION")
             browser_claim_count+=1
+        conditional=receipt.get("browser_promotion")
+        if isinstance(conditional,dict) and conditional.get("condition")=="CODE_REQUIRED":
+            label=("Conditional coupon price · "+str(conditional.get("price"))+
+                   " "+str(conditional.get("currency"))+
+                   " · code "+str(conditional.get("code")))
+            nid="browser-promotion:"+_key(sha+"|"+label)
+            add_node(nid,"seller_declaration",label[:200],
+                     parameter="coupon_price_with_code",
+                     value=conditional.get("price"),
+                     currency=conditional.get("currency"),
+                     promotion_code=conditional.get("code"),
+                     valid_until=conditional.get("valid_until"),
+                     source_url=url,source_sha256=sha,
+                     provenance="BROWSER_VISIBLE_CONDITIONAL_PRICE",
+                     status="CONDITIONAL_CODE_NOT_APPLIED_AT_CHECKOUT",
+                     checkout_verified=False,code_applied=False,
+                     exact_variant_verified=False)
+            add_edge("offer-0",nid,"CONDITIONAL_BROWSER_PROMOTION",
+                     status="CODE_REQUIRED_NOT_CHECKOUT_VERIFIED")
+            add_edge(nid,sid,"OBSERVED_IN_FILTERED_BROWSER_PROJECTION")
+            browser_claim_count+=1
     search=(projection.get("source_search") or {})
     search_lead_ids={}
     for candidate in (search.get("leads") or [])[:24]:
@@ -319,6 +340,143 @@ def build_offer_knowledge_graph(projection):
                      exact_retailer_variant_verified=False)
             add_edge("offer-0",family_id,"SELLER_PAGE_MODEL_IDENTITY",
                      status="PAGE_DECLARED_MODEL_NOT_CHECKOUT")
+    # An indexed retailer link may be revisited through an explicitly
+    # authorized real-browser queue. Result is attached to the *same indexed
+    # offer*, never to input offer-0 or a merely similar Google search card.
+    index_checks={row["offer_idx"]:row for row in
+                  (projection.get("indexed_browser_checks") or [])[:12]
+                  if type(row) is dict and type(row.get("offer_idx")) is int}
+    indexed_browser_checked=0
+    indexed_browser_failed=0
+    indexed_browser_identity_conflicts=0
+    indexed_browser_price_disagreements=0
+    indexed_browser_views={}
+
+    def browser_index_evidence(oid, offer, check):
+        nonlocal indexed_browser_checked,indexed_browser_failed
+        nonlocal indexed_browser_identity_conflicts,indexed_browser_price_disagreements
+        status=check.get("status")
+        row_url=check.get("url")
+        if row_url!=offer.get("url"):
+            return
+        indexed_browser_views[oid]={"status":status,"checkout_verified":False}
+        result=check.get("browser_claim")
+        if status!="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED" or not result:
+            indexed_browser_failed+=status not in ("QUEUED","IN_PROGRESS")
+            node_id="indexed-browser-status:"+_key(oid+"|"+str(status))
+            add_node(node_id,"source_lead",
+                     "Browser check · "+str(status or "QUEUED"),
+                     url=row_url,status=str(status or "QUEUED"),
+                     source_kind="INDEXED_SELLER_BROWSER_CHECK_NO_RECEIPT",
+                     checkout_verified=False)
+            add_edge(oid,node_id,"INDEXED_SELLER_BROWSER_CHECK_STATE",
+                     status="NO_CURRENT_BROWSER_PRICE_VERIFIED")
+            return
+        fields=result.get("fields") or {}
+        sha=result.get("snapshot_sha256")
+        url=result.get("source_url")
+        if (not isinstance(fields,dict) or not isinstance(sha,str) or
+                len(sha)!=64 or result.get("acquisition_method")!="USER_BROWSER" or
+                result.get("checkout_verified") is not False or
+                result.get("seller_verified") is not False):
+            return
+        from browser_cart_identity import browser_cart_link_key
+        try:
+            first=browser_cart_link_key(row_url)
+            second=browser_cart_link_key(url)
+        except (TypeError,ValueError):
+            return
+        if not first or first!=second:
+            return
+        indexed_browser_checked+=1
+        src="indexed-browser-source:"+_key(oid+"|"+sha)
+        add_node(src,"fetched_source",
+                 "Browser capture of indexed store "+str(check.get("seller") or "")[:65],
+                 url=url,sha256=sha,retrieved_at=result.get("acquired_at"),
+                 source_kind="USER_BROWSER_INDEXED_SELLER_PROJECTION",
+                 status="SELLER_DECLARATION_NOT_CHECKOUT",
+                 checkout_verified=False,exact_variant_verified=False)
+        add_edge(oid,src,"INDEXED_OFFER_VISITED_IN_BROWSER",
+                 status="SELLER_URL_MATCH_ONLY_VARIANT_NOT_CHECKOUT_VERIFIED")
+        # Same URL is not proof that the indexed product was the same
+        # SKU/size/bundle, and the earlier indexed price may be stale.
+        from search_first import _variant_assessment, _variant_conflict
+        indexed_title=str(check.get("indexed_title") or "")
+        current_title=str(fields.get("title") or "")
+        identity=_variant_assessment(indexed_title,current_title)
+        indexed_browser_views[oid]["identity_status"]=identity
+        indexed_browser_views[oid]["captured_at"]=result.get("acquired_at")
+        if _variant_conflict(identity):
+            indexed_browser_views[oid]["status"]="BROWSER_VARIANT_CONFLICT"
+            indexed_browser_identity_conflicts+=1
+            conflict="indexed-browser-title-conflict:"+_key(oid+"|"+sha)
+            add_node(conflict,"source_disagreement",
+                     "Indexed title vs browser product differs",
+                     status=identity,source_url=url,checkout_verified=False)
+            add_edge(oid,conflict,"INDEXED_VS_BROWSER_VARIANT_CONFLICT",
+                     status="DO_NOT_UPDATE_OFFER_PRICE_UNTIL_REVIEW")
+            add_edge(conflict,src,"TITLE_CONFLICT_SOURCE")
+            return
+        def field(key,label,value):
+            if not isinstance(value,str) or not value.strip() or len(value)>220:
+                return
+            fact="indexed-browser-field:"+_key(oid+"|"+sha+"|"+key+"|"+value)
+            add_node(fact,"seller_declaration",label+" · "+value,
+                     parameter=key,value=value,source_url=url,source_sha256=sha,
+                     captured_at=result.get("acquired_at"),
+                     provenance="BROWSER_INDEXED_SELLER_NOT_CHECKOUT",
+                     checkout_verified=False,exact_variant_verified=False,
+                     status="SELLER_DECLARATION_FOR_INDEXED_URL")
+            add_edge(oid,fact,"INDEXED_SELLER_PAGE_DECLARES",
+                     status="BROWSER_DECLARED_NOT_CHECKOUT")
+            source_facet(oid,"seller" if key=="price" else "model",fact)
+            add_edge(fact,src,"BROWSER_INDEX_FIELD_SOURCE")
+        field("title","Browser product title",fields.get("title"))
+        field("sku","Browser SKU",fields.get("sku"))
+        field("gtin","Browser GTIN",fields.get("gtin"))
+        field("availability","Browser availability",fields.get("availability"))
+        now_price=fields.get("price")
+        now_currency=fields.get("currency")
+        if isinstance(now_price,str) and now_currency in ("PLN","EUR","USD"):
+            indexed_browser_views[oid]["declared_price"]=now_price
+            indexed_browser_views[oid]["currency"]=now_currency
+            indexed_browser_views[oid]["price_origin"]=result.get("browser_original_price_origin")
+            field("price","Seller-declared browser price",now_price+" "+now_currency)
+            coupon=result.get("browser_promotion")
+            if isinstance(coupon,dict) and coupon.get("condition")=="CODE_REQUIRED":
+                indexed_browser_views[oid]["promotion"]=coupon
+                promo_id="indexed-browser-coupon:"+_key(oid+"|"+sha+"|"+coupon["code"])
+                add_node(promo_id,"seller_declaration",
+                    "Price with code "+coupon["code"]+" · "+coupon["price"]+
+                    " "+coupon["currency"],
+                    parameter="coupon_price_with_code",
+                    value=coupon["price"],currency=coupon["currency"],
+                    promotion_code=coupon["code"],
+                    valid_until=coupon.get("valid_until"),
+                    source_url=url,source_sha256=sha,
+                    provenance="BROWSER_VISIBLE_CONDITIONAL_PRICE",
+                    status="CODE_REQUIRED_NOT_CHECKOUT_VERIFIED",
+                    checkout_verified=False,code_applied=False)
+                add_edge(oid,promo_id,"CONDITIONAL_BROWSER_PROMOTION",
+                         status="CODE_REQUIRED_NOT_CHECKOUT_VERIFIED")
+                add_edge(promo_id,src,"OBSERVED_IN_FILTERED_BROWSER_PROJECTION")
+            indexed_price=check.get("indexed_price")
+            indexed_currency=check.get("currency")
+            if indexed_price is not None and (
+                    str(indexed_price)!=now_price or indexed_currency!=now_currency):
+                indexed_browser_views[oid]["price_differs_from_index"]=True
+                indexed_browser_price_disagreements+=1
+                conflict="indexed-browser-price-diff:"+_key(oid+"|"+sha)
+                add_node(conflict,"source_disagreement",
+                         "Indexed price differs from browser-declared price",
+                         status="INDEXED_PRICE_MAY_BE_STALE_OR_VARIANT_DIFFERS",
+                         indexed_price=str(indexed_price),
+                         indexed_currency=indexed_currency,
+                         browser_price=now_price,browser_currency=now_currency,
+                         checkout_verified=False)
+                add_edge(oid,conflict,"INDEXED_VS_BROWSER_PRICE_DISAGREEMENT",
+                         status="BROWSER_PRICE_NOT_CONFIRMED_CHECKOUT")
+
     for offer in offers:
         oid=offer["id"]
         kind=offer.get("kind","UNKNOWN")
@@ -332,6 +490,9 @@ def build_offer_knowledge_graph(projection):
         if oid!="offer-0":
             add_edge("offer-0",oid,"ALTERNATIVE_INDEX_LEAD",
                      status="SEARCH_RESULT_NOT_VERIFIED_EQUIVALENT")
+            idx=int(oid.split("-")[-1])
+            if idx in index_checks:
+                browser_index_evidence(oid,offer,index_checks[idx])
         if search_lead_ids:
             from generic_source_research import product_identity
             identity=product_identity(offer.get("title",""))
@@ -571,6 +732,7 @@ def build_offer_knowledge_graph(projection):
             "title":offer.get("title"),"source":offer.get("source"),
             "kind":kind,"url":offer.get("url"),
             "indexed_price":price,"claim_provenance":provenance,
+            "browser_observation":indexed_browser_views.get(oid),
             "title_facts":generic_facts,
             "unit_price":normalized_price,
             "input_price":(projection.get("input_price") if oid=="offer-0" else None),
@@ -619,6 +781,10 @@ def build_offer_knowledge_graph(projection):
             "seller_page_declarations":seller_page_claims,
             "browser_claims_not_checkout_verified":browser_claim_count,
             "browser_identity_conflicts":browser_conflict_count,
+            "indexed_browser_checked":indexed_browser_checked,
+            "indexed_browser_failed":indexed_browser_failed,
+            "indexed_browser_identity_conflicts":indexed_browser_identity_conflicts,
+            "indexed_browser_price_disagreements":indexed_browser_price_disagreements,
             "evidence_facets":sum(n["type"]=="evidence_facet"
                                     for n in vertices.values()),
             "focused_verification_gaps":sum(n["type"]=="verification_gap"

@@ -83,6 +83,41 @@ def _validate_snapshot(value):
     return value
 
 
+def _validate_coupon_promotion(value, snapshot):
+    """A conditional visible coupon claim, never a checkout total."""
+    from decimal import Decimal
+    if value is None:
+        return None
+    if (type(value) is not dict or set(value)!={
+            "price","currency","code","valid_until","source"}):
+        raise ValueError("INVALID_COUPON_PROJECTION")
+    price=value["price"]
+    code=value["code"]
+    currency=value["currency"]
+    until=value["valid_until"]
+    if (type(price) is not str or not
+            re.fullmatch(r"(?:0|[1-9][0-9]{0,5})[.][0-9]{2}",price) or
+            type(code) is not str or not re.fullmatch(r"[A-Z0-9_-]{4,30}",code) or
+            not re.search(r"[A-Z]",code) or not re.search(r"[0-9]",code) or
+            currency!=snapshot["offers"]["priceCurrency"] or
+            value["source"]!="VISIBLE_PRODUCT_PRICE_WITH_CODE"):
+        raise ValueError("INVALID_COUPON_PROJECTION")
+    if (Decimal(price)>=Decimal(str(snapshot["offers"]["price"])) or
+            Decimal(price)<=Decimal("0")):
+        raise ValueError("INVALID_COUPON_PRICE_RELATION")
+    if until is not None:
+        if type(until) is not str or not re.fullmatch(
+                r"20[0-9]{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])",until):
+            raise ValueError("INVALID_COUPON_EXPIRY")
+        try:
+            datetime.fromisoformat(until)
+        except ValueError as exc:
+            raise ValueError("INVALID_COUPON_EXPIRY") from exc
+    return {"price":price,"currency":currency,"code":code,
+            "valid_until":until,"source":value["source"],
+            "condition":"CODE_REQUIRED",
+            "checkout_verified":False,"code_applied":False}
+
 def _capture_time(stamp, now=None):
     if not _plain(stamp, 45):
         raise ValueError("INVALID_CAPTURE_TIME")
@@ -183,9 +218,10 @@ class CompanionQueue:
         return None
 
     def report(self, payload):
-        if type(payload) is not dict or set(payload) != {
-                "job_id", "url", "captured_at", "snapshot",
-                "price_origin", "error"}:
+        expected={"job_id", "url", "captured_at", "snapshot",
+                  "price_origin", "error"}
+        if type(payload) is not dict or set(payload) not in (
+                expected,expected | {"promotion"}):
             raise ValueError("INVALID_CAPTURE_RECEIPT")
         job_id = payload["job_id"]
         with self.lock:
@@ -198,7 +234,8 @@ class CompanionQueue:
             if payload["error"] is not None:
                 if (payload["error"] not in FAILURES or
                         payload["snapshot"] is not None or
-                        payload["price_origin"] is not None):
+                        payload["price_origin"] is not None or
+                        payload.get("promotion") is not None):
                     raise ValueError("INVALID_FAILURE_RECEIPT")
                 row["status"] = payload["error"]
                 row["result"] = None
@@ -207,10 +244,13 @@ class CompanionQueue:
             if payload["price_origin"] not in PRICE_ORIGINS:
                 raise ValueError("UNKNOWN_BROWSER_PRICE_SOURCE")
             snapshot = _validate_snapshot(payload["snapshot"])
+            promotion=_validate_coupon_promotion(payload.get("promotion"),snapshot)
             raw = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode("utf8")
             extracted = extract_snapshot(row["url"], raw, content_type="application/ld+json",
                                          acquisition_method="USER_BROWSER",
                                          acquired_at=payload["captured_at"])
+            if promotion:
+                extracted["browser_promotion"]=promotion
             extracted["browser_original_price_origin"] = payload["price_origin"]
             extracted["browser_projection_scope"] = "FILTERED_PRODUCT_OFFER_ONLY"
             for claim in extracted["evidence"]:
