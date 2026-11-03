@@ -357,6 +357,9 @@
       report.market_reference?
       "Median of comparable indexed listings: "+report.market_reference+
       " — not the selected store price or verified savings.":
+      report.status==="FUNCTIONAL_INDEX_LEADS_NEED_SPEC_VERIFICATION"?
+      "Offers are conditional leads; there is no reliable like-for-like peer median. "+
+      "Confirm the model, performance, stock and delivered total at the retailer.":
       "No reliable price baseline; listing data is incomplete."));
     function addGroup(rows,heading){
       if(!rows.length)return;
@@ -417,11 +420,14 @@
       });
       container.appendChild(cards);
     }
+    const functionalMode=report.status==="FUNCTIONAL_INDEX_LEADS_NEED_SPEC_VERIFICATION";
     addGroup(options,unitMode?
       "Comparable advertised packs · ranked by indexed cost per unit":
+      functionalMode?"Potentially cheaper functional leads · specifications not verified":
       "Potentially cheaper, comparable configurations");
     addGroup(tradeoffs,unitMode?
       "Pack or product variant not confirmed":
+      functionalMode?"Further unverified functional leads":
       "Cheaper with specification differences");
     if(unitMode&&(report.different_variant_listings||[]).length){
       container.appendChild(item("p","purchase-disclaimer",
@@ -478,6 +484,7 @@
       legacy?"Research result · earlier saved job":"Research interrupted";
     head.appendChild(item("strong","",title));
     const tag=item("span","verdict-tag"+(v.status==="UNAVAILABLE"?" unavailable":""),
+      v.comparison_projection_updated?"Reassessed from saved evidence · index prices unverified":
       v.status==="COMPLETE"?"Local Qwen · conditional assessment · indexed prices":
       v.status==="UNAVAILABLE"?"Local Qwen timed out · source-based assessment":
       "Research from archived job");
@@ -491,6 +498,8 @@
     target.appendChild(item("p","verdict-summary",text));
     if(v.status==="COMPLETE")
       target.appendChild(item("p","verdict-tag",
+        v.purchase_insights?.status==="FUNCTIONAL_INDEX_LEADS_NEED_SPEC_VERIFICATION"?
+          "Functional alternatives found · retailer and spec verification required":
         v.purchase_insights?.status==="UNIT_PRICE_LEADS_NOT_CHECKOUT"?
           "Compare unit costs · retailer price and variant unverified":
         v.purchase_insights?.status==="SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS"?
@@ -538,8 +547,6 @@
     if(!app||!window.TraceCartKnowledgeGraph)return;
     const status=$("job-state"),form=$("product-form"),button=form.querySelector("button");
     const verdictBox=$("live-verdict"),linkSafetyBox=$("link-safety");
-    const priceCorrection=$("input-price-correction");
-    if(priceCorrection)priceCorrection.hidden=!app.dataset.live;
     function setBusy(busy) {
       button.disabled=busy;
       button.classList.toggle("is-analyzing",busy);

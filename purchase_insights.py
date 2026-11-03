@@ -246,9 +246,32 @@ def build_purchase_insights(projection,graph=None):
                _number(r["price"])<input_price]
     else:
         expensive_options=[]
+    # If the input title omits numeric specs (common for manufacturer pages),
+    # do not conclude that no cheaper products exist. Surface distinguishable
+    # same-SKU or function+voltage title leads with explicit uncertainty.
+    # No index listing is promoted to a verified functional equivalent.
+    functional=[]
+    if not selected_specs and not top and not extra:
+        from functional_value import functional_leads
+        functional=functional_leads(projection,input_price,input_currency)
+    if functional:
+        top=functional[:4]
+        extra=functional[4:]
+        first=functional[0]
+        status="FUNCTIONAL_INDEX_LEADS_NEED_SPEC_VERIFICATION"
+        message=(
+            "Potentially cheaper offer requiring specification verification: "+
+            first["title"]+" — "+first["price"]+" "+first["currency"]+
+            ". "+("Observed selected seller price: "+input_price_label+". "
+                   if input_price_label else
+                   "Selected seller price not independently established. ")+
+            "This is a search-index lead, not a confirmed equivalent or "
+            "checkout price. Compare manufacturer specifications, variant, "
+            "included accessories and delivered cost before purchase."
+        )
     # The submitted seller page may be HTTP 403. Even if its listing title
     # and an indexed price happen to match, no checkout has been verified.
-    if input_price_label and not top and not extra:
+    elif input_price_label and not top and not extra:
         status="SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS"
         higher=expensive_options[0] if expensive_options else None
         message=(

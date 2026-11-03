@@ -667,6 +667,24 @@ class CartResearchJobs:
             record=self.read(job_id)
             projection=build_decision_projection(record)
             graph=build_offer_knowledge_graph(projection)
+            # Recompute the presentation of historical completed jobs from
+            # persisted inputs, without rewriting the saved model verdict or
+            # source audit. Earlier rule versions incorrectly discarded
+            # category-matched offers when titles omitted numerical specs.
+            verdict=record.get("final_verdict") or {"status":"NOT_SCHEDULED"}
+            previous=verdict.get("purchase_insights") or {}
+            if (record["state"]=="READY" and verdict.get("status") in
+                ("COMPLETE","UNAVAILABLE","INTERRUPTED") and
+                previous.get("status") in
+                ("SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS",
+                 "NO_RELIABLE_COMPARABLE_INDEX_LEADS",
+                 "INPUT_PRICE_UNKNOWN_NO_VALUE_RECOMMENDATION")):
+                from purchase_insights import build_purchase_insights
+                updated=build_purchase_insights(projection,graph)
+                if updated.get("status")=="FUNCTIONAL_INDEX_LEADS_NEED_SPEC_VERIFICATION":
+                    verdict={**verdict,"purchase_insights":updated,
+                             "summary":updated["headline"],
+                             "comparison_projection_updated":True}
             return {
                 "state":record["state"],
                 "offer_queue":[{"id":o["id"],"title":o.get("title"),
@@ -679,7 +697,7 @@ class CartResearchJobs:
                 "model_offers":record.get("model_offers",{}),
                 "evidence_offers":record.get("evidence_offers",{}),
                 "source_search":record.get("source_search",{}),
-                "final_verdict":record.get("final_verdict",{"status":"NOT_SCHEDULED"}),
+                "final_verdict":verdict,
                 "input_price":record.get("input_price"),
                 "link_safety":record.get("link_safety",{"status":"NOT_STARTED"}),
                 "payment_authorized":False,
