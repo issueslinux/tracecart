@@ -83,3 +83,12 @@ test("real source observations remain reference-scoped and cannot authorize purc
  assert.ok(source.includes("SHA-256"));
  assert.equal(source.includes("purchaseAuthorized=true"),false);
 });
+
+
+test("e-bike plan separates title hypotheses, conditional Wh scenarios, and LLM failures",()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,"../assets/decision-flow.js"),"utf8");
+ assert.ok(source.includes("Listing-title clues — NOT verified product facts"));
+ assert.ok(source.includes("RELATED") || source.includes("Related model names"));
+ assert.ok(source.includes("HYPOTHETICAL, not measured"));
+ assert.ok(source.includes("structured research plan remains available"));
+});

@@ -261,3 +261,15 @@ h1 em,h2 em{font-weight:400;font-style:italic;color:var(--accent)}
   padding-bottom: 5px;
 }
 .reference-observation {color: #245b48; font-weight: 600;}
+
+
+.offer-title-hypotheses {
+  margin: 12px 0; padding: 14px; background: #faf5e7;
+  border: 1px solid #e4d3a6; border-radius: 9px;
+  font-size: .83rem; color: #624a1d;
+}
+.offer-title-hypotheses h4 { margin: 0 0 7px; font-size: .86rem;}
+.offer-title-hypotheses ul { margin: 0 0 9px; padding-left: 17px;}
+.offer-title-hypotheses li { margin-bottom: 5px;}
+.offer-title-hypotheses p {margin: 7px 0;}
+.offer-title-hypotheses .scenario-note {font-weight: 600;}

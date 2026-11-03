@@ -262,6 +262,33 @@
         money(offer.indexed_price,offer.currency)+
         " · Price unverified · Question status: PLANNED, not answered"));
       if (offer.url) card.appendChild(anchor("View indexed source ↗",offer.url));
+      if(Array.isArray(offer.listing_title_claims) &&
+         offer.listing_title_claims.length) {
+        const facts=node("section","offer-title-hypotheses");
+        facts.appendChild(node("h4","","Listing-title clues — NOT verified product facts"));
+        const ul=node("ul");
+        offer.listing_title_claims.forEach(c=>
+          ul.appendChild(node("li","",c.display)));
+        facts.appendChild(ul);
+        const hints=offer.index_model_hints || [];
+        if(hints.length) {
+          facts.appendChild(node("h4","","Related model names in search-index titles"));
+          hints.forEach(h=>{
+            facts.appendChild(node("p","",
+              h.model_hint+" — "+h.source_offer+
+              " · indexed alternative only, NOT identity proof for this seller SKU."));
+          });
+        }
+        const diagnostic=offer.research_diagnostics || {};
+        (diagnostic.scenarios || []).forEach(sc=>{
+          facts.appendChild(node("p","scenario-note",
+            sc.assumption+": "+
+            sc.energy_wh+" Wh; if "+sc.advertised_range_km+
+            " km, implied "+sc.implied_wh_per_km+
+            " Wh/km. HYPOTHETICAL, not measured."));
+        });
+        card.appendChild(facts);
+      }
       const list=node("div","offer-question-scroll");
       const questions=node("ol","offer-question-list");
       const sentinel=node("p","offer-pagination-status","Loading first questions…");
@@ -361,7 +388,9 @@
       const observations=result.reference_answers||[];
       const message=observations.length ?
         observations.length+" independent reference observations · NOT verified for the offered SKU" :
-        "No independently matched document collected for this exact model";
+        data.category==="E_BIKE" ?
+          "Independent review not retrieved · brand, exact model and battery configuration still require verification" :
+          "No independently matched document collected for this exact model";
       target.appendChild(node("h4","",message));
       if(observations.length) {
         const ul=node("ul","evidence-observation-list");
@@ -394,7 +423,8 @@
       if(!result) continue;
       const label=result.state==="OK" ?
         "LOCAL LLM · "+result.questions.length+" source questions · not answered" :
-        "LOCAL LLM · "+result.state.replace(/_/g," ");
+        result.state==="RUNNING" ? "LOCAL LLM · composing source follow-ups…" :
+        "LOCAL LLM · unavailable (invalid response or timeout); structured research plan remains available";
       if(target.dataset.signature===label) continue;
       target.dataset.signature=label;
       target.replaceChildren(node("h4","",label));

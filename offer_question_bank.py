@@ -123,12 +123,25 @@ def offer_summaries(record, category=None):
                 else row.get("indexed_currency"), kind))
     axes = AXES.get(category, AXES["OTHER"])
     for offer in offers:
-        offer["question_count"] = len(axes) * len(PROBES)
+        if category == "E_BIKE":
+            from ebike_research import (ebike_question_count, ebike_claims,
+                                        offer_title_diagnostics)
+            offer["question_count"] = ebike_question_count()
+            offer["listing_title_claims"] = ebike_claims(offer["title"])
+            offer["research_diagnostics"] = offer_title_diagnostics(offer)
+        else:
+            offer["question_count"] = len(axes) * len(PROBES)
+    if category == "E_BIKE" and offers:
+        from ebike_research import likely_index_model_hints
+        offers[0]["index_model_hints"] = likely_index_model_hints(offers)
     return offers
 
 
 def questions_for_offer(offer, category, offset=0, limit=PAGE_SIZE):
     """Stable, paginated research *questions*, not hallucinated findings."""
+    if category == "E_BIKE":
+        from ebike_research import questions_for_ebike
+        return questions_for_ebike(offer, offset, limit)
     axes = AXES.get(category, AXES["OTHER"])
     total = len(axes) * len(PROBES)
     if not isinstance(offset, int) or not 0 <= offset <= total:
@@ -171,36 +184,62 @@ def propose_offer_model_questions(offer, category, request=None):
     title = offer.get("title") or ""
     if not title:
         return []
-    system = (
-        "You are an independent product evidence researcher. For this specific "
-        "product listing, invent NO facts and ask up to six sharply differentiated "
-        "ENGLISH questions for primary manufacturer sources and independent tests. "
-        "Focus on exact model identity, compatibility, tested quality, reliability, "
-        "repairs, conflicts and variant mismatches. Address sources, NOT the buyer. "
-        "Return only JSON {\\\"questions\\\":[\\\"...?...\\\"]}. No answers."
+    category_focus = (
+        "For an electric bicycle prioritize OEM identity; motor continuous "
+        "rating; battery volts, Ah and Wh; range test conditions; brakes, "
+        "service and legal pedal-assist cutoff." if category == "E_BIKE" else
+        "Prioritize exact variant identification, independent lab tests, "
+        "reliability, compatibility, repairability and seller-price ambiguity."
     )
-    payload = {
-        "model": "qwen2.5:1.5b-instruct", "stream": False, "format": "json",
-        "options": {"temperature": 0, "num_predict": 220},
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps({
-                "offer_title_unverified": title[:150],
-                "category": category, "listing_type": offer["kind"],
-                "task": "generate source research questions only, no findings",
-            },ensure_ascii=False)}],
-    }
-    response = (request or _request_json)(
-        "http://127.0.0.1:11435/api/chat", "POST",
-        json.dumps(payload).encode("utf-8"),
-        {"Content-Type": "application/json"}, timeout=25)
-    parsed = json.loads(response["message"]["content"])
-    raw = parsed.get("questions") if type(parsed) is dict else None
-    if type(raw) is not list or len(raw) > 12:
-        raise ValueError("Invalid model question response")
+    # A tiny local 1.5B model often emitted truncated JSON when asked for
+    # six lengthy questions within 220 tokens. Ask fewer, shorter questions
+    # and retry once with an even smaller response, never inventing an answer.
+    requester = request or _request_json
+    def run_model(question_limit, max_tokens):
+        system = (
+            "Ask up to {} SHORT, independent, ENGLISH source-research "
+            "questions (under 110 chars each) about a product listing. "
+            "{} Verify evidence, never guess facts, never address the buyer. "
+            "Respond as JSON object only: "
+            '{{"questions":["Question one?","Question two?"]}}'
+        ).format(question_limit, category_focus)
+        payload = {
+            "model": "qwen2.5:1.5b-instruct", "stream": False,
+            "format": "json",
+            "options": {"temperature": 0, "num_predict": max_tokens},
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": json.dumps({
+                    "unverified_offer_title": title[:150],
+                    "category": category,
+                    "listing_type": offer["kind"],
+                }, ensure_ascii=False)}],
+        }
+        response = requester(
+            "http://127.0.0.1:11435/api/chat", "POST",
+            json.dumps(payload).encode("utf-8"),
+            {"Content-Type": "application/json"}, timeout=25)
+        raw_text = response["message"]["content"].strip()
+        try:
+            parsed = json.loads(raw_text)
+        except json.JSONDecodeError:
+            # Tolerate a JSON object embedded in a markdown fence, but do
+            # not guess about syntactically incomplete object contents.
+            first = raw_text.find("{")
+            if first < 0:
+                raise
+            parsed, _ = json.JSONDecoder().raw_decode(raw_text[first:])
+        raw = parsed.get("questions") if type(parsed) is dict else None
+        if type(raw) is not list or len(raw) > 12:
+            raise ValueError("Invalid model question list")
+        return raw
+    try:
+        raw = run_model(4, 340)
+    except (json.JSONDecodeError, ValueError, KeyError, TypeError):
+        raw = run_model(2, 220)
     result = []
     for q in raw:
-        if type(q) is not str or not 18 <= len(q) <= 220 or not q.endswith("?"):
+        if type(q) is not str or not 18 <= len(q) <= 160 or not q.endswith("?"):
             continue
         low=q.casefold()
         # A small local model can propose nonsensical cross-component queries.
@@ -215,7 +254,7 @@ def propose_offer_model_questions(offer, category, request=None):
             "status": "OPEN_RESEARCH_GAP", "finding": None,
             "evidence_ids": [], "addressed_to": "RESEARCH_AGENT_NOT_BUYER",
         })
-        if len(result) == 6:
+        if len(result) == 4:
             break
     if not result:
         raise ValueError("No valid model questions")

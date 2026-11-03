@@ -1,3 +1,13 @@
+> **NEXT RESEARCH FIX (2026-11-03):** On actual
+> `LoHWENthHlgccaUCtbOdQkCO` e-bike job, removed 288 repetitive
+> source-question permutations per offer. Now 24 separate high-priority
+> topics + domain-appropriate follow-ups (228 per offer), unverified
+> listing-title claims, related search-index model names (NOT exact identity),
+> conditional Wh/range arithmetic, and a resilient local Qwen JSON retry.
+> Historical Allegro GET remains blocked (HTTP 403), independent e-bike
+> tests/prices are not proven. See
+> [EBIKE_RESEARCH_FIX_2026-11-03](EBIKE_RESEARCH_FIX_2026-11-03.md).
+>
 > **LATEST RESEARCH EVIDENCE (2026-11-02):** A separate robots-aware
 > independent-source execution worker now verifies fetched page identity,
 > methods and results. On the saved Lenovo case it found **2 distinct

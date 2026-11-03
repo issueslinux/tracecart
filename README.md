@@ -5,6 +5,21 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-03: e-bike questions are now source-directed, not 288 formulaic prompts
+
+In the live saved Allegro bicycle example, 288 mechanically repeated
+questions per listing were not useful and the local model returned malformed
+JSON for two of 13 offers. Electric bicycles now receive **24 distinct
+high-priority questions first**, followed by cross-claim and source-specific
+checks (**228 questions per offer**), with conditional motor/battery/range
+wording based only on what the listing title actually states. The frontend
+separates title claims, *possible* model identities from Shopping search
+titles, hypothetical battery Wh arithmetic and independently sourced facts.
+Qwen proposes up to four shorter questions and retries invalid JSON once.
+A source-blocked Allegro page is still not treated as verified and there
+are no invented e-bike independent reviews or purchase prices.
+[Repair + real browser/Qwen verification](docs/EBIKE_RESEARCH_FIX_2026-11-03.md).
+
 ## NEW: actual independent-source checks, not just question lists
 
 **2026-11-02 evidence execution:** A separate nonblocking source worker now

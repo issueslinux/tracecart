@@ -537,6 +537,39 @@ class WebFlowTests(unittest.TestCase):
         self.assertFalse(report["root"]["children"][-1]
                          ["details"]["payment_authorized"])
 
+    def test_ebike_questions_are_prioritized_and_source_claims_unverified(self):
+        """The live JSON must no longer expose 12 mechanical probes per facet."""
+        from tests.test_ebike_research import sample_record
+        item=sample_record()
+        jid="R"*24
+        with self.server.cart_jobs._db() as db:
+            db.execute("""INSERT INTO cart_research_jobs
+                (id,item,state,created,result,error_type) VALUES (?,?,?,?,?,NULL)""",
+                (jid,json.dumps(item["item"]),"READY",
+                 "2026-11-03T08:00:00Z",json.dumps(item["report"])))
+        status,raw=self.request("GET","/cart/status/"+jid+".decision.json")
+        self.assertEqual(status,200)
+        projection=json.loads(raw)
+        self.assertEqual(projection["category"],"E_BIKE")
+        self.assertEqual(len(projection["offers"]),4)
+        self.assertTrue(all(o["question_count"]==228 for o in
+                            projection["offers"]))
+        title=projection["offers"][0]
+        self.assertEqual(title["research_diagnostics"]["scenarios"][0]
+                         ["energy_wh"],540)
+        self.assertFalse(title["index_model_hints"][0]["exact_seller_sku_verified"])
+        self.assertFalse(projection["payment_authorized"])
+        status,body=self.request("GET","/cart/status/"+jid+
+                                 "/questions.json?offer=0&offset=0&limit=24")
+        self.assertEqual(status,200)
+        page=json.loads(body)
+        self.assertEqual(page["total"],228)
+        self.assertEqual(len(set(q["dimension"] for q in page["questions"])),24)
+        self.assertEqual(page["questions"][0]["priority"],"P0")
+        self.assertIn("energy in wh",page["questions"][1]["question"].casefold())
+        self.assertTrue(all(q["finding"] is None for q in page["questions"]))
+        self.assertEqual(page["verified_answers"],0)
+
     def test_fetched_reference_answers_visible_only_as_non_sku_evidence(self):
         """Readonly review findings carry URL+SHA, not an exact checkout claim."""
         from evidence_execution import execute_reference_checks
