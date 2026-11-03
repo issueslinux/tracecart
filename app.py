@@ -28,6 +28,7 @@ from cart_research import CartResearchJobs
 from live_offer_compare import compare_live_offer
 from multi_offer_compare import compare_live_offers
 from browser_capture import parse_browser_capture
+from browser_companion_queue import CompanionQueue
 from country_suggestion import suggested_country
 from guided_decision import build_decision_projection
 
@@ -410,6 +411,75 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def companion_json(self, payload, code=200):
+        raw = json.dumps(payload, ensure_ascii=False,
+                         separators=(",", ":")).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Security-Policy", "default-src 'none'")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def companion_authorized(self):
+        auth = self.headers.get("Authorization", "")
+        # Bearer token is never accepted in URL, form or cookie.
+        if not auth.startswith("Bearer ") or not self.server.companion.authorized(auth[7:]):
+            self.companion_json({"error":"UNAUTHORIZED_COMPANION"}, 401)
+            return False
+        return True
+
+    def companion_page(self):
+        jobs = self.server.companion.listed()
+        rows = []
+        for row in jobs:
+            fields = (row.get("result") or {}).get("fields") or {}
+            price = ((str(fields.get("price")) + " " + str(fields.get("currency")))
+                     if fields.get("price") and fields.get("currency") else "—")
+            rows.append("<tr><td>{}</td><td>{}</td><td>{}</td>"
+                        "<td>{}</td><td>{}</td><td>"
+                        '<a href="/research/companion/{}.json">Evidence JSON</a>'
+                        "</td></tr>".format(
+                            h(row["created_at"][:19]), h(row["url"]),
+                            h(row["status"]), h(fields.get("title") or "—"),
+                            h(price), h(row["id"])))
+        table = ("<table><thead><tr><th>Queued</th><th>Source URL</th>"
+                 "<th>Status</th><th>Declared product</th><th>Unverified price</th>"
+                 "<th>Evidence</th>"
+                 "</tr></thead><tbody>{}</tbody></table>".format("".join(rows))
+                 if rows else "<p>No research tasks queued.</p>")
+        self.send_page("""<section><h2>Browser companion · opt-in research</h2>
+            <p>Install the local, unpacked Chrome/Chromium extension from
+            <code>browser-extension/</code>. Enter this local port and pairing
+            token in its popup once, then grant access to each selected merchant
+            site in the browser permission prompt. Only URLs you queue here
+            are opened. Disable background queue in the popup at any time.</p>
+            <p><b>Local endpoint:</b> 127.0.0.1:{}</p>
+            <label>Private pairing token (keep on this computer)
+            <input type="text" readonly value="{}"></label>
+            <p class="warning">This pairing secret has read/write access to the
+            <b>research-only</b> queue. It does not authorize checkout and
+            must never be shared with websites or stored in the repository.</p>
+            <form method="post" action="/research/companion/queue">{}
+              <label>Product HTTPS URLs (up to 12 explicitly selected pages,
+              one per line)
+              <textarea name="product_urls" rows="5" maxlength="7000" required
+              placeholder="https://store.example.org/product/..."></textarea></label>
+              <button>Queue selected research pages</button>
+            </form>
+            <p>No cookies, localStorage, authentication tokens, full page HTML
+            or account information are sent. Only a bounded, sanitized
+            Product/Offer projection is accepted. All prices remain
+            <b>USER_BROWSER, not seller/checkout verified</b>.
+            Access denied and CAPTCHA are not bypassed.</p>
+            <p><a href="/research/companion">Refresh research jobs</a>
+            · <a href="/research">Research lab</a></p>{}
+            </section>""".format(self.server.server_port,
+                                  h(self.server.companion.token),
+                                  self.hidden(), table))
+
     def cart_entry_page(self):
         # One screen for both a new URL and ongoing graph research.
         tmpl=(Path(__file__).resolve().parent / "assets" /
@@ -591,6 +661,18 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         if not self.trusted_host():
             return
         path = urlsplit(self.path).path
+        if path == "/api/browser-companion/next":
+            if not self.companion_authorized():
+                return
+            return self.companion_json({"job": self.server.companion.take()})
+        if path == "/research/companion":
+            return self.companion_page()
+        if path.startswith("/research/companion/") and path.endswith(".json"):
+            job_id = path[len("/research/companion/"):-len(".json")]
+            try:
+                return self.companion_json(self.server.companion.get_job(job_id))
+            except ValueError:
+                return self.companion_json({"error": "UNKNOWN_RESEARCH_JOB"}, 404)
         if path == "/":
             menu = "".join("<li><b>{}</b> — {} USD · {}</li>".format(h(name), h(value[1]), h(value[0]))
                            for name, value in CATALOG.items())
@@ -609,7 +691,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 and export the full expandable decision tree with unanswered questions.</p>
                 <p><a class="btn" href="/cart">Try cart-triggered analysis</a>
                 <a class="btn" href="/research">Research lab</a>
-                <a class="btn" href="/compare">Compare offers</a></p>
+                <a class="btn" href="/compare">Compare offers</a>
+                <a class="btn" href="/research/companion">Browser companion</a></p>
                 </section>""".format(self.hidden(), menu))
         elif path == "/cart":
             self.cart_entry_page()
@@ -737,7 +820,12 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             fixture = (Path(__file__).resolve().parent / "examples" /
                        "sample_research_fixture.json").read_text(encoding="utf-8")
             sample = h(fixture)
-            self.send_page("""<section><h2>Independent Evidence & Critic Lab</h2>
+            self.send_page("""<section><h2>Browser-based product extraction</h2>
+                <p>Analyze explicitly queued, authorized merchant pages using
+                the opt-in local browser companion. Observations remain unverified
+                and cannot authorize checkout.</p>
+                <a class="btn" href="/research/companion">Open browser research queue</a>
+                </section><section><h2>Independent Evidence & Critic Lab</h2>
                 <p>Import your collected offers, reviews, test excerpts and source URLs
                 as JSON. This first version does <b>not</b> search the web or verify URLs
                 automatically. The included input is FICTIONAL and for demonstration only.</p>
@@ -1350,8 +1438,31 @@ https://www.adafruit.com/product/3400</textarea></label>
             return
         if self.path == "/api/cart/added":
             return self.cart_event_api()
+        if self.path == "/api/browser-companion/result":
+            if not self.companion_authorized():
+                return
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+                if not 2 <= size <= 16000 or (
+                        self.headers.get("Content-Type", "").split(";", 1)[0].strip()
+                        != "application/json"):
+                    raise ValueError("INVALID_COMPANION_CONTENT_TYPE_OR_SIZE")
+                payload = json.loads(self.rfile.read(size).decode("utf8"))
+                return self.companion_json(self.server.companion.report(payload))
+            except (ValueError, UnicodeError, TypeError, KeyError):
+                return self.companion_json({"error": "INVALID_COMPANION_RECEIPT"}, 400)
         try:
             form = self.form()
+            if self.path == "/research/companion/queue":
+                urls = [v.strip() for v in form.get("product_urls", "").splitlines()
+                        if v.strip()]
+                self.server.companion.enqueue_many(urls)
+                self.send_response(303)
+                self.send_header("Location", "/research/companion")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             if self.path.startswith("/cart/status/") and self.path.endswith("/input-price"):
                 job_id=self.path[len("/cart/status/"):-len("/input-price")]
                 # Input only; never claim a user-visible price was fetched.
@@ -1524,6 +1635,8 @@ def run():
     server.store = CheckoutStore(str(args.db))
     server.reports = ReportStore(server.store.db)
     server.cart_jobs = CartResearchJobs(args.db)
+    server.companion = CompanionQueue(token_path=args.db.parent /
+                                      "browser_companion.token")
     print("TraceCart local demo: http://127.0.0.1:{}".format(args.port))
     print("PayPal mode: sandbox only; no capture code; user approval mandatory")
     try:
