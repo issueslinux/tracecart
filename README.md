@@ -729,6 +729,17 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## Browser companion permission controls (2026-11-03)
+
+The opt-in extension includes **Grant**, **Check permission**, and
+**Revoke access** per merchant site. Revocation blocks new queued
+capturing, including jobs that were in flight during permission removal.
+A disposable *real Chromium* native permission-dialog test verified
+**Deny → Allow → Revoke → queued access rejected** on a single
+public, robots-approved test merchant. Details and the isolated Xvfb
+test command:
+[`docs/BROWSER_COMPANION_PERMISSION_LIFECYCLE_2026-11-03.md`](docs/BROWSER_COMPANION_PERMISSION_LIFECYCLE_2026-11-03.md).
+
 ## Verified MV3 browser companion end-to-end research (2026-11-03)
 
 A disposable **real Chromium MV3 service worker** and loopback TraceCart

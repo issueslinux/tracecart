@@ -48,6 +48,11 @@ async function snapshotJob(job) {
       if (state.status==="complete") {ready=true;break;}
     }
     if (!ready) return {error:"TAB_TIMEOUT"};
+    // The user may revoke a host while the background tab is loading.
+    // The initial pre-navigation check alone is not sufficient.
+    if (!(await chrome.permissions.contains({origins:[origin]}))) {
+      return {error:"SITE_PERMISSION_REQUIRED"};
+    }
     // No redirects to another offer or host: the research queue must refer
     // to exactly the requested URL, with no silent price reassignment.
     const actual=String(state.url || "");
@@ -60,6 +65,11 @@ async function snapshotJob(job) {
       return {error:projection?.error || "BROWSER_ERROR"};
     }
     if (projection.url!==job.url) return {error:"REDIRECTED"};
+    // Do not forward already collected fields if permission was revoked
+    // while the tab was being inspected.
+    if (!(await chrome.permissions.contains({origins:[origin]}))) {
+      return {error:"SITE_PERMISSION_REQUIRED"};
+    }
     return projection;
   } catch (_) {
     return {error:"BROWSER_ERROR"};
