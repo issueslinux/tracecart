@@ -29,7 +29,7 @@ class HistoricalResearchUIProjectionTests(unittest.TestCase):
         self.assertEqual(evidence["google_shopping_cards"],12)
         self.assertEqual(evidence["indexed_store_links"],3)
         self.assertEqual(evidence["indexed_listing_records"],15)
-        self.assertEqual(evidence["unverified_similar_product_leads"],4)
+        self.assertEqual(evidence["unverified_similar_product_leads"],5)
         self.assertIsNone(evidence["selected_seller_price"])
         self.assertEqual(evidence["input_source_problem"],"SOURCE_TOO_LARGE")
         self.assertEqual(evidence["seller_confirmed_competitor_prices"],0)

@@ -30,7 +30,7 @@ def source_graph():
         {"id":"spec:1","type":"title_claim","label":"16 GB RAM"},
         {"id":"declared:1","type":"source_declaration","label":"RAM: 16 GB",
          "source_kind":"BRAND_SITE_DECLARATIONS_NOT_INDEPENDENT_TESTS",
-         "value":"16 GB"},
+         "source_property":"RAM memory","value":"16 GB"},
         {"id":"gap:1","type":"verification_gap","label":"Independent tests?"},
       ]}
 
