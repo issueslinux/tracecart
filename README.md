@@ -729,6 +729,32 @@ future milestones. The decision report is informational and cannot authorize
 or trigger a PayPal order.
 
 
+## New: universal product extraction (research v1, 2026-11-03)
+
+`universal_product_extract.py` parses bounded **already acquired** product
+HTML, JSON-LD, structured JSON and browser-rendered DOM into field-level
+evidence with source URL, JSON pointer/method, timestamp, SHA-256 and explicit
+uncertainty. `universal_source_acquisition.py` provides an optional, explicit
+public-HTTPS URL fetch via existing robots/DNS-pinned transport, with a
+restricted, opt-in Chromium fallback **only after a permitted HTTP 200**.
+
+No merchant-specific CSS selectors are required for JSON-LD, Product Offer
+microdata, WooCommerce primary price widgets or OpenGraph. Multiple products,
+conflicting prices, invalid GTINs, access challenges and rate-limits fail
+closed. A seller's page price remains **not checkout-verified**.
+
+Run an existing snapshot:
+`python3 scripts_extract_snapshot.py --url https://shop.example.org/p/1 --input /tmp/product.html`
+
+Run an explicit permitted network fetch:
+`python3 scripts_extract_snapshot.py --url https://shop.example.org/p/1 --fetch`
+
+The 18-case synthetic fixture benchmark and offline unit/transport tests are
+documented in
+[`docs/UNIVERSAL_PRODUCT_EXTRACTION_V1_2026-11-03.md`](docs/UNIVERSAL_PRODUCT_EXTRACTION_V1_2026-11-03.md).
+**No production cart or checkout integration yet**, and no claim that this
+unblocks Allegro's DataDome protection.
+
 ## The problem
 
 AI-assisted checkout is dangerous when a natural-language model can hallucinate prices, quantities or buyer consent. TraceCart separates those powers: a small local Qwen model can only suggest a catalog SKU and a bounded quantity, while trusted Python code derives the exact payable amount from a server-controlled catalog and requires an explicit, short-lived human approval before calling the **PayPal Sandbox Orders v2 API**. It never captures payments. Network uncertainty is reconciled manually instead of retrying blindly.
