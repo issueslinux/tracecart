@@ -25,7 +25,8 @@
         <input id="product_url" name="product_url" type="url" maxlength="1200"
           placeholder="Paste a product URL" autocomplete="url"
           value="{{PRODUCT_URL}}" required>
-        <button type="submit">Analyze</button>
+        <button type="submit" id="analyze-button"><span class="analyze-spin"
+          aria-hidden="true"></span><span id="analyze-label">Analyze</span></button>
       </form>
       <span class="live-status" id="job-state" role="status" aria-live="polite">Ready</span>
     </header>
@@ -39,6 +40,8 @@
         </div>
       </aside>
       <section class="live-stage" aria-label="Growing evidence graph">
+        <section id="live-verdict" class="live-verdict" hidden
+          aria-label="Final research verdict" aria-live="polite"></section>
         <section id="knowledge-graph-region" class="knowledge-graph-region"
           aria-label="Connected product and evidence graph">
           <div class="live-graph-top">

@@ -538,6 +538,9 @@
     canvas.addEventListener("pointerup",()=>{drag=null;});
     canvas.addEventListener("pointercancel",()=>{drag=null;});
     syncButtons();showDetails(active||focus);draw();remember();
+    // Model findings cite these existing immutable graph node IDs; clicking
+    // "Evidence" opens precisely that source/claim in the detail panel.
+    root._traceCartGraphController={select,graph};
     return {select,graph,stats:groupCounts(graph)};
   }
   if(typeof window!=="undefined")window.TraceCartKnowledgeGraph={create};

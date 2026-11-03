@@ -149,7 +149,15 @@ class ProgressiveOfferResearchTests(unittest.TestCase):
                        "evidence_execution.execute_reference_checks",
                        side_effect=quick_check),patch(
                        "offer_question_bank.propose_offer_question_batch",
-                       return_value=({}, {},[])):
+                       return_value=({}, {},[])),patch(
+                       "model_verdict.generate_final_verdict",
+                       return_value={"status":"COMPLETE",
+                         "origin":"LOCAL_LLM_EVIDENCE_SYNTHESIS",
+                         "verdict":"INSUFFICIENT_EVIDENCE",
+                         "summary":"Documentary evidence is incomplete in this isolated test.",
+                         "observations":[],
+                         "next_step":"Verify original seller data.",
+                         "payment_authorized":False}):
                 jobs=CartResearchJobs(str(Path(tmp)/"jobs.sqlite"),
                                       runner=__import__("cart_research").research_cart)
                 try:

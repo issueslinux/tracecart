@@ -168,6 +168,7 @@ def build_decision_projection(record):
                 "evidence_progress":record.get("evidence_progress") or {
                     "status":"NOT_STARTED","processed":0,"planned":0},
                 "source_search":record.get("source_search") or {},
+                "final_verdict":record.get("final_verdict") or {"status":"NOT_SCHEDULED"},
                 "questions": [],
                 "payment_authorized": False,
                 "evidence": {"google_shopping_cards": len(
@@ -316,6 +317,7 @@ def build_decision_projection(record):
         "selected_item":selected,
         "selected_source_intake":source,
         "source_search":record.get("source_search") or {},
+        "final_verdict":record.get("final_verdict") or {"status":"NOT_SCHEDULED"},
         "model_offers":record.get("model_offers") or {},
         "model_progress_stage":record.get("progress_stage") or "NOT_SCHEDULED",
         "evidence_offers":record.get("evidence_offers") or {},

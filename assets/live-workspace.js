@@ -90,9 +90,7 @@
   }
   function questionTasks(data,selectedId="offer-0"){
     const g=data.graph||{},details=g.offer_details||{},model=data.model_offers||{};
-    const complete=data.state==="READY" &&
-      (data.evidence_progress||{}).status==="COMPLETE" &&
-      data.progress_stage==="PER_OFFER_MODEL_COMPLETE";
+    const complete=data.state==="READY" && isTerminal(data);
     const running=[],open=[],answered=[],proposed=[];
     let batchReported=false;
     const ordered=Object.entries(details).sort(([a],[b])=>
@@ -180,10 +178,95 @@
         independent_reference_measurements:0,verified_exact_sku_answers:0}
     };
   }
+  function isTerminal(snapshot) {
+    if(!snapshot||snapshot.state==="FAILED"||snapshot.state==="INTERRUPTED")
+      return true;
+    if(snapshot.state!=="READY")return false;
+    const evidenceStatus=(snapshot.evidence_progress||{}).status;
+    const verdictStatus=(snapshot.final_verdict||{}).status;
+    if(evidenceStatus==="INTERRUPTED"||verdictStatus==="INTERRUPTED")
+      return true;
+    if(evidenceStatus!=="COMPLETE")return false;
+    const verdict=(snapshot.final_verdict||{}).status||"NOT_SCHEDULED";
+    if(["COMPLETE","UNAVAILABLE","INTERRUPTED"].includes(verdict))
+      return true;
+    // Old durable jobs predate the verdict phase. Never retroactively
+    // describe those saved reports as local LLM conclusions.
+    return verdict==="NOT_SCHEDULED" &&
+      snapshot.progress_stage==="PER_OFFER_MODEL_COMPLETE";
+  }
+  function renderVerdict(target,snapshot,app) {
+    if(!target)return;
+    const v=snapshot.final_verdict||{};
+    const stats=(snapshot.graph||{}).stats||{};
+    const legacy=snapshot.state==="READY" &&
+      (!v.status||v.status==="NOT_SCHEDULED")&&isTerminal(snapshot);
+    const ready=snapshot.state==="READY" &&
+      ["COMPLETE","UNAVAILABLE","INTERRUPTED"].includes(v.status);
+    target.hidden=!(ready||legacy);
+    if(target.hidden)return;
+    target.replaceChildren();
+    const head=item("div","verdict-head");
+    const title=v.status==="COMPLETE"?"Final evidence assessment":
+      v.status==="UNAVAILABLE"?"Research result · model unavailable":
+      legacy?"Research result · earlier saved job":"Research interrupted";
+    head.appendChild(item("strong","",title));
+    const tag=item("span","verdict-tag"+(v.status==="UNAVAILABLE"?" unavailable":""),
+      v.status==="COMPLETE"?"Local Qwen · conditional verdict":
+      "No verified best buy");
+    head.appendChild(tag);target.appendChild(head);
+    const text=v.summary || (
+      "Research finished. This saved job has no final local-LLM synthesis. "+
+      (stats.documented_product_declarations||0)+" documented product declarations, "+
+      (stats.independent_reference_measurements||0)+" independent measurements and "+
+      (stats.verified_checkout_prices||0)+" confirmed checkout prices."
+    );
+    target.appendChild(item("p","verdict-summary",text));
+    if(v.status==="COMPLETE")
+      target.appendChild(item("p","verdict-tag",String(v.verdict||"").replace(/_/g," ")));
+    const findings=(v.observations||[]).filter(x=>x&&typeof x.text==="string");
+    if(findings.length){
+      const group=item("div","verdict-findings");
+      findings.forEach((finding,i)=>{
+        const card=item("div","verdict-finding");
+        card.appendChild(item("div","",finding.text));
+        (finding.evidence_ids||[]).forEach((ref,j)=>{
+          if(typeof ref!=="string"||
+              !(snapshot.graph||{}).nodes?.some(n=>n.id===ref))return;
+          const button=item("button","", "Evidence "+(j+1)+" ↗");
+          button.type="button";
+          button.addEventListener("click",()=>{
+            const controller=app._traceCartGraphController;
+            if(controller&&controller.graph.nodes.some(n=>n.id===ref))
+              controller.select(ref);
+          });
+          card.appendChild(button);
+        });
+        group.appendChild(card);
+      });
+      target.appendChild(group);
+    }
+    if(v.next_step)
+      target.appendChild(item("p","verdict-next","Next step: "+v.next_step));
+    target.appendChild(item("p","verdict-limits",
+      "Product claims are not independent tests. Index prices are not checkout totals. "+
+      "No payment or purchase was authorized."+
+      (v.status==="COMPLETE" && v.coverage&&v.coverage.observations_omitted?
+       " Local-model context omitted "+v.coverage.observations_omitted+
+       " source observations; full audit remains available.":"")));
+  }
+
   function boot(){
     const app=$("decision-app");
     if(!app||!window.TraceCartKnowledgeGraph)return;
     const status=$("job-state"),form=$("product-form"),button=form.querySelector("button");
+    const verdictBox=$("live-verdict");
+    function setBusy(busy) {
+      button.disabled=busy;
+      button.classList.toggle("is-analyzing",busy);
+      button.setAttribute("aria-busy",String(busy));
+      $("analyze-label").textContent=busy?"Analyzing…":"Analyze";
+    }
     let gotData=false,graphFingerprint="",source,lastEventAt=Date.now();
     let lastSnapshot=null;
     function show(snapshot,id){
@@ -225,21 +308,26 @@
       }
       $("live-source-count").textContent=pendingSource?
         pendingSource+" checking":String(sources.length);
-      const checksDone=snapshot.state==="READY" &&
-        activity.status==="COMPLETE" &&
-        snapshot.progress_stage==="PER_OFFER_MODEL_COMPLETE";
+      const checksDone=snapshot.state==="READY" && isTerminal(snapshot);
       $("live-question-count").textContent=checksDone?
         "Complete · 0 active":workingModel?
         questions.length+" · 1 model batch":String(questions.length);
       renderItems($("live-source-tasks"),sources);
       renderItems($("live-question-tasks"),questions);
       const phase=snapshot.progress_stage||snapshot.state||"STARTING";
-      const researchDone=snapshot.state==="READY" &&
-        (snapshot.evidence_progress||{}).status==="COMPLETE" &&
-        phase==="PER_OFFER_MODEL_COMPLETE";
-      status.textContent=researchDone?
-        "Completed · "+(activity.processed||0)+"/"+
-        (activity.planned||0)+" checked · no active tasks":
+      const researchDone=isTerminal(snapshot);
+      setBusy(!researchDone);
+      renderVerdict(verdictBox,snapshot,app);
+      const finalStatus=(snapshot.final_verdict||{}).status;
+      status.textContent=snapshot.state==="FAILED"?"Research failed":
+        snapshot.state==="INTERRUPTED"?"Research interrupted":
+        researchDone?
+        ((finalStatus==="COMPLETE"?"Verdict ready":"Research finished")+
+         " · "+(activity.processed||0)+"/"+
+         (activity.planned||0)+" checked"):
+        finalStatus==="RUNNING"?"Qwen synthesizing evidence":
+        finalStatus==="QUEUED"&&activity.status==="COMPLETE"?
+          "Preparing final verdict":
         phase==="SOURCE_FETCH"?"Reading input page":
         snapshot.state==="READY"&&
         (snapshot.evidence_progress||{}).status==="RUNNING"?
@@ -264,9 +352,10 @@
     window.TraceCartKnowledgeGraph.create(app,emptyGraph());
     $("live-graph-count").textContent="1 node · 0 links";
     status.textContent="Ready";
+    setBusy(false);
     form.addEventListener("submit",()=>{
       // Native form POST, CSRF protection and PRG remain authoritative.
-      button.disabled=true;status.textContent="Starting";
+      setBusy(true);status.textContent="Starting";
     });
     if(!app.dataset.live){
       $("graph-export").hidden=true;
@@ -274,6 +363,7 @@
       return;
     }
     status.textContent="Connecting";
+    setBusy(true);
     // EventSource consumes same-origin server RAM snapshots and automatically
     // reconnects. Never exposes memory addresses or GPU buffers.
     if(typeof EventSource==="undefined"){
@@ -314,8 +404,12 @@
       if(source)source.close();
       if(gotData){
         const e=(lastSnapshot||{}).evidence_progress||{};
-        status.textContent="Completed · "+(e.processed||0)+"/"+
-          (e.planned||0)+" checked · no active tasks";
+        setBusy(false);
+        const v=(lastSnapshot||{}).final_verdict||{};
+        status.textContent=(lastSnapshot.state==="FAILED"?"Research failed":
+          lastSnapshot.state==="INTERRUPTED"?"Research interrupted":
+          v.status==="COMPLETE"?"Verdict ready":"Research finished")+
+          " · "+(e.processed||0)+"/"+(e.planned||0)+" checked";
       }
     });
     source.onerror=()=>{
@@ -330,7 +424,8 @@
     });
   }
   if(typeof module!=="undefined"&&module.exports)
-    module.exports={sourceTasks,questionTasks,emptyGraph};
+    module.exports={sourceTasks,questionTasks,emptyGraph,
+      isTerminal,renderVerdict};
   if(typeof document!=="undefined"){
     if(document.readyState==="loading")
       document.addEventListener("DOMContentLoaded",boot,{once:true});

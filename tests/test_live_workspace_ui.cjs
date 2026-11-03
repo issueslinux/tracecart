@@ -44,6 +44,36 @@ test("blocked primary HTTP 403 is explained instead of NO MATCHED SOURCE",()=>{
   assert.equal(row.state,"HTTP 403 BLOCKED");
   assert.match(row.detail,/cannot bypass denied access/);
 });
+test("spinner lasts through the persisted final Qwen verdict stage",()=>{
+  const template=fs.readFileSync(path.join(__dirname,"../assets/decision-page.html"),"utf8");
+  const css=fs.readFileSync(path.join(__dirname,"../assets/live-workspace.css"),"utf8");
+  assert.ok(template.includes('id="analyze-button"'));
+  assert.ok(template.includes('class="analyze-spin"'));
+  assert.ok(template.includes('id="live-verdict"'));
+  assert.ok(css.includes("@keyframes tracecart-spin"));
+  const base={state:"READY",
+    evidence_progress:{status:"COMPLETE",processed:16,planned:16}};
+  for(const v of ["QUEUED","RUNNING"]){
+    assert.equal(live.isTerminal({...base,
+      progress_stage:"FINAL_VERDICT_RUNNING",
+      final_verdict:{status:v}}),false);
+  }
+  assert.equal(live.isTerminal({...base,
+    progress_stage:"PER_OFFER_MODEL_COMPLETE",
+    final_verdict:{status:"QUEUED"}}),false);
+  assert.equal(live.isTerminal({...base,
+    progress_stage:"FINAL_VERDICT_COMPLETE",
+    final_verdict:{status:"COMPLETE"}}),true);
+  assert.equal(live.isTerminal({...base,
+    progress_stage:"FINAL_VERDICT_UNAVAILABLE",
+    final_verdict:{status:"UNAVAILABLE"}}),true);
+  assert.equal(live.isTerminal({...base,
+    progress_stage:"PER_OFFER_MODEL_COMPLETE",
+    final_verdict:{status:"NOT_SCHEDULED"}}),true);
+  assert.equal(live.isTerminal({...base,
+    evidence_progress:{status:"RUNNING",processed:15,planned:16},
+    final_verdict:{status:"COMPLETE"}}),false);
+});
 test("right rail cycles unresolved checks when workers update, never converts them to answers",()=>{
   const list=live.questionTasks(example);
   assert.equal(list[0].state,"INFERENCE");
