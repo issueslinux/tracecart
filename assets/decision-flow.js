@@ -252,6 +252,7 @@
     const url = sourceUrl.replace(/\.decision\.json$/, "/questions.json");
     offers.forEach((offer, index) => {
       const card=node("article","offer-research-card");
+      card.id="offer-research-"+(index+1);
       const heading=node("div","offer-research-heading");
       const label=node("strong","",offer.title);
       heading.appendChild(label);
@@ -437,6 +438,23 @@
     }
   }
 
+  async function renderKnowledgeGraph(app) {
+    if(!app.dataset.knowledgeGraph||!window.TraceCartKnowledgeGraph)return;
+    try {
+      const response=await fetch(app.dataset.knowledgeGraph,{
+        credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}});
+      if(!response.ok)throw Error("Graph HTTP "+response.status);
+      const graph=await response.json();
+      window.TraceCartKnowledgeGraph.create(app,graph);
+    } catch(_) {
+      const region=document.getElementById("knowledge-graph-region");
+      region.hidden=false;
+      const body=document.getElementById("kg-details");
+      body.replaceChildren(node("p","kg-missing",
+        "Offer graph temporarily unavailable; original research and audit remain accessible."));
+    }
+  }
+
   function mount() {
     const app=document.getElementById("decision-app");
     if (!app) return;
@@ -493,6 +511,7 @@
         renderOfferQueue(data,app.dataset.source);
         refreshModelQuestions(data);
         refreshDocumentedEvidence(data);
+        renderKnowledgeGraph(app);
         if(data.model_progress_stage==="PER_OFFER_MODEL_QUEUED" ||
            (data.evidence_progress||{}).status==="RUNNING") {
           let followups=0;
@@ -506,7 +525,10 @@
                 refreshModelQuestions(latest);
                 refreshDocumentedEvidence(latest);
                 if(latest.model_progress_stage!=="PER_OFFER_MODEL_QUEUED" &&
-                   (latest.evidence_progress||{}).status!=="RUNNING") return;
+                   (latest.evidence_progress||{}).status!=="RUNNING") {
+                  renderKnowledgeGraph(app);
+                  return;
+                }
               }
             } catch(_) {}
             setTimeout(updateSources,2400);

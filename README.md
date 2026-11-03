@@ -5,6 +5,25 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-03: interactive offer / claim / source knowledge graph
+
+Every persisted cart decision now has a **read-only interactive evidence
+network**: `/cart/status/<job_id>.knowledge-graph.json`, also visualized
+above the decision path on the HTML status page. Click any offer to
+inspect its individual advertised specifications, indexed price
+caveat, high-priority open evidence checks, possible model-identity
+leads and any independent source observations; click a shared
+specification to see all listings that merely *claim* the same value.
+Reference reviews, checked document SHA256, variant mismatch and
+source URLs remain distinct from exact-SKU verification. Each
+arithmetic Wh value derived from title V×Ah is **per-offer and
+unverified**; similar titles never establish a verified common model.
+Dynamic SVG pan, zoom, keyboard selection, JSON export and
+cross-offer comparison require no external graph database, rendering
+dependencies, paid searches or buyer-choice prompts. No checkout
+price, quality claim or automatic purchase is inferred.
+[Schema, provenance rules, saved e-bike/Lenovo replay and browser verification](docs/OFFER_KNOWLEDGE_GRAPH_2026-11-03.md).
+
 ## 2026-11-03: e-bike questions are now source-directed, not 288 formulaic prompts
 
 In the live saved Allegro bicycle example, 288 mechanically repeated

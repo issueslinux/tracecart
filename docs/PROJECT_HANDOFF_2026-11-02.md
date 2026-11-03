@@ -1,3 +1,16 @@
+> **CONNECTED OFFER GRAPH (2026-11-03):** New deterministic,
+> read-only `/cart/status/<id>.knowledge-graph.json` and interactive
+> SVG above the existing decision path. Joins every offer's unverified
+> title claims, per-offer V×Ah derived Wh (never a tested battery),
+> indexed quote, 24 first-priority evidence gaps, source-linked
+> independent review references and abstention gate. On saved e-bike
+> job: 13 offers, 10 distinct advertised specs, 12 unverified prices,
+> 312 open top-priority links, 0 verified exact SKU. On laptop job:
+> 2 distinct measurements from one fetched review, reference-only,
+> 0 exact SKU verified. Native browser click, zoom/pan, graph JSON
+> export, no third-party graphics libs or Neo4j requirement.
+> [Full schema & test results](OFFER_KNOWLEDGE_GRAPH_2026-11-03.md).
+>
 > **NEXT RESEARCH FIX (2026-11-03):** On actual
 > `LoHWENthHlgccaUCtbOdQkCO` e-bike job, removed 288 repetitive
 > source-question permutations per offer. Now 24 separate high-priority
