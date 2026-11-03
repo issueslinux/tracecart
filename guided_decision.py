@@ -158,7 +158,13 @@ def build_decision_projection(record):
                 "selected_url": _public_link(item.get("merchant_url")),
                 "progress_stage": record.get("progress_stage") or "QUEUED",
                 "progress_revision": record.get("progress_revision") or 0,
+                "model_progress_stage":record.get("progress_stage") or "QUEUED",
                 "offers": offer_summaries(current, category),
+                "model_offers":record.get("model_offers") or {},
+                "evidence_offers":record.get("evidence_offers") or {},
+                "evidence_progress":record.get("evidence_progress") or {
+                    "status":"NOT_STARTED","processed":0,"planned":0},
+                "source_search":record.get("source_search") or {},
                 "questions": [],
                 "payment_authorized": False,
                 "evidence": {"google_shopping_cards": len(

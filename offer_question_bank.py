@@ -285,3 +285,75 @@ def propose_offer_model_questions(offer, category, request=None):
     if not result:
         raise ValueError("No valid model questions")
     return result
+
+
+def propose_offer_question_batch(offers, category, request=None, max_models=4):
+    """One bounded local model call for distinct offers, never one per listing.
+
+    The local Ollama instance has a single inference slot (-np 1). Sending 18
+    HTTP prompts concurrently would only queue on GPU; one compact batched
+    prompt lets independent source checks continue instead.
+    """
+    import json
+    from core import _request_json
+    from generic_source_research import product_identity
+    if not 1 <= max_models <= 4:
+        raise ValueError("Invalid model budget")
+    selected=[]
+    duplicates={}
+    keys={}
+    for offer in offers:
+        title=str(offer.get("title") or "")
+        ident=product_identity(title)
+        key=((ident["brand"],ident["model"]) if ident else
+             ("unidentified", " ".join(title.casefold().split())[:85]))
+        if key in keys:
+            duplicates[offer["id"]]=keys[key]
+            continue
+        if len(selected)>=max_models:
+            continue
+        keys[key]=offer["id"]
+        selected.append(offer)
+    if not selected:
+        return {},duplicates,[]
+    payload={
+        "model":"qwen2.5:1.5b-instruct","stream":False,"format":"json",
+        "options":{"temperature":0,"num_predict":450},
+        "messages":[
+            {"role":"system","content":(
+                "Write one short evidence-research QUESTION per product. "
+                "Never invent an answer or a source. Do not recommend buying. "
+                "Respond ONLY JSON with key 'items': array of objects "
+                "{'id':'offer-0','question':'...?'}. Keep ids unchanged, "
+                "questions English, each under 120 chars. "
+                "Distinguish product model variants, laboratory tests and specifications.")},
+            {"role":"user","content":json.dumps({"category":category,
+                "products":[{"id":o["id"],
+                    "unverified_title":o.get("title","")[:105]}
+                    for o in selected]},ensure_ascii=False)},
+        ],
+    }
+    response=(request or _request_json)(
+        "http://127.0.0.1:11435/api/chat","POST",
+        json.dumps(payload,ensure_ascii=False).encode("utf-8"),
+        {"Content-Type":"application/json"},timeout=16)
+    parsed=json.loads(response["message"]["content"])
+    rows=parsed.get("items") if isinstance(parsed,dict) else None
+    if not isinstance(rows,list):
+        raise ValueError("Invalid batch question response")
+    accepted={o["id"]:[] for o in selected}
+    for row in rows[:12]:
+        if not isinstance(row,dict):
+            continue
+        oid=row.get("id")
+        question=row.get("question")
+        if (oid not in accepted or accepted[oid] or
+            not isinstance(question,str) or
+            not 18<=len(question)<=160 or not question.endswith("?")):
+            continue
+        accepted[oid].append({
+            "question":question,"origin":"LOCAL_LLM_BATCH_REPRESENTATIVE",
+            "status":"OPEN_RESEARCH_GAP","finding":None,
+            "evidence_ids":[],"addressed_to":"RESEARCH_AGENT_NOT_BUYER",
+        })
+    return accepted,duplicates,[o["id"] for o in selected]

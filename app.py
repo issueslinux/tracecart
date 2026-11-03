@@ -609,6 +609,22 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             self.send_flow_asset(path)
         elif path.startswith("/cart/status/"):
             suffix = path[len("/cart/status/"):]
+            if suffix.endswith("/live.json"):
+                jid=suffix[:-len("/live.json")]
+                try:
+                    _,snapshot=self.server.cart_jobs.live_snapshot(jid)
+                except ValueError:
+                    return self.send_page("<section>Unknown research job</section>",404)
+                payload=json.dumps(snapshot,ensure_ascii=False,
+                                   separators=(",",":")).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type","application/json; charset=utf-8")
+                self.send_header("Cache-Control","no-store")
+                self.send_header("X-Content-Type-Options","nosniff")
+                self.send_header("Content-Length",str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
             if suffix.endswith("/live"):
                 return self.stream_live_graph(suffix[:-len("/live")])
             question_page = suffix.endswith("/questions.json")

@@ -5,6 +5,28 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-03: input-first growing graph and fast, honest model statuses
+
+A pasted product URL now appears **first** as a graph node. Its actual
+source page is checked and added immediately in an independent I/O lane,
+in parallel with catalog and Shopping discovery. Other offers enter the
+graph incrementally on **completed source checks** (up to 16 concurrent
+network tasks); pending/active offers remain visible in the side task
+rail. Exact Product JSON-LD name matching supports marketing titles
+that omit a page's explicit model number, without mislabeling it as a
+verified checkout SKU.
+
+The previous two synchronous AI stages plus *one per indexed offer*
+sequential Qwen calls were removed from the critical path. The new
+worker sends at most **one bounded batch** for up to four distinct model
+families, marks duplicate/out-of-budget offers explicitly as skipped,
+and never shows 18 fabricated simultaneous WRITING cards. SSE events
+now have a same-origin snapshot resync path
+`/cart/status/<id>/live.json`; orphaned inference statuses are
+normalized after restart. Original reports, reference citations,
+checkout guardrails and source hashes remain durable.
+[Actual RYOBI job measurements and tests](docs/PROGRESSIVE_FIRST_PRODUCT_PARALLEL_RUNTIME_2026-11-03.md).
+
 ## 2026-11-03: multi-domain source discovery and discrepancy checks
 
 TraceCart now supports bounded **cross-domain research URL discovery** for

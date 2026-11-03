@@ -79,28 +79,46 @@ class ProgressiveOfferResearchTests(unittest.TestCase):
         self.assertNotIn("allegro.pl",text)
         self.assertEqual(len(observed),1)
 
-    def test_per_offer_llm_persists_outside_original_report(self):
+    def test_one_batched_model_call_replaces_sixteen_sequential_prompts(self):
         with tempfile.TemporaryDirectory() as tmp:
             jobs=CartResearchJobs(str(Path(tmp)/"jobs.sqlite"),
                                   runner=lambda x: deepcopy(RECORD["report"]))
+            calls=[]
+            def batch(offers,category,max_models=4):
+                calls.append([o["id"] for o in offers])
+                return ({o["id"]:[{
+                   "question":"Which independent source measures "+o["id"]+"?",
+                   "finding":None,"origin":"LOCAL_LLM_BATCH_REPRESENTATIVE"}]
+                   for o in offers},{},[o["id"] for o in offers])
             try:
-                with patch("offer_question_bank.propose_offer_model_questions",
-                           side_effect=lambda offer,cat: [{
-                               "question":"Which lab test applies to "+offer["id"]+"?",
-                               "finding":None,"origin":"LOCAL_LLM_PER_OFFER"}]):
+                with patch("offer_question_bank.propose_offer_question_batch",
+                           side_effect=batch):
                     jobs._generate_offer_questions("Z"*24,RECORD)
                 with jobs._db() as db:
-                    rows=db.execute("SELECT offer_idx,status,questions_json FROM cart_offer_model_questions WHERE job_id=? ORDER BY offer_idx",("Z"*24,)).fetchall()
+                    rows=db.execute("""SELECT offer_idx,status,questions_json
+                        FROM cart_offer_model_questions WHERE job_id=?
+                        ORDER BY offer_idx""",("Z"*24,)).fetchall()
                 self.assertEqual(len(rows),16)
-                self.assertTrue(all(r[1]=="OK" and len(json.loads(r[2]))==1 for r in rows))
+                self.assertEqual(len(calls),1)
+                self.assertLessEqual(len(calls[0]),4)
+                self.assertEqual(sum(r[1]=="OK" for r in rows),
+                                 len(calls[0]))
+                self.assertTrue(all(r[1] in (
+                    "OK","SKIPPED_DUPLICATE_MODEL","SKIPPED_MODEL_BUDGET")
+                    for r in rows))
+                self.assertTrue(all(len(json.loads(r[2]))==1
+                                    for r in rows if r[1]=="OK"))
+                self.assertFalse(any(r[1] in ("RUNNING","BATCH_RUNNING")
+                                     for r in rows))
                 self.assertEqual(RECORD["report"]["root"]["details"].get(
                     "post_index_llm_question_generation"),None)
             finally:
                 jobs.close()
 
-    def test_snapshot_visible_while_local_llm_blocks_not_after_it(self):
+    def test_first_offer_source_ready_while_original_catalog_runner_blocks(self):
         start=threading.Event()
         release=threading.Event()
+        input_source_done=threading.Event()
         item=RECORD["item"]
         source={
             "price_status":"NOT_VERIFIED_PAGE_BLOCKED",
@@ -108,41 +126,71 @@ class ProgressiveOfferResearchTests(unittest.TestCase):
             "intake_status":"URL_ONLY_UNVERIFIED"
         }
         report=RECORD["report"]
-        def slow_llm(r, clean):
+        def slow_runner(clean,use_local_questions=True):
+            self.assertFalse(use_local_questions,
+                "No local LLM may block the initial user-facing research")
             start.set()
-            if not release.wait(8):
+            if not release.wait(5):
                 raise RuntimeError("test timeout")
-            return r
+            return deepcopy(report)
+        def quick_check(offer,cat,fetch=None):
+            if offer["id"]=="offer-0":
+                input_source_done.set()
+            return {"status":"NO_MATCHED_INDEPENDENT_SOURCE",
+                    "sources_checked":0,"reference_answers":[],
+                    "verified_for_exact_offer":0}
         with tempfile.TemporaryDirectory() as tmp:
-            jobs=CartResearchJobs(str(Path(tmp)/"jobs.sqlite"),
-                                  runner=lambda x: deepcopy(report))
-            try:
-                with patch("product_intake.extract_product_page",
-                           return_value=(item,source)), patch.dict("os.environ",
-                           {"SERPAPI_API_KEY": ""}), patch(
-                           "autonomous_research.enrich_index_research_with_llm",
-                           side_effect=slow_llm):
+            with patch("cart_research.research_cart",
+                       side_effect=slow_runner),patch(
+                       "product_intake.extract_product_page",
+                       return_value=(item,source)),patch.dict(
+                       "os.environ",{"SERPAPI_API_KEY":"",
+                                     "BRAVE_API_KEY":""}),patch(
+                       "evidence_execution.execute_reference_checks",
+                       side_effect=quick_check),patch(
+                       "offer_question_bank.propose_offer_question_batch",
+                       return_value=({}, {},[])):
+                jobs=CartResearchJobs(str(Path(tmp)/"jobs.sqlite"),
+                                      runner=__import__("cart_research").research_cart)
+                try:
                     jid=jobs.submit_url(item["merchant_url"])
-                    self.assertTrue(start.wait(3),"worker should begin model stage")
-                    current=jobs.read(jid)
+                    self.assertTrue(start.wait(3),"base catalog runner must begin")
+                    self.assertTrue(input_source_done.wait(3),
+                        "First product document must run before catalog is ready")
+                    for _ in range(30):
+                        current=jobs.read(jid)
+                        if "offer-0" in current["evidence_offers"] and (
+                            current["evidence_offers"]["offer-0"].get("status")
+                            =="NO_MATCHED_INDEPENDENT_SOURCE"):
+                            break
+                        time.sleep(.025)
                     self.assertEqual(current["state"],"RUNNING")
-                    self.assertEqual(current["progress_stage"],
-                                     "LLM_SOURCE_QUESTIONS_IN_PROGRESS")
-                    projected=build_decision_projection(current)
-                    self.assertEqual(len(projected["offers"]),16)
-                    self.assertEqual(projected["evidence"]["google_shopping_cards"],12)
-                    self.assertEqual(projected["evidence"]["indexed_store_links"],3)
-                    self.assertFalse(projected["payment_authorized"])
+                    self.assertEqual(current["evidence_offers"]["offer-0"]
+                                     ["status"],"NO_MATCHED_INDEPENDENT_SOURCE")
+                    from offer_knowledge_graph import build_offer_knowledge_graph
+                    shown=build_offer_knowledge_graph(
+                        build_decision_projection(current))
+                    self.assertEqual(shown["stats"]["offers"],1)
+                    self.assertEqual(shown["stats"]["total_discovered_offers"],1)
                     release.set()
-                    for _ in range(80):
+                    for _ in range(100):
                         current=jobs.read(jid)
                         if current["state"] in ("READY","FAILED"):
                             break
+                        time.sleep(.03)
+                    self.assertEqual(current["state"],"READY",
+                                     current["error_type"])
+                    # Evidence worker reuses checked input source.
+                    for _ in range(100):
+                        if jobs.read(jid)["evidence_progress"]["status"]=="COMPLETE":
+                            break
                         time.sleep(.025)
-                    self.assertEqual(current["state"],"READY",current["error_type"])
-            finally:
-                release.set()
-                jobs.close()
+                    self.assertEqual(jobs.read(jid)["evidence_progress"]
+                                     ["status"],"COMPLETE")
+                finally:
+                    release.set()
+                    jobs.close()
+
 
 if __name__=="__main__":
     unittest.main()

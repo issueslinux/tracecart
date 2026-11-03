@@ -28,7 +28,7 @@ test("source rail reflects actual persisted worker statuses, not made-up verifie
 });
 test("right rail cycles unresolved checks when workers update, never converts them to answers",()=>{
   const list=live.questionTasks(example);
-  assert.equal(list[0].state,"WRITING");
+  assert.equal(list[0].state,"INFERENCE");
   assert.ok(list.some(x=>x.state==="OPEN"));
   assert.ok(!list.some(x=>x.state==="VERIFIED"));
   const more=live.questionTasks({...example,progress_revision:4});
@@ -84,4 +84,34 @@ test("source discrepancies and search leads are shown as unresolved research, no
   const css=fs.readFileSync(path.join(__dirname,"../assets/decision-flow.css"),"utf8");
   assert.ok(css.includes("kg-type-source_disagreement"));
   assert.ok(css.includes("kg-type-source_lead"));
+});
+
+
+test("source rail uses discovered work queue while graph shows first input offer",()=>{
+  const partial={...example,
+    graph:{offer_details:{"offer-0":example.graph.offer_details["offer-0"]}},
+    offer_queue:[
+      {id:"offer-0",title:"Original RYOBI RPI18"},
+      {id:"offer-1",title:"Alternative RYOBI R18PI"},
+      {id:"offer-2",title:"Other compressor"},
+    ],
+    evidence_offers:{
+      "offer-0":{status:"GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED",
+                 reference_answers:[{finding:"Declared max pressure"}]},
+      "offer-1":{status:"RUNNING",reference_answers:[]},
+      "offer-2":{status:"QUEUED",reference_answers:[]},
+    },
+    model_offers:{"offer-0":{state:"BATCH_RUNNING",questions:[]},
+                  "offer-1":{state:"BATCH_RUNNING",questions:[]}},
+  };
+  const src=live.sourceTasks(partial);
+  assert.equal(src.length,3);
+  assert.equal(src[0].key,"#1");
+  assert.equal(src[0].state,"SPECIFICATIONS");
+  assert.ok(src.some(x=>x.key==="#2" && x.state==="CHECKING"));
+  const qs=live.questionTasks(partial);
+  assert.equal(qs.filter(x=>x.state==="INFERENCE").length,1);
+  const code=fs.readFileSync(path.join(__dirname,"../assets/live-workspace.js"),"utf8");
+  assert.ok(code.includes("lastEventAt"));
+  assert.ok(code.includes("fallbackUrl=app.dataset.live"));
 });
