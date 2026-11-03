@@ -119,6 +119,24 @@ def execute_reference_checks(offer, category, fetch=None):
     results or automatic purchasing recommendations.
     """
     model=model_family(offer.get("title"))
+    if category=="E_BIKE":
+        from ebike_research import offer_title_diagnostics
+        # Never pretend the URL-derived title, indexed price or a similarly
+        # named alternative has established the precise e-bike variant.
+        diagnostic=offer_title_diagnostics(offer)
+        return {
+            "status":"NO_MATCHED_INDEPENDENT_EBIKE_REVIEW",
+            "model_family":None,"sources_checked":0,
+            "reference_answers":[],"verified_for_exact_offer":0,
+            "listing_diagnostics":diagnostic,
+            "pending_high_impact":[
+                "Exact OEM brand, model, and frame variant",
+                "Battery nominal voltage, manufacturer, Wh and BMS",
+                "Measured assistance-only range, rider mass and terrain",
+                "Motor rated continuous power, cutoff and throttle behavior",
+                "Brakes, warranty, spare parts, real current seller price",
+            ],
+        }
     if category!="LAPTOP" or model not in REVIEW_SOURCES:
         return {"status":"NO_MATCHED_INDEPENDENT_SOURCE",
                 "model_family":model,"sources_checked":0,
