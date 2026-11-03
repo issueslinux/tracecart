@@ -66,11 +66,17 @@
         a.weight-b.weight||Number(a.key.slice(1))-Number(b.key.slice(1))));
     return rows.slice(0,20);
   }
-  function questionTasks(data){
+  function questionTasks(data,selectedId="offer-0"){
     const g=data.graph||{},details=g.offer_details||{},model=data.model_offers||{};
+    const complete=data.state==="READY" &&
+      (data.evidence_progress||{}).status==="COMPLETE" &&
+      data.progress_stage==="PER_OFFER_MODEL_COMPLETE";
     const running=[],open=[],answered=[],proposed=[];
     let batchReported=false;
-    for(const [id,d] of Object.entries(details)){
+    const ordered=Object.entries(details).sort(([a],[b])=>
+      a===selectedId?-1:b===selectedId?1:
+      Number(a.split("-")[1])-Number(b.split("-")[1]));
+    for(const [id,d] of ordered){
       const idx=Number(id.split("-")[1])+1;
       const ml=model[id]||{};
       if(["RUNNING","BATCH_RUNNING"].includes(ml.state) &&
@@ -110,19 +116,33 @@
           state:"CHECK SOURCES",mode:"BLOCKED"});
       }
       for(const q of (d.high_impact_questions||[]).slice(0,5)){
-        open.push({key:"#"+idx+" · P0",title:q.question,
-          detail:"Source evidence required; not answered.",
-          state:"OPEN",mode:"QUEUED"});
+        open.push({key:"#"+idx+" · VERIFY",title:q.question,
+          detail:q.reason||"A new independent source or SKU check is required.",
+          state:complete?"UNRESOLVED":"OPEN",mode:"QUEUED"});
       }
     }
-    // The visible queue is bounded. New offer arrivals, actual source
-    // results and model updates replace old cards instead of appending
-    // hundreds of formulaic questions to the page.
+    // Finished work is not a queue. The old revision-rotating generic
+    // probes made completed jobs appear to be indefinitely processing.
+    // Show actual documented findings and selected-offer gaps, not 18×24
+    // template questions. The other offers remain navigable in the graph.
+    if(complete){
+      const selectedEvidence=answered.filter(row=>
+        row.key.startsWith("#"+(Number(selectedId.split("-")[1])+1)+" ·"));
+      const selectedGaps=open.filter(row=>
+        row.key.startsWith("#"+(Number(selectedId.split("-")[1])+1)+" ·"));
+      return [{
+        key:"RESEARCH",title:"Source and model checks have finished",
+        detail:(data.evidence_progress.processed||0)+"/"+
+          (data.evidence_progress.planned||0)+
+          " offers checked. Unresolved items require additional sources.",
+        state:"COMPLETE",mode:"REFERENCE",
+      },...selectedEvidence.slice(0,5),...selectedGaps.slice(0,9)];
+    }
     const changed=Number(data.progress_revision)||0;
-    const offset=open.length?changed%Math.max(1,open.length):0;
-    const rotated=open.slice(offset).concat(open.slice(0,offset));
-    const lead=running.slice(0,4).concat(answered.slice(0,3))
-      .concat(proposed.slice(0,5));
+    const rotated=open.length?
+      open.slice(changed%open.length).concat(open.slice(0,changed%open.length)):[];
+    const lead=running.slice(0,1).concat(answered.slice(0,5))
+      .concat(proposed.slice(0,2));
     return lead.concat(rotated.slice(0,Math.max(0,18-lead.length)));
   }
   function emptyGraph(){
@@ -143,7 +163,9 @@
     if(!app||!window.TraceCartKnowledgeGraph)return;
     const status=$("job-state"),form=$("product-form"),button=form.querySelector("button");
     let gotData=false,graphFingerprint="",source,lastEventAt=Date.now();
+    let lastSnapshot=null;
     function show(snapshot,id){
+      lastSnapshot=snapshot;
       if(id!==undefined)lastEventAt=Date.now();
       gotData=true;
       const graph=snapshot.graph;
@@ -155,15 +177,18 @@
       }
       const stats=graph&&graph.stats||{};
       $("live-graph-count").textContent=
-        (stats.offers||0)+"/"+(stats.total_discovered_offers||stats.offers||0)+
-        " offers · "+(graph.nodes||[]).length+" nodes · "+
-        (graph.edges||[]).length+" links";
+        (stats.offers||0)+" offers · "+
+        (app.dataset.visibleGraphNodes||"0")+"/"+(graph.nodes||[]).length+
+        " nodes visible · "+(app.dataset.visibleGraphLinks||"0")+
+        " displayed links";
       const activity=snapshot.evidence_progress||{};
       const pendingSource=Object.values(snapshot.evidence_offers||{})
         .filter(x=>["RUNNING","QUEUED"].includes(x.status)).length;
       const workingModel=Object.values(snapshot.model_offers||{})
         .filter(x=>["RUNNING","BATCH_RUNNING"].includes(x.state)).length;
-      const sources=sourceTasks(snapshot),questions=questionTasks(snapshot);
+      const sources=sourceTasks(snapshot),
+        questions=questionTasks(snapshot,(app._traceCartGraphView||{}).focus||
+          "offer-0");
       const search=snapshot.source_search||{};
       if(search.status==="RUNNING"){
         sources.unshift({key:"DISCOVERY",title:"Searching external sources",
@@ -177,7 +202,11 @@
       }
       $("live-source-count").textContent=pendingSource?
         pendingSource+" checking":String(sources.length);
-      $("live-question-count").textContent=workingModel?
+      const checksDone=snapshot.state==="READY" &&
+        activity.status==="COMPLETE" &&
+        snapshot.progress_stage==="PER_OFFER_MODEL_COMPLETE";
+      $("live-question-count").textContent=checksDone?
+        "Complete · 0 active":workingModel?
         questions.length+" · 1 model batch":String(questions.length);
       renderItems($("live-source-tasks"),sources);
       renderItems($("live-question-tasks"),questions);
@@ -185,7 +214,9 @@
       const researchDone=snapshot.state==="READY" &&
         (snapshot.evidence_progress||{}).status==="COMPLETE" &&
         phase==="PER_OFFER_MODEL_COMPLETE";
-      status.textContent=researchDone?"Ready":
+      status.textContent=researchDone?
+        "Completed · "+(activity.processed||0)+"/"+
+        (activity.planned||0)+" checked · no active tasks":
         phase==="SOURCE_FETCH"?"Reading input page":
         snapshot.state==="READY"&&
         (snapshot.evidence_progress||{}).status==="RUNNING"?
@@ -193,6 +224,8 @@
           (snapshot.evidence_progress.planned||0)+" offers":
         phase.replace(/_/g," ").toLowerCase();
       $("live-evidence-status").textContent=
+        (researchDone?"Research finished · new evidence requires another run · ":"")+
+        (stats.seller_page_declarations||0)+" seller-page declarations · "+
         (stats.independent_reference_measurements||0)+
         " independent test values · "+(stats.documented_product_declarations||0)+
         " sourced declarations · "+(stats.unresolved_source_discrepancies||0)+
@@ -200,6 +233,11 @@
         " verified exact variants · "+
         (stats.verified_checkout_prices||0)+" verified checkout prices";
     }
+    app.addEventListener("tracecart:selection-changed",()=>{
+      if(!lastSnapshot)return;
+      renderItems($("live-question-tasks"),questionTasks(lastSnapshot,
+        (app._traceCartGraphView||{}).focus||"offer-0"));
+    });
     window.TraceCartKnowledgeGraph.create(app,emptyGraph());
     $("live-graph-count").textContent="1 node · 0 links";
     status.textContent="Ready";
@@ -251,7 +289,11 @@
     });
     source.addEventListener("settled",()=>{
       if(source)source.close();
-      if(gotData)status.textContent="Ready";
+      if(gotData){
+        const e=(lastSnapshot||{}).evidence_progress||{};
+        status.textContent="Completed · "+(e.processed||0)+"/"+
+          (e.planned||0)+" checked · no active tasks";
+      }
     });
     source.onerror=()=>{
       if(source.readyState===EventSource.CONNECTING)

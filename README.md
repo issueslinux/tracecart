@@ -5,6 +5,26 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-03: richer central graph with sourced fields and targeted remaining checks
+
+The central SVG now renders saved seller-page data that were previously
+absent from the decision projection: SKU/EAN, seller-declared price,
+availability and conditional delivery/shipping, plus manufacturer/
+merchant technical fields **with their actual source labels and SHA-256**.
+Evidence groups connect offer → aspect → page value → downloaded document.
+The former 13-source-node display cap and redundant 24-question list
+have been removed from the active view. Generic historical probe
+catalogues remain labeled as uninvestigated archive in the APIs.
+
+Only *missing, actionable* evidence gaps remain next to each offer.
+For the RYOBI RPI18-0 example: instrumented independent test, warranty,
+spare parts/repair and real checkout total. The right rail follows
+selection and, once all workers terminate, reports **COMPLETE** rather
+than continuously rotating old OPEN questions. No publisher claim is
+presented as an independently measured specification or checkout price.
+[Details, saved RYOBI comparison and test evidence](
+docs/EVIDENCE_FIRST_GRAPH_AND_TARGETED_GAPS_2026-11-03.md).
+
 ## 2026-11-03: input-first growing graph and fast, honest model statuses
 
 A pasted product URL now appears **first** as a graph node. Its actual

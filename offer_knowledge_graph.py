@@ -13,7 +13,7 @@ from similar_tier import PUBLIC_SPEC_NAMES, read_specs
 
 MAX_OFFERS = 33
 MAX_CLAIMS_PER_OFFER = 20
-MAX_REFERENCE_ROWS_PER_OFFER = 16
+MAX_REFERENCE_ROWS_PER_OFFER = 28
 
 
 def _key(value):
@@ -75,6 +75,17 @@ def build_offer_knowledge_graph(projection):
     edges={}
     details={}
     spec_name=PUBLIC_SPEC_NAMES
+    fact_families={
+        "model":"Identity / model","barcode":"Identity / barcode",
+        "voltage":"Electrical / voltage","power":"Electrical / power",
+        "battery":"Battery","charging":"Charging & kit",
+        "accessories":"Equipment","weight":"Mass / weight",
+        "size":"Dimensions","noise":"Noise","vibration":"Vibration",
+        "pressure":"Pressure / output","speed":"Performance",
+        "range":"Range","screen":"Display","memory":"Memory",
+        "storage":"Storage","warranty":"Warranty",
+        "seller":"Seller page","other":"Documented specifications",
+    }
 
     def add_node(id_, kind, label, **fields):
         if id_ not in vertices:
@@ -85,6 +96,19 @@ def build_offer_knowledge_graph(projection):
         id_="edge:"+_key((src,dst,kind,fields.get("question_id")))
         if id_ not in edges:
             edges[id_]={"id":id_,"from":src,"to":dst,"relation":kind,**fields}
+
+    def source_facet(offer_id, family, reading_id):
+        family=str(family or "other").casefold()[:40]
+        if family not in fact_families:family="other"
+        facet="facet:"+offer_id+":"+family
+        add_node(facet,"evidence_facet",fact_families[family],
+                 source_family=family,
+                 status="DOCUMENTED_DECLARATIONS_NOT_INDEPENDENTLY_TESTED")
+        add_edge(offer_id,facet,"HAS_DOCUMENTED_FACET",
+                 status="PUBLISHED_EVIDENCE_SCOPE")
+        add_edge(facet,reading_id,"FACET_HAS_SOURCE_FACT",
+                 status="SOURCE_DECLARATION_NOT_INDEPENDENT_TEST")
+        return facet
 
     gate=add_node("decision:abstain","decision_gate",
                   "NO VERIFIED BEST BUY",
@@ -106,6 +130,73 @@ def build_offer_knowledge_graph(projection):
     exact_verified=0
     gap_edges=0
     discrepancy_count=0
+    seller_page_claims=0
+    intake=projection.get("selected_source_intake") or {}
+    selected_item=projection.get("selected_item") or {}
+    actual_page=intake.get("page_sha256") and intake.get("retrieved_at")
+    # The input page has its own structured Product JSON-LD receipt.
+    # It is seller/brand-provided DATA, not an independent test or verified
+    # checkout. Render these statements in the graph, not only in a deep
+    # audit endpoint where real user information was previously invisible.
+    if actual_page and (intake.get("source_url") or selected_item.get("merchant_url")):
+        page_url=intake.get("source_url") or selected_item.get("merchant_url")
+        digest=intake["page_sha256"]
+        page_id=_source_id(page_url,digest)
+        add_node(page_id,"fetched_source",
+                 intake.get("brand") or "User-selected product page",
+                 url=page_url,sha256=digest,
+                 retrieved_at=intake["retrieved_at"],
+                 source_kind="SELLER_PRODUCT_JSON_LD_DECLARATIONS")
+        def seller_fact(key,label,value):
+            nonlocal seller_page_claims
+            if value is None or isinstance(value,bool) or str(value).strip() in ("","-"):
+                return
+            nid="seller:"+_key((digest,key,str(value)))
+            add_node(nid,"seller_declaration",label+" · "+str(value),
+                     parameter=key,value=str(value),
+                     source_url=page_url,source_sha256=digest,
+                     provenance="SELLER_PAGE_SNAPSHOT_NOT_CHECKOUT",
+                     status="SELLER_DECLARATION_NOT_INDEPENDENT_TEST")
+            add_edge("offer-0",nid,"SELLER_PAGE_DECLARES",
+                     status="SNAPSHOT_ONLY_NOT_CHECKOUT")
+            source_facet("offer-0",
+                         {"sku":"model","ean":"barcode",
+                          "brand":"model","listed_price":"seller",
+                          "availability":"seller","shipping":"seller",
+                          "delivery":"seller"}.get(key,"seller"),nid)
+            add_edge(nid,page_id,"OBSERVED_IN_SOURCE",
+                     status="FETCHED_DOCUMENT_WITH_SHA256")
+            seller_page_claims+=1
+        seller_fact("brand","Brand",intake.get("brand"))
+        seller_fact("sku","SKU",intake.get("sku"))
+        if intake.get("barcode_status")=="FOUND_CHECKSUM_VALID":
+            seller_fact("ean","EAN",selected_item.get("barcode"))
+        if intake.get("price_status")=="SELLER_DECLARED":
+            price=selected_item.get("price")
+            unit=selected_item.get("currency")
+            if price is not None and unit in ("PLN","EUR","USD"):
+                seller_fact("listed_price","Seller price",str(price)+" "+unit)
+        availability=intake.get("availability_claim")
+        if isinstance(availability,str) and availability.startswith("https://schema.org/"):
+            seller_fact("availability","Seller availability",
+                        availability.rsplit("/",1)[-1])
+        shipping=intake.get("structured_shipping_claim") or {}
+        if (isinstance(shipping,dict) and
+            shipping.get("status")=="SELLER_DECLARED_DESTINATION_CONDITIONAL"):
+            cost=shipping.get("shipping_cost")
+            curr=shipping.get("currency")
+            country=shipping.get("destination_country")
+            if cost is not None and curr in ("PLN","EUR","USD") and country:
+                seller_fact("shipping","Conditional seller shipping",
+                            str(cost)+" "+curr+" · "+str(country))
+        delivery=intake.get("structured_delivery_window_claim") or {}
+        if (isinstance(delivery,dict) and
+            delivery.get("status")=="SELLER_DECLARED_HANDLING_PLUS_TRANSIT_DAYS"):
+            min_days=delivery.get("min_days")
+            max_days=delivery.get("max_days")
+            if isinstance(min_days,(int,float)) and isinstance(max_days,(int,float)):
+                seller_fact("delivery","Advertised handling + transit",
+                            "{}–{} days".format(min_days,max_days))
     search=(projection.get("source_search") or {})
     search_lead_ids={}
     for candidate in (search.get("leads") or [])[:24]:
@@ -126,6 +217,20 @@ def build_offer_knowledge_graph(projection):
                  identity=ident)
         search_lead_ids.setdefault((ident["brand"],ident["model"]),[]).append(
             (lead,url))
+    family_id=None
+    family_tokens=[]
+    seller_brand=""
+    if actual_page and intake.get("sku") and intake.get("brand"):
+        seller_brand=re.findall(r"[a-z0-9]+",intake["brand"].casefold())[0]
+        family_tokens=re.findall(r"[a-z0-9]+",str(intake["sku"]).casefold())
+        if 2<=len("".join(family_tokens))<=35 and seller_brand:
+            family_id="model-family:"+_key((seller_brand,tuple(family_tokens)))
+            add_node(family_id,"model_family",
+                     seller_brand.upper()+" · "+str(intake["sku"]),
+                     status="PAGE_MODEL_AND_SEARCH_TITLE_MATCH_ONLY",
+                     exact_retailer_variant_verified=False)
+            add_edge("offer-0",family_id,"SELLER_PAGE_MODEL_IDENTITY",
+                     status="PAGE_DECLARED_MODEL_NOT_CHECKOUT")
     for offer in offers:
         oid=offer["id"]
         kind=offer.get("kind","UNKNOWN")
@@ -144,6 +249,14 @@ def build_offer_knowledge_graph(projection):
                 for lead,url in search_lead_ids.get(key,[]):
                     add_edge(oid,lead,"SOURCE_DISCOVERY_LEAD",
                         status="URL_ONLY_UNVERIFIED_NO_PRODUCT_RECEIPT")
+        if family_id and oid!="offer-0":
+            title_words=re.findall(r"[a-z0-9]+",
+                                   str(offer.get("title","")).casefold())
+            contiguous=any(title_words[i:i+len(family_tokens)]==family_tokens
+                for i in range(max(0,len(title_words)-len(family_tokens)+1)))
+            if seller_brand in title_words and contiguous:
+                add_edge(oid,family_id,"INDEX_TITLE_MATCHES_DECLARED_MODEL",
+                    status="UNVERIFIED_EXACT_SKU_MATCH")
         specs=read_specs(offer.get("title",""),category)
         # URL title can be truncated/synthetic. All fields are *claims*.
         listing_claims=[]
@@ -236,6 +349,7 @@ def build_offer_knowledge_graph(projection):
                      ref.get("value") or ref.get("finding") or "Source finding",
                      question_id=ref.get("question_id"),
                      finding=ref.get("finding"),value=ref.get("value"),
+                     source_property=ref.get("source_property"),
                      reviewed_model=ref.get("reviewed_model"),
                      reviewed_variant=ref.get("reviewed_variant"),
                      variant_match=ref.get("variant_match"),
@@ -246,6 +360,7 @@ def build_offer_knowledge_graph(projection):
                      source_sha256=digest)
             add_edge(oid,answer_id,"HAS_SOURCE_OBSERVATION",
                      status=answer_status)
+            source_facet(oid,ref.get("property_family"),answer_id)
             add_edge(answer_id,source,"OBSERVED_IN_SOURCE",
                      status="FETCHED_DOCUMENT_WITH_SHA256")
             lead="lead:"+_key(source_url)
@@ -262,6 +377,7 @@ def build_offer_knowledge_graph(projection):
                             "source_url":source_url,"source_sha256":digest,
                             "source_kind":ref.get("source_kind"),
                             "property_family":ref.get("property_family"),
+                            "source_property":ref.get("source_property"),
                             "status":answer_status,
                             "variant_match":ref.get("variant_match"),
                             "method":ref.get("source_method")})
@@ -323,13 +439,31 @@ def build_offer_knowledge_graph(projection):
                 add_edge(oid,other,"SIMILAR_INDEX_MODEL_NAME_LEAD",
                          status="NOT_VERIFIED_SAME_PRODUCT",
                          model_hint=hint.get("model_hint"))
+        from evidence_gap_summary import graph_research_summary
+        gap_summary=graph_research_summary(
+            offer,category,evidence.get(oid) or {},
+            intake if oid=="offer-0" else {})
+        for q in gap_summary["open_questions"]:
+            gap_id="verification:"+oid+":"+str(q["dimension"])
+            add_node(gap_id,"verification_gap",q["question"],
+                     reason=q["reason"],priority=q["priority"],
+                     dimension=q["dimension"],
+                     status="OPEN_REQUIRES_NEW_EVIDENCE",
+                     offer_id=oid)
+            add_edge(oid,gap_id,"HAS_UNRESOLVED_VERIFICATION_GAP",
+                     status="NEEDS_NEW_SOURCE_NOT_INFERENCE")
+            add_edge(gap_id,gate,"GAP_BLOCKS_VERIFIED_PURCHASE",
+                     status="EXACT_VARIANT_OR_CHECKOUT_UNVERIFIED")
         llm=models.get(oid) or {}
         details[oid]={
             "title":offer.get("title"),"source":offer.get("source"),
             "kind":kind,"url":offer.get("url"),
             "indexed_price":price,"claim_provenance":provenance,
-            "claims":listing_claims,"high_impact_questions":questions,
-            "planned_question_count":offer.get("question_count",0),
+            "claims":listing_claims,
+            "high_impact_questions":gap_summary["open_questions"],
+            "source_coverage":gap_summary,
+            "legacy_plan_question_count":offer.get("question_count",0),
+            "planned_question_count":len(gap_summary["open_questions"]),
             "model_question_status":llm.get("state","NOT_REQUESTED"),
             "model_questions":[x.get("question") for x in
                                llm.get("questions",[])[:6] if isinstance(x,dict)],
@@ -365,6 +499,11 @@ def build_offer_knowledge_graph(projection):
             "total_planned_questions":sum(o.get("question_count",0) for o in offers),
             "independent_reference_measurements":len(unique_measurements),
             "documented_product_declarations":len(unique_document_declarations),
+            "seller_page_declarations":seller_page_claims,
+            "evidence_facets":sum(n["type"]=="evidence_facet"
+                                    for n in vertices.values()),
+            "focused_verification_gaps":sum(n["type"]=="verification_gap"
+                                             for n in vertices.values()),
             "unresolved_source_discrepancies":discrepancy_count,
             "source_discovery_leads":len((projection.get("source_search")
                                         or {}).get("leads") or []),
@@ -388,6 +527,8 @@ def build_offer_knowledge_graph(projection):
             "A matching value or related Shopping title does not establish identical model, battery or frame.",
             "Independent reviews of other variants stay reference-only until exact SKU and tested configuration match.",
             "Seller/OEM/third-party page specifications are source declarations, not independent laboratory tests.",
+            "A seller-page price, availability, delivery or shipping quote is conditional and not a validated checkout total.",
+            "Matching a manufacturer model token in a search-index title does not prove the same seller SKU.",
             "Disagreements between seller and source declarations may indicate different variants, test conditions, or outdated values; they do not prove deception.",
             "A URL discovered through a paid search index is a lead, not a source observation until the page is independently fetched.",
             "No verified seller checkout price is inferred from indexed quotes.",

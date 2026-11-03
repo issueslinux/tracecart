@@ -20,7 +20,7 @@ from product_intake import validate_product_url
 
 MAX_DIRECT_SOURCES=2
 MAX_LINKS=600
-MAX_CLAIMS=12
+MAX_CLAIMS=24
 MAX_BYTES=2500000
 GENERIC_PRODUCT_WORDS={
     "rower","elektryczny","meski","damski","ebike","bike","electric",
@@ -359,9 +359,9 @@ def parse_source_claims(raw,offer,category,source_url,source_kind):
     # Present the SKU/EAN, electrical and functional specs before noise
     # uncertainty fields. Every fact remains a verbatim page declaration.
     rank={"model":0,"barcode":1,"voltage":2,"power":3,
-          "battery":4,"pressure":5,"weight":6,"size":7,
-          "storage":8,"memory":9,"accessories":10,
-          "noise":11,"vibration":12}
+          "battery":4,"pressure":5,"speed":6,"weight":7,
+          "size":8,"storage":9,"memory":10,"charging":11,
+          "accessories":12,"noise":13,"vibration":14}
     picked.sort(key=lambda v:rank.get(v[0],20))
     picked=picked[:MAX_CLAIMS]
     if not picked:
@@ -553,7 +553,7 @@ def execute_generic_sources(offer,category,fetch=None,enable_brand_discovery=Tru
                 "sources_checked":0,"attempted_sources":attempted,
                 "declared_claim_conflicts":[]}
     from source_discrepancies import find_source_discrepancies
-    visible=rows[:18]
+    visible=rows[:26]
     discrepancies=find_source_discrepancies(offer,category,visible)
     return {"status":"GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED",
             "reference_answers":visible,"verified_for_exact_offer":0,

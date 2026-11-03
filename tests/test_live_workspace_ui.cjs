@@ -48,7 +48,7 @@ test("placeholder opens before any backend request; no invented evidence",()=>{
   const frontend=fs.readFileSync(path.join(__dirname,"../assets/live-workspace.js"),"utf8");
   assert.ok(frontend.includes("new EventSource("));
   assert.ok(frontend.includes('source.addEventListener("graph"'));
-  assert.ok(frontend.includes("Source evidence required"));
+  assert.ok(frontend.includes("A new independent source or SKU check is required."));
   assert.ok(!frontend.includes("innerHTML"));
 });
 
@@ -114,4 +114,34 @@ test("source rail uses discovered work queue while graph shows first input offer
   const code=fs.readFileSync(path.join(__dirname,"../assets/live-workspace.js"),"utf8");
   assert.ok(code.includes("lastEventAt"));
   assert.ok(code.includes("fallbackUrl=app.dataset.live"));
+});
+
+
+test("completed research shows evidence-specific unresolved checks, not rotating generic 24-question backlogs",()=>{
+  const data={...example,
+    state:"READY",progress_stage:"PER_OFFER_MODEL_COMPLETE",
+    evidence_progress:{status:"COMPLETE",processed:18,planned:18},
+    graph:{offer_details:{
+      "offer-0":{high_impact_questions:[
+        {question:"Independent instrumented performance test for model RPI18-0?",
+         reason:"No laboratory measurement found."},
+        {question:"Current all-in checkout total?",reason:"Seller quote only."}
+      ]},
+      "offer-1":{high_impact_questions:[
+        {question:"Check another manufacturer manual?",reason:"Missing source."}
+      ]},
+    }},
+    model_offers:{"offer-0":{state:"OK",questions:[]}},
+    evidence_offers:{"offer-0":{status:"GENERAL_DOCUMENT_DECLARATIONS_FETCHED_SKU_UNVERIFIED",
+      reference_answers:[{finding:"Declared voltage 18V",
+        source_kind:"SELLER_PRODUCT_PAGE_DECLARATIONS"}]}}
+  };
+  const selected=live.questionTasks(data,"offer-0");
+  assert.equal(selected[0].state,"COMPLETE");
+  assert.equal(selected.filter(x=>x.state==="UNRESOLVED").length,2);
+  assert.ok(selected.some(x=>x.title.includes("Independent instrumented")));
+  assert.ok(!selected.some(x=>x.title.includes("another manufacturer manual")));
+  const other=live.questionTasks(data,"offer-1");
+  assert.equal(other.filter(x=>x.state==="UNRESOLVED").length,1);
+  assert.ok(other.some(x=>x.title.includes("another manufacturer manual")));
 });

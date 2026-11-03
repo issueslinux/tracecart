@@ -160,6 +160,9 @@ def build_decision_projection(record):
                 "progress_revision": record.get("progress_revision") or 0,
                 "model_progress_stage":record.get("progress_stage") or "QUEUED",
                 "offers": offer_summaries(current, category),
+                "selected_item":item,
+                "selected_source_intake":((preview or {}).get(
+                    "source_intake") or {}),
                 "model_offers":record.get("model_offers") or {},
                 "evidence_offers":record.get("evidence_offers") or {},
                 "evidence_progress":record.get("evidence_progress") or {
@@ -310,6 +313,8 @@ def build_decision_projection(record):
                             else "Retailer page claims",
         "evidence":evidence,
         "offers":offer_summaries(record,category),
+        "selected_item":selected,
+        "selected_source_intake":source,
         "source_search":record.get("source_search") or {},
         "model_offers":record.get("model_offers") or {},
         "model_progress_stage":record.get("progress_stage") or "NOT_SCHEDULED",
