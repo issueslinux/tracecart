@@ -300,7 +300,7 @@ h1 em,h2 em{font-weight:400;font-style:italic;color:var(--accent)}
 .kg-links .kg-muted{opacity:.12}
 .kg-node{cursor:pointer;outline:none}
 .kg-node circle{fill:#fff;stroke:#5b8572;stroke-width:2;transition:fill .12s}
-.kg-node text{font:600 13px/1 var(--mono);fill:#263a32;user-select:none;pointer-events:none}
+.kg-node text{font:600 13px/1 var(--mono);fill:#263a32;user-select:none;pointer-events:visiblePainted;cursor:pointer}
 .kg-node.kg-type-offer circle{fill:#24624a;stroke:#fff;stroke-width:2.2}
 .kg-node.kg-type-offer text{font-size:13px;fill:#243b33}
 .kg-node.kg-type-title_claim circle{fill:#fefdf9;stroke:#74a68c}
