@@ -25,12 +25,6 @@
         <input id="product_url" name="product_url" type="url" maxlength="1200"
           placeholder="Paste a product URL" autocomplete="url"
           value="{{PRODUCT_URL}}" required>
-        <label for="observed_price" class="sr-only">Price shown by the seller (optional)</label>
-        <input id="observed_price" name="observed_price" type="text" maxlength="18"
-          inputmode="decimal" placeholder="Price seen, e.g. 2799.00">
-        <input type="hidden" name="observed_currency" value="PLN">
-        <input type="text" name="promotion_code" maxlength="40"
-          placeholder="Promo code (optional)">
         <button type="submit" id="analyze-button"><span class="analyze-spin"
           aria-hidden="true"></span><span id="analyze-label">Analyze</span></button>
       </form>
@@ -46,20 +40,6 @@
         </div>
       </aside>
       <section class="live-stage" aria-label="Growing evidence graph">
-        <form id="input-price-correction" class="observed-price-correction"
-              action="{{INPUT_PRICE_ACTION}}" method="post" hidden>
-          <input type="hidden" name="csrf" value="{{CSRF}}">
-          <label for="corrected_price">Seller price you can see (not checkout-verified)</label>
-          <input id="corrected_price" name="observed_price" type="text"
-                 inputmode="decimal" maxlength="18" placeholder="e.g. 2799.00"
-                 value="{{INPUT_PRICE_VALUE}}" required>
-          <input type="hidden" name="observed_currency" value="PLN">
-          <label for="corrected_promotion_code">Promo code (if required)</label>
-          <input id="corrected_promotion_code" name="promotion_code" type="text"
-                 maxlength="40" placeholder="e.g. BW1610-0112"
-                 value="{{INPUT_PROMOTION_CODE}}">
-          <button type="submit">Update price comparison</button>
-        </form>
         <section id="live-verdict" class="live-verdict" hidden
           aria-label="Final research verdict" aria-live="polite"></section>
         <section id="link-safety" class="link-safety" hidden

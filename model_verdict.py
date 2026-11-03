@@ -179,8 +179,9 @@ def insufficient_verdict(graph,error_type="MODEL_UNAVAILABLE",projection=None):
         "summary":summary,"observations":observations,
         "purchase_insights":comparison,
         "next_step":( "Inspect the leading comparable retailer pages, "
-                      "screen/storage/CPU trade-offs and delivered totals. "
-                     "Do not treat an indexed quote as a checkout price."),
+                      "the specific functional and compatibility trade-offs, "
+                      "and delivered totals. An indexed quote is not a "
+                      "verified checkout price."),
         "error_type":_label(error_type,75),
         "payment_authorized":False,
         "verification":"NO_VERIFIED_BEST_BUY",
