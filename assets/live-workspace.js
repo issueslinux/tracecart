@@ -512,6 +512,22 @@
           button.addEventListener("click",()=>controller.select(row.offer_id));
           actions.appendChild(button);
         }
+        if(row.offer_id&&app.dataset.sandboxAction&&app.dataset.csrf){
+          const sandbox=document.createElement("form");
+          sandbox.method="post";sandbox.action=app.dataset.sandboxAction;
+          sandbox.className="purchase-paypal-form";
+          for(const [name,value] of [["csrf",app.dataset.csrf],
+                                      ["offer_id",row.offer_id]]){
+            const hidden=document.createElement("input");
+            hidden.type="hidden";hidden.name=name;hidden.value=value;
+            sandbox.appendChild(hidden);
+          }
+          const btn=item("button","","PayPal Sandbox demo");
+          btn.type="submit";
+          btn.title="Review an illustrative quote; this does not buy at the listed retailer.";
+          sandbox.appendChild(btn);
+          actions.appendChild(sandbox);
+        }
         if(row.source_url){
           try{
             const u=new URL(row.source_url);
