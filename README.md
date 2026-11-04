@@ -5,6 +5,14 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-04: local decision-model benchmark (experimental)
+
+TraceCart now has a **read-only benchmark harness** for locally hosted
+Tev1 0.8B, Tev1 4B and Qwen 1.5B over saved research records and synthetic
+policy controls. It does not switch production inference, revisit stores,
+or spend SerpAPI budget. See
+[LOCAL_DECISION_MODELS_2026-11-04.md](docs/LOCAL_DECISION_MODELS_2026-11-04.md).
+
 ## 2026-11-03: richer central graph with sourced fields and targeted remaining checks
 
 The central SVG now renders saved seller-page data that were previously

@@ -1,0 +1,348 @@
+{
+  "method": "POLICY_REPRODUCTION_WITH_SYNTHETIC_CONTROLS",
+  "not_human_labelled_accuracy": true,
+  "no_external_search_or_merchant_requests": true,
+  "source_carts": [
+    "dell",
+    "ryobi",
+    "lenovo",
+    "bike",
+    "detergent"
+  ],
+  "n_saved": 5,
+  "n_counterfactual": 6,
+  "case_ids": [
+    "dell_saved",
+    "dell_index_fixed",
+    "dell_sku_conflict",
+    "dell_no_coupon",
+    "dell_checkout_verified_simulated",
+    "ryobi_saved",
+    "ryobi_receipt_simulated",
+    "lenovo_saved",
+    "lenovo_wrong_model_simulated",
+    "bike_saved",
+    "detergent_saved"
+  ],
+  "models": {
+    "tev1:0.8b": [
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": false,
+        "seconds": 7.345,
+        "selected_probability": 0.3144
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": false,
+        "seconds": 6.059,
+        "selected_probability": 0.3531
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 5.475,
+        "selected_probability": 0.5031
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 5.016,
+        "selected_probability": 0.3659
+      },
+      {
+        "choice": "ACCEPT_RECEIPT",
+        "correct_policy": true,
+        "seconds": 5.081,
+        "selected_probability": 0.8739
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 4.616,
+        "selected_probability": 0.4085
+      },
+      {
+        "choice": "ACCEPT_RECEIPT",
+        "correct_policy": true,
+        "seconds": 4.582,
+        "selected_probability": 0.6626
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 4.8,
+        "selected_probability": 0.431
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 4.906,
+        "selected_probability": 0.7836
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": false,
+        "seconds": 4.717,
+        "selected_probability": 0.398
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 4.638,
+        "selected_probability": 0.4378
+      }
+    ],
+    "tev1:4b": [
+      {
+        "choice": "VERIFY_COUPON",
+        "correct_policy": false,
+        "seconds": 35.481,
+        "selected_probability": 0.4305
+      },
+      {
+        "choice": "VERIFY_COUPON",
+        "correct_policy": true,
+        "seconds": 30.711,
+        "selected_probability": 0.8142
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 30.813,
+        "selected_probability": 0.9879
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 30.49,
+        "selected_probability": 0.9962
+      },
+      {
+        "choice": "ACCEPT_RECEIPT",
+        "correct_policy": true,
+        "seconds": 30.753,
+        "selected_probability": 0.9985
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 28.192,
+        "selected_probability": 0.9991
+      },
+      {
+        "choice": "ACCEPT_RECEIPT",
+        "correct_policy": true,
+        "seconds": 28.576,
+        "selected_probability": 0.9994
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 30.466,
+        "selected_probability": 0.9988
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 30.168,
+        "selected_probability": 0.9959
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 28.635,
+        "selected_probability": 0.999
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 29.195,
+        "selected_probability": 0.9981
+      }
+    ],
+    "qwen2.5:1.5b-instruct": [
+      {
+        "choice": "RECHECK_INDEX",
+        "correct_policy": true,
+        "seconds": 7.765,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": false,
+        "seconds": 1.696,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 0.973,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 1.592,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_COUPON",
+        "correct_policy": false,
+        "seconds": 1.623,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 2.275,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": false,
+        "seconds": 1.142,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 2.582,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 1.154,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 2.53,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 2.191,
+        "selected_probability": null
+      }
+    ],
+    "deterministic": [
+      {
+        "choice": "RECHECK_INDEX",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_COUPON",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "ACCEPT_RECEIPT",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "ACCEPT_RECEIPT",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_VARIANT",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      },
+      {
+        "choice": "VERIFY_SELLER",
+        "correct_policy": true,
+        "seconds": 0,
+        "selected_probability": null
+      }
+    ]
+  },
+  "summary": {
+    "tev1:0.8b": {
+      "cases": 11,
+      "valid": 11,
+      "correct_policy": 8,
+      "accuracy_on_policy_controls": 0.727,
+      "median_seconds": 4.906,
+      "p95_seconds": 7.345,
+      "failed_or_timed_out": 0
+    },
+    "tev1:4b": {
+      "cases": 11,
+      "valid": 11,
+      "correct_policy": 10,
+      "accuracy_on_policy_controls": 0.909,
+      "median_seconds": 30.466,
+      "p95_seconds": 35.481,
+      "failed_or_timed_out": 0
+    },
+    "qwen2.5:1.5b-instruct": {
+      "cases": 11,
+      "valid": 11,
+      "correct_policy": 8,
+      "accuracy_on_policy_controls": 0.727,
+      "median_seconds": 1.696,
+      "p95_seconds": 7.765,
+      "failed_or_timed_out": 0
+    },
+    "deterministic": {
+      "cases": 11,
+      "valid": 11,
+      "correct_policy": 11,
+      "accuracy_on_policy_controls": 1.0,
+      "median_seconds": 0,
+      "p95_seconds": 0,
+      "failed_or_timed_out": 0
+    }
+  },
+  "measurement_note": "deterministic.seconds=0 represents near-zero in-process policy evaluation; separately measured full deterministic summary median=8.837ms on five saved graphs; this is not true labelled retail-outcome accuracy",
+  "runtime": {
+    "host": "hexagony-01",
+    "gpu": "NVIDIA GeForce GTX 1050 Ti 4 GiB",
+    "ram": "62 GiB",
+    "ollama_version": "0.40.13",
+    "model_vram_bytes_observed": 0,
+    "api_only_loopback": true
+  }
+}
