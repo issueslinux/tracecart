@@ -885,7 +885,8 @@ class CartResearchJobs(GraphQuestionReviewMixin):
           "SITE_PERMISSION_REQUIRED","REDIRECTED","ACCESS_CHALLENGE",
           "NO_STRUCTURED_PRODUCT","MULTIPLE_PRODUCTS_AMBIGUOUS",
           "CONFLICTING_PRODUCT_IDENTITY","CONFLICTING_OFFER_EVIDENCE",
-          "TAB_TIMEOUT","BROWSER_ERROR"}
+          "TAB_TIMEOUT","BROWSER_ERROR", "ROBOTS_DISALLOWED",
+          "ROBOTS_UNAVAILABLE","UNSAFE_BROWSER_DESTINATION"}
         if status not in terminal:
             return
         with self._db() as db:

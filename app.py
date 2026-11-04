@@ -1608,9 +1608,14 @@ https://www.adafruit.com/product/3400</textarea></label>
                             if x["status"]!="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"}
                     targets=[x for x in targets if x["offer_idx"] in failed] or targets
                 queued=self.server.companion.enqueue_many(
-                    [row["url"] for row in targets])
-                self.server.cart_jobs.register_index_browser_batch(
-                    cart_job_id,targets,queued)
+                    [row["url"] for row in targets],hold=True)
+                try:
+                    self.server.cart_jobs.register_index_browser_batch(
+                        cart_job_id,targets,queued)
+                except Exception:
+                    self.server.companion.cancel_held(queued)
+                    raise
+                self.server.companion.release_many(queued)
                 self.send_response(303)
                 self.send_header("Location","/cart/status/"+cart_job_id)
                 self.send_header("Cache-Control","no-store")
@@ -1829,6 +1834,15 @@ def run():
     from automatic_browser_verification import enqueue_for_completed_cart
     server.cart_jobs.on_research_ready=lambda jid:enqueue_for_completed_cart(
         server,jid)
+    # Submitting a product URL is enough to authorize automated, bounded
+    # research of eligible public merchant pages. Preserve an explicit opt-out.
+    with server.cart_jobs._db() as db:
+        db.execute("""INSERT OR IGNORE INTO cart_browser_auto_settings
+            (id,enabled) VALUES (1,1)""")
+    from managed_browser_verification import ManagedBrowserWorker
+    browser_worker = ManagedBrowserWorker(server)
+    server.managed_browser = browser_worker
+    browser_worker.start()
     print("TraceCart local demo: http://127.0.0.1:{}".format(args.port))
     print("PayPal mode: sandbox only; no capture code; user approval mandatory")
     try:
@@ -1836,6 +1850,7 @@ def run():
     except KeyboardInterrupt:
         pass
     finally:
+        browser_worker.close()
         server.server_close()
         server.cart_jobs.close()
         server.store.db.close()

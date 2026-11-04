@@ -25,7 +25,8 @@ FAILURES = frozenset((
     "SITE_PERMISSION_REQUIRED", "REDIRECTED", "ACCESS_CHALLENGE",
     "NO_STRUCTURED_PRODUCT", "MULTIPLE_PRODUCTS_AMBIGUOUS",
     "CONFLICTING_PRODUCT_IDENTITY", "CONFLICTING_OFFER_EVIDENCE",
-    "TAB_TIMEOUT", "BROWSER_ERROR",
+    "TAB_TIMEOUT", "BROWSER_ERROR", "ROBOTS_DISALLOWED",
+    "ROBOTS_UNAVAILABLE", "UNSAFE_BROWSER_DESTINATION",
 ))
 PRICE_ORIGINS = frozenset(("DIRECT_OFFER_PRICE",
                            "EXPLICIT_SALE_PRICE_SPECIFICATION",
@@ -176,8 +177,10 @@ class CompanionQueue:
     def enqueue(self, url):
         return self.enqueue_many([url])[0]
 
-    def enqueue_many(self, urls):
-        """Atomically reserve a bounded, user-submitted batch."""
+    def enqueue_many(self, urls, hold=False):
+        """Reserve a bounded batch. Held jobs become visible only after DB linking."""
+        if type(hold) is not bool:
+            raise ValueError("INVALID_COMPANION_HOLD")
         if type(urls) is not list or not 1 <= len(urls) <= MAX_PENDING:
             raise ValueError("INVALID_COMPANION_BATCH")
         safe = [validate_product_url(url) for url in urls]
@@ -200,18 +203,36 @@ class CompanionQueue:
                 row = {"id": secrets.token_urlsafe(18), "url": url,
                        "status": "QUEUED",
                        "created_at": datetime.now(timezone.utc).isoformat(),
-                       "leased_at": None, "result": None}
+                       "leased_at": None, "result": None, "held": hold}
                 self.jobs.append(row)
                 added.append(row["id"])
             if len(self.jobs) > MAX_HISTORY:
                 self.jobs[:] = self.jobs[-MAX_HISTORY:]
             return added
 
+    def release_many(self, capture_ids):
+        """Publish an already-persisted linked batch atomically to workers."""
+        if type(capture_ids) is not list or not capture_ids:
+            raise ValueError("INVALID_COMPANION_RELEASE")
+        with self.lock:
+            rows=[r for r in self.jobs if r["id"] in capture_ids]
+            if (len(rows)!=len(capture_ids) or len(set(capture_ids))!=len(rows) or
+                    any(r["status"]!="QUEUED" or not r["held"] for r in rows)):
+                raise ValueError("INVALID_COMPANION_RELEASE")
+            for row in rows:
+                row["held"]=False
+
+    def cancel_held(self, capture_ids):
+        """Rollback unpublished queue reservations if SQLite linking fails."""
+        with self.lock:
+            self.jobs[:]=[r for r in self.jobs if not (
+                r["id"] in capture_ids and r["status"]=="QUEUED" and r["held"])]
+
     def take(self):
         with self.lock:
             self._expire()
             for row in self.jobs:
-                if row["status"] == "QUEUED":
+                if row["status"] == "QUEUED" and not row["held"]:
                     row["status"] = "IN_PROGRESS"
                     row["leased_at"] = self.clock()
                     return {"job_id": row["id"], "url": row["url"]}
@@ -220,9 +241,14 @@ class CompanionQueue:
     def report(self, payload):
         expected={"job_id", "url", "captured_at", "snapshot",
                   "price_origin", "error"}
-        if type(payload) is not dict or set(payload) not in (
-                expected,expected | {"promotion"}):
+        allowed=(expected,expected | {"promotion"},
+                 expected | {"browser_mode"},
+                 expected | {"promotion","browser_mode"})
+        if type(payload) is not dict or set(payload) not in allowed:
             raise ValueError("INVALID_CAPTURE_RECEIPT")
+        mode=payload.get("browser_mode", "USER_CHROME_EXTENSION")
+        if mode not in ("USER_CHROME_EXTENSION", "ISOLATED_MANAGED_CHROMIUM"):
+            raise ValueError("INVALID_BROWSER_EXECUTION_MODE")
         job_id = payload["job_id"]
         with self.lock:
             self._expire()
@@ -253,6 +279,7 @@ class CompanionQueue:
                 extracted["browser_promotion"]=promotion
             extracted["browser_original_price_origin"] = payload["price_origin"]
             extracted["browser_projection_scope"] = "FILTERED_PRODUCT_OFFER_ONLY"
+            extracted["browser_execution_mode"] = mode
             for claim in extracted["evidence"]:
                 if claim["field"] in ("price", "currency"):
                     claim["browser_original_price_origin"] = payload["price_origin"]
