@@ -131,14 +131,14 @@
         const browserStatus=autoInputTask.status;
         if(browserStatus==="SITE_PERMISSION_REQUIRED"){
           mode="BLOCKED";label="BROWSER PERMISSION REQUIRED";
-          detail="Chromium Companion could not open this merchant: its host permission is missing. " +
-            "Open Browser capture, grant permission to this HTTPS site in the extension popup, " +
-            "enable the queue and retry. The earlier HTTP 403 was from the server.";
+          detail="An older extension-based attempt was denied by its host permission. " +
+            "Managed Chromium now retries eligible URLs without adding any store permissions. " +
+            "The earlier HTTP 403 was from the server.";
         }else if(browserStatus==="ACCESS_CHALLENGE"){
           mode="BLOCKED";label="BROWSER ACCESS CHALLENGE";
-          detail="The merchant redirected the browser to a human/security challenge. " +
-            "Open the product in your regular browser and complete any challenge yourself; " +
-            "automatic research will not bypass it. No seller price was captured.";
+          detail="The merchant showed an automated-access security challenge. " +
+            "TraceCart stops this visit without bypassing the protection or inventing a price. " +
+            "Only independent, permitted sources can provide additional evidence.";
         }else if(browserStatus==="REDIRECTED"){
           mode="BLOCKED";label="BROWSER REDIRECTED";
           detail="The merchant navigated away from the requested product URL. " +
@@ -146,7 +146,7 @@
             "No checkout price was verified.";
         }else if(browserStatus==="QUEUED"){
           mode="QUEUED";label="BROWSER QUEUED";
-          detail="Waiting for a paired, enabled Chromium Companion with this merchant granted. " +
+          detail="Waiting for the local managed Chromium research worker. " +
             "A queued task is not an active browser visit.";
         }else if(browserStatus==="IN_PROGRESS"){
           mode="RUNNING";label="BROWSER CHECKING";
@@ -154,7 +154,7 @@
         }else if(browserStatus==="INTERRUPTED_ON_RESTART"){
           mode="BLOCKED";label="BROWSER INTERRUPTED";
           detail="The browser process restarted before verification. " +
-            "Reconnect Companion and retry. No price was confirmed.";
+            "The managed Chromium worker can retry automatically. No price was confirmed.";
         }else if(browserStatus!=="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"){
           mode="BLOCKED";label="BROWSER: "+browserStatus;
           detail="The browser visit did not yield one unambiguous product price. " +
@@ -749,7 +749,7 @@
                 "QUEUED","IN_PROGRESS"].includes(t.status));
             const reasons=[...new Set(failed.map(t=>t.status))];
             return (reasons.length?"Browser outcome: "+reasons.join(", ")+". ":"")+
-              "Grant merchant permissions in Chromium Companion before retrying. " +
+              "TraceCart uses isolated Chromium without manual store grants. " +
               "Access challenges are not bypassed; no checkout is verified.";
           })(),
           mode:auto.status==="COMPLETE_WITH_FAILURES"?"BLOCKED":"REFERENCE",
@@ -784,13 +784,13 @@
         sources.unshift({
           key:"BROWSER INDEX",title:complete+"/"+checks.length+
             " indexed store pages captured · "+errors+" inaccessible/failed",
-          detail:"Three concurrent browser tabs maximum. Only separately authorized merchant origins are visited. Cards without seller URLs cannot be fetched.",
+          detail:"Up to three isolated Chromium workers automatically inspect eligible public merchant URLs. Cards without seller URLs cannot be fetched.",
           state:complete===checks.length?"CAPTURED":"VERIFYING",mode:"REFERENCE"
         });
       }else if((snapshot.offers||[]).some(x=>x.kind==="INDEXED_SELLER_LINK")){
         sources.unshift({
           key:"BROWSER INDEX",title:"Store URLs ready for browser verification",
-          detail:"Use the Verify indexed retailer offers button. Each shop needs its own Chrome permission; indexed prices are not current seller checks.",
+          detail:"Managed Chromium automatically visits eligible public seller URLs without extension permissions. Indexed prices are not current seller checks.",
           state:"AWAITING USER",mode:"QUEUED"
         });
       }
@@ -832,7 +832,7 @@
         sources.unshift({
           key:"SHOPPING",title:"Shopping-index search: "+shopping,
           detail:"Search-index cards and seller URLs are only leads. "+
-            "Browser checks require separate user-granted merchant permissions.",
+            "Browser checks run automatically in isolated Chromium; access challenges remain blocked.",
           state:"INDEX SCANNED",mode:"REFERENCE"
         });
       }

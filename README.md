@@ -2,6 +2,22 @@
 
 **Development status: public MIT-licensed, testable MVP; NOT A CONTEST SUBMISSION.**
 
+
+**Automated product-browser research:** The local app starts up to three
+isolated, headless Chromium workers automatically when launched via `app.py`.
+Submitting a product URL is enough to queue eligible public seller URLs; no
+per-store Chrome permissions or extension installation are necessary. Each
+visit is robots-checked, DNS-pinned to a public IPv4, restricted to the same
+HTTPS hostname and denied on CAPTCHA/access challenge. It never logs in or
+checks out. Browser prices remain seller declarations, **not verified checkout
+amounts**. The optional MV3 Browser Companion remains for manual diagnostics;
+old `SITE_PERMISSION_REQUIRED` receipts are historical and can be retried
+through the automatic worker. Set automatic browser research off on the local
+companion settings page if desired. The original `USER_BROWSER` evidence
+transport name is retained for backward compatibility, while new receipts
+carry `browser_execution_mode=ISOLATED_MANAGED_CHROMIUM` to distinguish
+machine-operated browser sessions from manual extension observations.
+
 **Feature freeze (2026-11-04):** search, interactive evidence graph and purchase-decision engine are locked at tag `tracecart-core-freeze-2026-11-04`. See the [contest submission readiness audit](docs/PAYPAL_HACKATHON_SUBMISSION_GATE_2026-11-04.md) for verified status and remaining PayPal/Devpost gates.
 
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.

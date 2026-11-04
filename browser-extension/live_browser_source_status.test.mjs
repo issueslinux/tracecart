@@ -15,13 +15,13 @@ test("permission-required selected eBay browser task overrides server HTTP 403",
   const rows=sourceTasks(snapshot("SITE_PERMISSION_REQUIRED"));
   assert.equal(rows[0].key,"#1");
   assert.equal(rows[0].state,"BROWSER PERMISSION REQUIRED");
-  assert.match(rows[0].detail,/grant permission/i);
+  assert.match(rows[0].detail,/without adding any store permissions/i);
   assert.equal(rows[0].mode,"BLOCKED");
 });
 test("access-challenged eBay is not presented as missing store price",()=>{
   const rows=sourceTasks(snapshot("ACCESS_CHALLENGE"));
   assert.equal(rows[0].state,"BROWSER ACCESS CHALLENGE");
-  assert.match(rows[0].detail,/not bypass/);
+  assert.match(rows[0].detail,/without bypassing/);
   assert.doesNotMatch(rows[0].detail,/No browser price available/);
 });
 test("failed structured source keeps a clear browser failure",()=>{

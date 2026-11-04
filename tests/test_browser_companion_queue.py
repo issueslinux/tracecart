@@ -37,6 +37,22 @@ class BrowserCompanionQueueTests(unittest.TestCase):
         self.clock = [100.0]
         self.queue = CompanionQueue(token="a" * 64, clock=lambda: self.clock[0])
 
+    def test_persist_first_hold_prevents_worker_from_racing_database_links(self):
+        ids=self.queue.enqueue_many([URL],hold=True)
+        self.assertIsNone(self.queue.take())
+        self.assertEqual(self.queue.listed()[0]["status"],"QUEUED")
+        self.queue.release_many(ids)
+        self.assertEqual(self.queue.take()["job_id"],ids[0])
+        with self.assertRaisesRegex(ValueError,"INVALID_COMPANION_RELEASE"):
+            self.queue.release_many(ids)
+
+    def test_cancel_held_batch_unblocks_capacity(self):
+        ids=self.queue.enqueue_many([URL],hold=True)
+        self.queue.cancel_held(ids)
+        self.assertIsNone(self.queue.take())
+        self.assertEqual(self.queue.listed(),[])
+        self.assertEqual(self.queue.enqueue(URL).__class__,str)
+
     def test_explicit_jobs_and_one_lease_without_automatic_retry(self):
         job_id = self.queue.enqueue(URL)
         self.assertTrue(self.queue.authorized("a" * 64))

@@ -1,8 +1,8 @@
-"""Automatic *queuing* of browser verification with a prior user opt-in.
+"""Automatic queuing of bounded browser visits for saved product URLs.
 
-The queue runs only in the user-connected MV3 extension. It never grants
-merchant host permissions or bypasses 403/CAPTCHA; unauthorized sites return
-SITE_PERMISSION_REQUIRED. Selection is bounded and based on saved URL evidence.
+The local app starts a managed, isolated Chromium worker; no extension host
+permission is necessary. The old MV3 companion remains an optional alternate
+consumer of the same queue. No CAPTCHA bypass, auth or checkout.
 """
 from product_intake import validate_product_url
 
@@ -28,17 +28,25 @@ def enqueue_for_completed_cart(server, cart_job_id):
         jobs.mark_browser_auto_batch(cart_job_id,"NO_ELIGIBLE_URLS")
         return {"status":"NO_ELIGIBLE_URLS","queued":0}
     try:
-        capture_ids=server.companion.enqueue_many(urls)
+        capture_ids=server.companion.enqueue_many(urls,hold=True)
     except ValueError as exc:
         jobs.mark_browser_auto_batch(cart_job_id,"SKIPPED_QUEUE_FULL")
         return {"status":"SKIPPED_QUEUE_FULL","queued":0,
                 "reason":str(exc)}
-    ids=dict(zip(urls,capture_ids))
-    indexed=[row for row in targets if row["url"] in ids]
-    if indexed:
-        jobs.register_index_browser_batch(cart_job_id,indexed,
-                                          [ids[row["url"]] for row in indexed])
-    jobs.mark_browser_auto_batch(cart_job_id,"QUEUED",len(urls))
-    jobs.link_browser_auto_tasks(cart_job_id,urls,capture_ids)
+    try:
+        ids=dict(zip(urls,capture_ids))
+        indexed=[row for row in targets if row["url"] in ids]
+        if indexed:
+            jobs.register_index_browser_batch(cart_job_id,indexed,
+                                              [ids[row["url"]] for row in indexed])
+        jobs.link_browser_auto_tasks(cart_job_id,urls,capture_ids)
+        jobs.mark_browser_auto_batch(cart_job_id,"QUEUED",len(urls))
+    except Exception:
+        server.companion.cancel_held(capture_ids)
+        raise
+    # The managed browser must NEVER finish before per-offer SQLite links exist.
+    server.companion.release_many(capture_ids)
+    managed = getattr(server,"managed_browser",None) is not None
     return {"status":"QUEUED","queued":len(urls),
-            "requires_site_host_permissions":True}
+            "browser_mode":"ISOLATED_MANAGED_CHROMIUM" if managed else "OPTIONAL_MV3_COMPANION",
+            "requires_site_host_permissions":not managed}
