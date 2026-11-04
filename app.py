@@ -853,10 +853,31 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                     return self.companion_json({"error": "UNKNOWN_RESEARCH_JOB"}, 404)
             return self.companion_json(row)
         if path.startswith("/cart/sandbox/"):
+            quote_id=path[len("/cart/sandbox/"):]
             try:
-                return self.cart_offer_sandbox_page(path[len("/cart/sandbox/"):])
+                quote=self.server.offer_sandbox.read(quote_id)
             except ValueError:
-                return self.send_page('<section class="error">Unknown Sandbox selection</section>',404)
+                return self.send_page(
+                    '<section class="error">Unknown Sandbox selection</section>',404)
+            # After the payer returns, perform only a GET to PayPal Sandbox.
+            # The returned token must already be bound to the stored order.
+            params=parse_qs(urlsplit(self.path).query)
+            token=params.get("token",[None])[0]
+            note=""
+            if token is not None:
+                if token!=quote["paypal_id"] or quote["state"] not in (
+                        "PAYER_ACTION_REQUIRED","VERIFIED_APPROVED"):
+                    note="PayPal return token does not match this Sandbox quote."
+                elif quote["state"]=="PAYER_ACTION_REQUIRED":
+                    try:
+                        current=self.server.offer_sandbox.verify(quote_id)
+                        if current["state"]!="VERIFIED_APPROVED":
+                            note=("PayPal returned, but payer approval is not yet "
+                                  "confirmed. No payment was captured.")
+                    except (ValueError,RuntimeError,OSError,KeyError,TypeError):
+                        note=("Could not verify PayPal status. No new order was "
+                              "created; use the read-only status check below.")
+            return self.cart_offer_sandbox_page(quote_id,note)
         if path == "/demo/store":
             return self.demo_store_page()
         if path.startswith("/demo/order/"):
