@@ -523,9 +523,9 @@
             hidden.type="hidden";hidden.name=name;hidden.value=value;
             sandbox.appendChild(hidden);
           }
-          const btn=item("button","tc-paypal-open","Płacę z PayPal");
+          const btn=item("button","tc-paypal-open","Pay with PayPal");
           btn.type="submit";
-          btn.title="Płatność testowa PayPal Sandbox — bez zakupu w sklepie.";
+          btn.title="PayPal Sandbox demo only — no real merchant purchase or charge.";
           sandbox.appendChild(btn);
           sandbox.appendChild(item("small","tc-paypal-sandbox-tag","SANDBOX"));
           actions.appendChild(sandbox);

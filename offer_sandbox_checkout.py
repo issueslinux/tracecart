@@ -137,6 +137,25 @@ class OfferSandboxOrders:
                  candidate["currency"],"QUOTED",time.time(),request_id))
         return quote_id
 
+    def start(self, jobs, job_id, offer_id):
+        """A single explicit Pay with PayPal click starts a Sandbox-only
+        quote. Its price comes from persisted evidence, never the browser.
+
+        This records the user's *click intent*, NOT a fabricated typed
+        consent phrase. The buyer still approves at PayPal's own checkout.
+        """
+        quote_id=self.select(jobs,job_id,offer_id)
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            cursor=db.execute(
+                """UPDATE offer_sandbox_orders
+                   SET state='APPROVED', approved=?
+                   WHERE id=? AND state='QUOTED'""",
+                (time.time(),quote_id))
+            if cursor.rowcount!=1:
+                raise ValueError("SANDBOX_START_FAILED")
+        return self.read(quote_id)
+
     def read(self, quote_id, internal=False):
         if type(quote_id) is not str or not re.fullmatch(r"[A-Za-z0-9_-]{20,50}",quote_id):
             raise ValueError("INVALID_QUOTE")
