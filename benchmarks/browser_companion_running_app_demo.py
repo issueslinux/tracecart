@@ -70,8 +70,8 @@ class RunningTraceCart:
         self.companion = LiveCompanionProxy(port, token)
         page = self.companion._read("/research/companion")
         found = CSRF.findall(page)
-        if len(found) != 1:
-            raise ValueError("STAGING_CSRF_NOT_FOUND")
+        if not found or len(set(found)) != 1:
+            raise ValueError("STAGING_CSRF_NOT_FOUND_OR_INCONSISTENT")
         self.csrf = html.unescape(found[0])
         if token not in page:
             raise ValueError("STAGING_TOKEN_MISMATCH")

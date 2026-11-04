@@ -112,6 +112,26 @@ class BrowserCartGraphTests(unittest.TestCase):
         self.assertFalse(coupon[0]["checkout_verified"])
         self.assertEqual(graph["stats"]["verified_checkout_prices"],0)
 
+    def test_input_browser_coupon_is_in_details_not_only_source_nodes(self):
+        self.cart_job()
+        self.queue.enqueue(URL)
+        task=self.queue.take()
+        product=sample()
+        product["offers"]["price"]="3499.99"
+        payload=receipt(task,snapshot=product)
+        payload["promotion"]={"price":"2799.00","currency":"PLN",
+          "code":"DEAL2026","valid_until":"2026-12-01",
+          "source":"VISIBLE_PRODUCT_PRICE_WITH_CODE"}
+        self.queue.report(payload)
+        self.cart.store_browser_claim(self.queue.get_job(task["job_id"]))
+        _,_,graph=self.graph()
+        observed=graph["offer_details"]["offer-0"]["browser_observation"]
+        self.assertEqual(observed["declared_price"],"3499.99")
+        self.assertEqual(observed["promotion"]["price"],"2799.00")
+        self.assertEqual(observed["promotion"]["code"],"DEAL2026")
+        self.assertFalse(observed["checkout_verified"])
+        self.assertEqual(graph["stats"]["verified_checkout_prices"],0)
+
     def test_source_receipt_persists_across_restart_and_prior_capture_links(self):
         captured=self.capture()
         self.cart.store_browser_claim(captured)
