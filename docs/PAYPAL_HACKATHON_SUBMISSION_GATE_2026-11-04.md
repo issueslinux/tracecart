@@ -110,3 +110,10 @@ local-Qwen plan were verified. **These do not close P0-1**: real authorized
 PayPal Sandbox credentials, OAuth, hosted buyer approval and a real Sandbox
 `APPROVED` GET response remain necessary. Likewise a judge-accessible demo,
 video and final contest submission remain outstanding.
+
+**Cost safety correction:** Fictional storefront add-cart events explicitly
+skip the paid SerpAPI shopping provider even if a credential is configured
+for normal research. A separate regression checks that no paid discovery
+callback is invoked for this demo. This safety exception touches only the
+one-job dispatch flag; the frozen search/ranking behavior for ordinary
+retailer research is unchanged.

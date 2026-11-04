@@ -1609,7 +1609,7 @@ https://www.adafruit.com/product/3400</textarea></label>
             form = self.form()
             if self.path == "/demo/store/add":
                 item=mock_merchant_item(form.get("sku"))
-                cart_id=self.server.cart_jobs.submit(item)
+                cart_id=self.server.cart_jobs.submit(item,allow_paid_shopping=False)
                 quote=self.server.store.quote(DEMO_SKU,1)
                 self.server.demo_orders.register(cart_id,quote["id"])
                 self.send_response(303)
