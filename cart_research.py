@@ -1575,7 +1575,11 @@ class CartResearchJobs(GraphQuestionReviewMixin):
                 (status,json.dumps(result,ensure_ascii=False),error,job_id))
         self._progress(job_id,"FINAL_VERDICT_"+status)
 
-    def submit(self, item):
+    def submit(self, item, allow_paid_shopping=True):
+        # Cost-control exception for the fictional checkout demonstration.
+        # Ordinary retailer events retain the original discovery behavior.
+        if type(allow_paid_shopping) is not bool:
+            raise ValueError("INVALID_PAID_SHOPPING_MODE")
         clean = validate_cart(item)
         job_id = secrets.token_urlsafe(18)
         with self._db() as db:
@@ -1583,7 +1587,7 @@ class CartResearchJobs(GraphQuestionReviewMixin):
                        (job_id, json.dumps(clean), "QUEUED",
                         datetime.now(timezone.utc).isoformat()))
         self._progress(job_id, "QUEUED")
-        self.pool.submit(self._work, job_id, clean)
+        self.pool.submit(self._work, job_id, clean, allow_paid_shopping)
         return job_id
 
     @staticmethod
@@ -1804,7 +1808,7 @@ class CartResearchJobs(GraphQuestionReviewMixin):
             self.evidence_pool.submit(self._execute_source_evidence,job_id,
                                       {"item":clean,"report":report})
 
-    def _work(self, job_id, item):
+    def _work(self, job_id, item, allow_paid_shopping=True):
         self._progress(job_id, "CATALOG_AND_BASE_RESEARCH")
         with self._db() as db:
             db.execute("UPDATE cart_research_jobs SET state='RUNNING' WHERE id=?", (job_id,))
@@ -1812,7 +1816,15 @@ class CartResearchJobs(GraphQuestionReviewMixin):
             report = self.runner(item)
             self._progress(job_id, "BASE_RESEARCH_AVAILABLE", report)
             if isinstance(report.get("root"),dict) and report["root"].get("children"):
-                report=self._attach_shopping_search(report,item,job_id)
+                if allow_paid_shopping:
+                    report=self._attach_shopping_search(report,item,job_id)
+                else:
+                    # Fictional demo: do not load credentials, reserve a paid
+                    # search budget, contact SerpAPI, or simulate index offers.
+                    from search_first import search_serpapi_shopping
+                    shopping=search_serpapi_shopping(item,api_key="")
+                    shopping["status"]="SKIPPED_FICTIONAL_DEMO_NO_PAID_SHOPPING"
+                    report["indexed_shopping"]=shopping
             self._progress(job_id, "RESEARCH_COMPLETE", report)
             state = "READY"
             result = json.dumps(report, ensure_ascii=False)
