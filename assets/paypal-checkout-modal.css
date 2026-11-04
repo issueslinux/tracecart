@@ -1,0 +1,233 @@
+/* Inline graph checkout · restrained modal with explicit Sandbox staging. */
+.purchase-actions .purchase-paypal-form{
+  display:inline-flex;align-items:center;gap:6px;margin:0;
+}
+.purchase-actions .tc-paypal-open{
+  min-height:34px;display:inline-flex;align-items:center;gap:6px;
+  padding:7px 13px;background:#ffcf4a;color:#192934;
+  border:1px solid #eab83b;border-radius:6px;
+  font:700 12px/1.15 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  box-shadow:0 1px 2px rgba(18,34,29,.07);
+  cursor:pointer;
+}
+.purchase-actions .tc-paypal-open:hover{
+  background:#ffbb22;border-color:#d7a517;box-shadow:0 3px 9px rgba(31,36,32,.1);
+}
+.purchase-actions .tc-paypal-open:focus-visible{
+  outline:3px solid #3a8e85;outline-offset:2px;
+}
+.purchase-actions .tc-paypal-sandbox-tag{
+  display:inline-flex;font:750 8px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace;
+  letter-spacing:.08em;color:#7a713b;margin:0;
+}
+.tc-paypal-verified-card{border-color:#75b897!important;background:#f5fbf6!important}
+.tc-paypal-verified-card .purchase-actions .tc-paypal-open{background:#d0ebdb}
+
+.tc-paypal-modal{
+  width:min(620px,calc(100% - 30px));
+  max-height:min(92vh,880px);
+  margin:auto;padding:0;
+  border:1px solid #dfe6e1;border-radius:15px;
+  color:#192d28;background:#fff;
+  font:14px/1.48 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  box-shadow:0 24px 86px rgba(12,35,29,.28);
+  overflow:auto;overscroll-behavior:contain;
+}
+.tc-paypal-modal::backdrop{background:rgba(7,25,20,.66);backdrop-filter:blur(4px)}
+.tc-paypal-modal .tc-paypal-shell{width:100%}
+.tc-paypal-modal .tc-paypal-head{
+  padding:26px 30px 22px;
+  display:flex;justify-content:space-between;gap:16px;
+  border-bottom:1px solid #e6ede8;
+}
+.tc-paypal-modal .tc-paypal-eyebrow{
+  display:block;color:#548272;letter-spacing:.16em;
+  font:750 10px/1.3 ui-monospace,Consolas,monospace;margin-bottom:7px;
+}
+.tc-paypal-modal .tc-paypal-eyebrow span{margin:0 5px;color:#9fb1a6}
+.tc-paypal-modal .tc-paypal-head h2{
+  font-size:26px;font-weight:730;line-height:1.15;
+  letter-spacing:-.045em;margin:0 0 6px;color:#18362c;
+}
+.tc-paypal-modal .tc-paypal-head p{margin:0;color:#73867a;font-size:12px}
+.tc-paypal-modal .tc-paypal-close{
+  flex:0 0 35px;width:35px;height:35px;border:1px solid #e1e8e2;
+  border-radius:8px;background:#f7faf8;color:#486858;
+  font-size:25px;font-weight:350;line-height:1;cursor:pointer;
+}
+.tc-paypal-modal .tc-paypal-close:hover{background:#ebf1ed}
+.tc-paypal-modal .tc-paypal-steps{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  list-style:none;gap:0;padding:17px 29px 19px;margin:0;
+  background:#fafcfb;border-bottom:1px solid #e8efea;
+}
+.tc-paypal-modal .tc-paypal-steps li{
+  position:relative;display:flex;align-items:center;
+  gap:7px;color:#a0b0a6;min-width:0;
+}
+.tc-paypal-modal .tc-paypal-steps li:not(:last-child)::after{
+  content:"";position:absolute;top:15px;left:75%;right:6%;
+  height:1px;background:#d7dfd9;
+}
+.tc-paypal-modal .tc-paypal-steps li span{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 28px;width:28px;height:28px;border-radius:50%;
+  border:1px solid #d8e2db;background:white;
+  font:800 10px/1 ui-monospace,Consolas,monospace;
+}
+.tc-paypal-modal .tc-paypal-steps li strong{font-size:11px;font-weight:650}
+.tc-paypal-modal .tc-paypal-steps li.tc-is-complete{color:#2d7755}
+.tc-paypal-modal .tc-paypal-steps li.tc-is-complete span{
+  background:#e4f4e7;border-color:#a5cfb4;color:#2b7052}
+.tc-paypal-modal .tc-paypal-steps li.tc-is-current{color:#204e3b}
+.tc-paypal-modal .tc-paypal-steps li.tc-is-current span{
+  background:#205b43;border-color:#205b43;color:#fff;
+  box-shadow:0 0 0 4px rgba(38,103,74,.09);
+}
+.tc-paypal-modal .tc-paypal-body{padding:24px 30px 26px}
+.tc-paypal-modal .tc-paypal-product{
+  display:flex;align-items:center;gap:13px;
+  padding:15px 16px;border:1px solid #e0e8e2;border-radius:10px;background:#f9fcfa;
+}
+.tc-paypal-modal .tc-paypal-product-icon{
+  display:grid;place-items:center;flex:0 0 41px;width:41px;height:41px;
+  background:#dfefe7;color:#28674b;font-size:24px;border-radius:10px;
+}
+.tc-paypal-modal .tc-paypal-product-text{flex:1;min-width:0}
+.tc-paypal-modal .tc-paypal-product-text span{
+  color:#84998a;letter-spacing:.09em;font-weight:750;font-size:9px;display:block;margin-bottom:4px;
+}
+.tc-paypal-modal .tc-paypal-product-text strong{
+  color:#223e30;font-size:13px;line-height:1.35;font-weight:650;display:block;overflow-wrap:anywhere;
+}
+.tc-paypal-modal .tc-paypal-price{
+  color:#164832;white-space:nowrap;font-size:20px;font-weight:790;
+  letter-spacing:-.04em;margin-left:4px;
+}
+.tc-paypal-modal .tc-paypal-caveat{
+  font-size:11px;line-height:1.6;background:#fff9e9;
+  color:#74602e;border-left:3px solid #e6c263;
+  padding:11px 14px;border-radius:0 6px 6px 0;margin:14px 0 22px;
+}
+.tc-paypal-modal .tc-paypal-caveat strong{color:#655325}
+.tc-paypal-modal .tc-paypal-status{
+  display:flex;align-items:center;gap:8px;
+  margin:0 0 18px;color:#536d5e;
+  font:750 11px/1.4 ui-monospace,Consolas,monospace;
+}
+.tc-paypal-modal .tc-paypal-status::before{
+  content:"";display:inline-block;flex:0 0 8px;height:8px;border-radius:50%;
+  background:#81a68f;
+}
+.tc-paypal-modal .tc-status-busy::before{
+  background:#d8a932;animation:tc-paypal-beat 1.35s ease-in-out infinite;
+}
+.tc-paypal-modal .tc-status-success{color:#246e4a}
+.tc-paypal-modal .tc-status-success::before{background:#28a66d}
+.tc-paypal-modal .tc-status-alert{color:#a45c36}
+.tc-paypal-modal .tc-status-alert::before{background:#cc713a}
+.tc-paypal-modal .tc-paypal-content h3{
+  font-size:17px;font-weight:710;color:#223d30;
+  letter-spacing:-.02em;margin:0 0 6px;
+}
+.tc-paypal-modal .tc-paypal-content p{font-size:12px;line-height:1.6;color:#6b7d6f;margin:5px 0 14px}
+.tc-paypal-modal .tc-paypal-review-form .tc-paypal-field{
+  display:flex;flex-direction:column;gap:8px;
+  font-size:12px;font-weight:700;color:#2c4c3d;margin:13px 0;
+}
+.tc-paypal-modal .tc-paypal-field input{
+  height:46px;width:100%;padding:10px 13px;
+  color:#1e352a;background:#fff;border:1px solid #bfd2c5;
+  border-radius:7px;font:14px/1.4 inherit;
+  font-family:inherit;font-size:14px;outline:none;
+}
+.tc-paypal-modal .tc-paypal-field input:focus{
+  border-color:#348460;box-shadow:0 0 0 3px rgba(38,126,79,.1);
+}
+.tc-paypal-modal .tc-paypal-consent-hint{
+  display:inline-block;background:#eef5f0;color:#285b40!important;
+  padding:8px 11px;border-radius:5px;
+  font:650 11px/1.4 ui-monospace,Consolas,monospace!important;
+  margin:0 0 5px!important;
+}
+.tc-paypal-modal .tc-paypal-button{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:100%;min-height:44px;gap:8px;padding:12px 18px;
+  border-radius:7px;border:1px solid transparent;
+  cursor:pointer;text-decoration:none;text-align:center;
+  font:750 13px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.tc-paypal-modal .tc-paypal-button:focus-visible{
+  outline:3px solid #79b499;outline-offset:2px;
+}
+.tc-paypal-modal .tc-paypal-button:disabled{opacity:.6;cursor:wait}
+.tc-paypal-modal .tc-paypal-primary{background:#205d44;color:#fff;margin-top:12px}
+.tc-paypal-modal .tc-paypal-primary:hover{background:#154b35}
+.tc-paypal-modal .tc-paypal-paypal{background:#ffc439;color:#142c3c;margin-top:13px;font-size:15px}
+.tc-paypal-modal .tc-paypal-paypal:hover{background:#ffb924}
+.tc-paypal-modal .tc-paypal-secondary,.tc-paypal-modal .tc-paypal-paypal-outline{
+  color:#1c563e;background:#f4faf6;border-color:#cbded0;font-size:12px;
+}
+.tc-paypal-modal .tc-paypal-secondary:hover,.tc-paypal-modal .tc-paypal-paypal-outline:hover{background:#e7f3ec}
+.tc-paypal-modal .tc-paypal-controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.tc-paypal-modal .tc-paypal-controls>*{flex:1;min-width:180px}
+.tc-paypal-modal .tc-paypal-wait{
+  min-height:90px;display:grid;place-items:center;text-align:center;
+  color:#6b8072;font-size:13px;background:#f7faf8;border-radius:8px;padding:20px;
+}
+.tc-paypal-modal .tc-paypal-pending{text-align:center;padding:0 0 8px}
+.tc-paypal-modal .tc-paypal-pulse{
+  display:grid;place-items:center;margin:0 auto 8px;
+  width:50px;height:50px;color:#e5b438;
+  font-size:20px;animation:tc-paypal-beat 1.6s infinite;
+}
+.tc-paypal-modal .tc-paypal-order-ref{
+  font:650 11px/1.5 ui-monospace,Consolas,monospace!important;color:#617e6e!important;
+}
+.tc-paypal-modal .tc-paypal-success{
+  padding:10px 8px 4px;text-align:center;animation:tc-paypal-rise .24s ease-out;
+}
+.tc-paypal-modal .tc-paypal-success-check{
+  width:58px;height:58px;display:grid;place-items:center;
+  border-radius:50%;background:#e6f5e9;color:#2c9b64;
+  font-size:29px;font-weight:750;margin:0 auto 15px;
+}
+.tc-paypal-modal .tc-paypal-success .tc-paypal-button{margin-top:13px}
+.tc-paypal-modal .tc-paypal-uncertain{
+  border:1px solid #ecd5b4;border-radius:8px;padding:18px;
+  background:#fffbf4;
+}
+.tc-paypal-modal .tc-paypal-error{
+  color:#a34f33;background:#fff0e8;border:1px solid #f2cfbe;
+  padding:11px 14px;border-radius:7px;font-size:12px;line-height:1.55;margin:15px 0 0;
+}
+.tc-paypal-modal .tc-paypal-error[hidden]{display:none}
+.tc-paypal-modal .tc-paypal-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:7px;
+  padding:13px 30px 15px;background:#f8faf8;
+  border-top:1px solid #e9eee9;color:#738578;
+  font:650 10px/1.5 ui-monospace,Consolas,monospace;
+}
+.tc-paypal-modal .tc-paypal-secure{color:#286f50;font-size:14px;margin-right:4px}
+.tc-paypal-modal .tc-paypal-footer a{color:#2c684f;text-decoration:underline}
+.tc-paypal-modal [hidden]{display:none!important}
+@keyframes tc-paypal-beat{50%{opacity:.35;transform:scale(.8)}}
+@keyframes tc-paypal-rise{from{opacity:.4;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:610px){
+ .tc-paypal-modal .tc-paypal-head{padding:20px 18px}
+ .tc-paypal-modal .tc-paypal-body{padding:18px}
+ .tc-paypal-modal .tc-paypal-steps{padding:14px}
+ .tc-paypal-modal .tc-paypal-steps li{gap:4px}
+ .tc-paypal-modal .tc-paypal-steps li span{width:24px;height:24px;flex-basis:24px}
+ .tc-paypal-modal .tc-paypal-steps li strong{font-size:9px}
+ .tc-paypal-modal .tc-paypal-steps li:not(:last-child)::after{display:none}
+ .tc-paypal-modal .tc-paypal-price{font-size:17px}
+ .tc-paypal-modal .tc-paypal-product{flex-wrap:wrap}
+ .tc-paypal-modal .tc-paypal-footer{padding:12px 18px}
+}
+@media(prefers-reduced-motion:reduce){
+ .tc-paypal-modal .tc-paypal-status::before,
+ .tc-paypal-modal .tc-paypal-pulse,
+ .tc-paypal-modal .tc-paypal-success{animation:none!important}
+}

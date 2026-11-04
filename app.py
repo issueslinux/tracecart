@@ -42,6 +42,9 @@ FLOW_ASSETS = {
     "/assets/offer-graph.js": ("text/javascript; charset=utf-8", "offer-graph.js"),
     "/assets/live-workspace.js": ("text/javascript; charset=utf-8", "live-workspace.js"),
     "/assets/live-workspace.css": ("text/css; charset=utf-8", "live-workspace.css"),
+    "/assets/paypal-checkout-modal.js": ("text/javascript; charset=utf-8", "paypal-checkout-modal.js"),
+    "/assets/paypal-checkout-modal.css": ("text/css; charset=utf-8", "paypal-checkout-modal.css"),
+    "/assets/paypal-popup-return.js": ("text/javascript; charset=utf-8", "paypal-popup-return.js"),
     "/assets/demo-autoverify.js": ("text/javascript; charset=utf-8", "demo-autoverify.js"),
 }
 
@@ -391,11 +394,14 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         # Do not log form payloads or PayPal approval tokens.
         print("TraceCart:", format_ % args)
 
-    def send_page(self, body, status=200, refresh_seconds=None, demo_script=False):
+    def send_page(self, body, status=200, refresh_seconds=None, demo_script=False, sandbox_popup_script=False):
         template=PAGE
         if demo_script:
             template=template.replace("</head>",
                 '<script defer src="/assets/demo-autoverify.js"></script></head>',1)
+        if sandbox_popup_script:
+            template=template.replace("</head>",
+                '<script defer src="/assets/paypal-popup-return.js"></script></head>',1)
         if refresh_seconds is not None:
             if type(refresh_seconds) is not int or not 1 <= refresh_seconds <= 10:
                 raise ValueError("INVALID_REFRESH_INTERVAL")
@@ -409,7 +415,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Security-Policy",
             "default-src 'none'; script-src 'self'; connect-src 'self'; "
             "style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'"
-            if demo_script else
+            if (demo_script or sandbox_popup_script) else
             "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
@@ -764,7 +770,31 @@ class TraceCartHandler(BaseHTTPRequestHandler):
     def hidden(self):
         return '<input type="hidden" name="csrf" value="{}">'.format(h(self.server.csrf))
 
-    def cart_offer_sandbox_page(self, quote_id, error=""):
+    def sandbox_quote_payload(self, quote_id):
+        # Public only to the browser possessing an unguessable quote ID.
+        # Never expose OAuth values, idempotency token, buyer identity, etc.
+        row=self.server.offer_sandbox.read(quote_id)
+        return {
+            "id":row["id"],
+            "research_id":row["research_id"],
+            "offer_id":row["offer_id"],
+            "title":row["title"],
+            "amount":row["total"],
+            "currency":row["currency"],
+            "source_url":row["source_url"],
+            "state":row["state"],
+            "consent_text":OFFER_SANDBOX_CONSENT,
+            "expires_at":(row["approved"]+900 if row["state"]=="APPROVED"
+                          else row["created"]+900 if row["state"]=="QUOTED"
+                          else None),
+            "paypal_order_id":row["paypal_id"],
+            "approval_url":row["approval_url"] if row["state"] in
+                            ("PAYER_ACTION_REQUIRED","VERIFIED_APPROVED") else None,
+            "payment_captured":False,
+            "merchant_checkout_verified":False,
+        }
+
+    def cart_offer_sandbox_page(self, quote_id, error="", notify_opener=False):
         quote=self.server.offer_sandbox.read(quote_id)
         state=quote["state"]
         source='<a href="{}" target="_blank" rel="noopener noreferrer">Source listing ↗</a>'.format(
@@ -818,7 +848,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             body+="<p class='warning'>Order creation uncertain. Do not retry or create another order for this quote. Reconcile the existing order with PayPal using read-only tools.</p>"
         body+="""<p><a href="/cart/status/{job}">← Return to original evidence graph</a></p>
           </section>""".format(job=h(quote["research_id"]))
-        self.send_page(body)
+        self.send_page(body,sandbox_popup_script=notify_opener)
 
     def do_GET(self):
         if not self.trusted_host():
@@ -852,6 +882,23 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     return self.companion_json({"error": "UNKNOWN_RESEARCH_JOB"}, 404)
             return self.companion_json(row)
+        if path.startswith("/cart/sandbox/") and path.endswith(".json"):
+            quote_id=path[len("/cart/sandbox/"):-len(".json")]
+            try:
+                quote=self.server.offer_sandbox.read(quote_id)
+                args=parse_qs(urlsplit(self.path).query)
+                if args.get("verify") == ["1"] and quote["state"]=="PAYER_ACTION_REQUIRED":
+                    # GET to PayPal Sandbox ONLY; never a new order or capture.
+                    try:
+                        self.server.offer_sandbox.verify(quote_id)
+                    except (ValueError,RuntimeError,OSError,KeyError,TypeError):
+                        return self.companion_json(
+                            {"error":"SANDBOX_STATUS_UNAVAILABLE",
+                             "quote":self.sandbox_quote_payload(quote_id)},503)
+                return self.companion_json(
+                    {"quote":self.sandbox_quote_payload(quote_id)})
+            except (ValueError,TypeError):
+                return self.companion_json({"error":"UNKNOWN_SANDBOX_QUOTE"},404)
         if path.startswith("/cart/sandbox/"):
             quote_id=path[len("/cart/sandbox/"):]
             try:
@@ -877,7 +924,11 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                     except (ValueError,RuntimeError,OSError,KeyError,TypeError):
                         note=("Could not verify PayPal status. No new order was "
                               "created; use the read-only status check below.")
-            return self.cart_offer_sandbox_page(quote_id,note)
+            confirmed=(token is not None and token==quote.get("paypal_id")
+                       and self.server.offer_sandbox.read(quote_id)["state"]
+                            =="VERIFIED_APPROVED")
+            return self.cart_offer_sandbox_page(
+                quote_id,note,notify_opener=confirmed)
         if path == "/demo/store":
             return self.demo_store_page()
         if path.startswith("/demo/order/"):
@@ -1696,6 +1747,9 @@ https://www.adafruit.com/product/3400</textarea></label>
                 job_id=self.path[len("/cart/status/"):-len("/paypal/select")]
                 qid=self.server.offer_sandbox.select(
                     self.server.cart_jobs,job_id,form.get("offer_id",""))
+                if "application/json" in self.headers.get("Accept",""):
+                    return self.companion_json(
+                        {"quote":self.sandbox_quote_payload(qid)})
                 self.send_response(303)
                 self.send_header("Location","/cart/sandbox/"+qid)
                 self.send_header("Cache-Control","no-store")
@@ -1717,12 +1771,24 @@ https://www.adafruit.com/product/3400</textarea></label>
                     else:
                         self.server.offer_sandbox.verify(qid)
                 except ValueError as exc:
+                    if "application/json" in self.headers.get("Accept",""):
+                        error=(str(exc) if str(exc) in
+                            ("CONSENT_OR_AMOUNT_MISMATCH","QUOTE_EXPIRED",
+                             "SANDBOX_CONSENT_EXPIRED",
+                             "SANDBOX_ORDER_ALREADY_STARTED_OR_NOT_APPROVED",
+                             "QUOTE_NOT_AWAITING_APPROVAL")
+                            else "SANDBOX_REQUEST_REJECTED")
+                        return self.companion_json(
+                            {"error":error,"quote":self.sandbox_quote_payload(qid)},400)
                     if str(exc) in ("CONSENT_OR_AMOUNT_MISMATCH","QUOTE_EXPIRED"):
                         return self.cart_offer_sandbox_page(
                             qid,"Incorrect amount or consent phrase. Check exact text and amount."
                             if str(exc)=="CONSENT_OR_AMOUNT_MISMATCH" else
                             "Quote expired; return to the research recommendations.")
                     raise
+                if "application/json" in self.headers.get("Accept",""):
+                    return self.companion_json(
+                        {"quote":self.sandbox_quote_payload(qid)})
                 self.send_response(303)
                 self.send_header("Location","/cart/sandbox/"+qid)
                 self.send_header("Cache-Control","no-store")
@@ -2013,6 +2079,23 @@ https://www.adafruit.com/product/3400</textarea></label>
             else:
                 self.send_page("<section class='error'>Not found</section>", 404)
         except (ValueError, RuntimeError, OSError, KeyError, TypeError) as exc:
+            if ("application/json" in self.headers.get("Accept","") and
+                    (self.path.startswith("/cart/sandbox/") or
+                     (self.path.startswith("/cart/status/") and
+                      self.path.endswith("/paypal/select")))):
+                # In particular, CREATE_UNCERTAIN must be reported truthfully
+                # without auto-retrying a possibly completed PayPal order.
+                result={"error":("SANDBOX_REQUEST_REJECTED" if
+                                 isinstance(exc,ValueError) else
+                                 "SANDBOX_REQUEST_UNAVAILABLE")}
+                response_status=400 if isinstance(exc,ValueError) else 503
+                if self.path.startswith("/cart/sandbox/"):
+                    quote_id=self.path[len("/cart/sandbox/"):].split("/",1)[0]
+                    try:
+                        result["quote"]=self.sandbox_quote_payload(quote_id)
+                    except (ValueError,TypeError):
+                        pass
+                return self.companion_json(result,response_status)
             # Never reflect credential values, token URLs or raw payment API responses.
             print("TraceCart blocked:",type(exc).__name__,
                   str(exc) if isinstance(exc, ValueError) else "redacted",
