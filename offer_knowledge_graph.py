@@ -201,6 +201,7 @@ def build_offer_knowledge_graph(projection):
                             "{}–{} days".format(min_days,max_days))
     browser_claim_count=0
     browser_conflict_count=0
+    selected_browser_view=None
     for receipt in (projection.get("browser_claims") or [])[:2]:
         if not isinstance(receipt,dict) or receipt.get("acquisition_method")!="USER_BROWSER":
             continue
@@ -245,6 +246,18 @@ def build_offer_knowledge_graph(projection):
                      status="DO_NOT_PROMOTE_PRICE")
             browser_conflict_count+=1
             continue
+        conditional=receipt.get("browser_promotion")
+        if selected_browser_view is None:
+            selected_browser_view={
+                "status":"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+                "declared_price":fields.get("price"),
+                "currency":fields.get("currency"),
+                "captured_at":receipt.get("acquired_at"),
+                "promotion":conditional if isinstance(conditional,dict) and
+                    conditional.get("condition")=="CODE_REQUIRED" else None,
+                "checkout_verified":False,
+                "exact_variant_verified":False,
+            }
         values=[("title",fields.get("title"),"model"),
                 ("brand",fields.get("brand"),"model"),
                 ("sku",fields.get("sku"),"model"),
@@ -732,7 +745,9 @@ def build_offer_knowledge_graph(projection):
             "title":offer.get("title"),"source":offer.get("source"),
             "kind":kind,"url":offer.get("url"),
             "indexed_price":price,"claim_provenance":provenance,
-            "browser_observation":indexed_browser_views.get(oid),
+            "browser_observation":(
+                selected_browser_view if oid=="offer-0"
+                else indexed_browser_views.get(oid)),
             "title_facts":generic_facts,
             "unit_price":normalized_price,
             "input_price":(projection.get("input_price") if oid=="offer-0" else None),

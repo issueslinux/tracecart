@@ -222,6 +222,13 @@ class ParallelIndexedHTTPTests(unittest.TestCase):
         self.assertEqual(graph["offer_details"]["offer-2"]["browser_observation"]
                          ["status"],"QUEUED")
 
+    def test_live_api_contains_individual_browser_check_statuses(self):
+        self.start()
+        snapshot=json.loads(self.call("/cart/status/"+self.job+"/live.json")[1])
+        self.assertEqual(len(snapshot["indexed_browser_checks"]),3)
+        self.assertEqual(len(snapshot["browser_claims"]),0)
+        self.assertEqual({r["status"] for r in snapshot["indexed_browser_checks"]},
+                         {"QUEUED"})
     def test_title_conflict_does_not_override_indexed_price(self):
         self.start()
         token=self.server.companion.token

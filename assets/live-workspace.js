@@ -80,15 +80,17 @@
       }else if(state){
         mode="BLOCKED";
         label=state.startsWith("INTERRUPTED")?"INTERRUPTED":
-          d.input_access_problem==="HTTP_403"?"HTTP 403 BLOCKED":
+          d.input_access_problem==="HTTP_403"?"SERVER HTTP 403":
           restricted?"ACCESS RESTRICTED":
           failed?"PAGE NOT RETRIEVED":
           mismatch?"WRONG MODEL":
           capacity?"BROWSER CAPACITY":
           rendered?"NO STRUCTURED DATA":
           !direct.length?(d.url?"NO FETCH RECEIPT":"INDEX ONLY"):"NO PRODUCT FACTS";
-        detail=label==="HTTP 403 BLOCKED"||label==="ACCESS RESTRICTED"?
-          "Seller denied automated retrieval. Graphical mode does not bypass access restrictions.":
+        detail=label==="SERVER HTTP 403"?
+          "The shop rejected TraceCart's server request, not the product. An authorized Chromium browser can still provide seller-declared data; checkout remains unverified.":
+          label==="ACCESS RESTRICTED"?
+          "Server retrieval was denied. This does not mean the product is unavailable to customers.":
           label==="PAGE NOT RETRIEVED"?
           "The source URL failed its network, robots or redirect check.":
           label==="WRONG MODEL"?
@@ -115,9 +117,24 @@
         label=status==="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"
           ?"BROWSER CAPTURED":status==="IN_PROGRESS"?"CHECKING":
           status==="QUEUED"?"QUEUED":"BROWSER: "+status;
+        const promotion=b.browser_promotion;
         detail=amount
-          ?"Browser seller-declared price: "+amount+"; exact variant and checkout unverified."
-          :"No verified browser price. "+status;
+          ?"Browser seller-declared price: "+amount+
+            (promotion?" · with code "+promotion.code+": "+
+              promotion.price+" "+promotion.currency:"")+
+            ". Checkout unverified."
+          :"No browser price available. "+status;
+      }
+      const inputBrowser=id==="offer-0"?(details[id]||{}).browser_observation:null;
+      if(inputBrowser?.status==="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"){
+        mode="REFERENCE";label="BROWSER CAPTURED";
+        const listed=inputBrowser.declared_price&&inputBrowser.currency
+          ?inputBrowser.declared_price+" "+inputBrowser.currency:"price unknown";
+        const coupon=inputBrowser.promotion;
+        detail="Browser-listed: "+listed+
+          (coupon?" · with code "+coupon.code+": "+coupon.price+" "+
+            coupon.currency+(coupon.valid_until?" until "+coupon.valid_until:""):"")+
+          " · checkout NOT VERIFIED. An earlier HTTP 403 only blocked server access.";
       }
       const row={key:"#"+(Number(id.split("-")[1])+1),
         title:d.title||"Product",detail,mode,state:label,weight:weight[mode]};

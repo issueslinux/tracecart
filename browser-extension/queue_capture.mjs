@@ -160,17 +160,54 @@ export function traceCartQueuedProductProjection() {
         if (elements.size>=85) break;
       }
     }
+    // Modern stores often render the discount in dedicated components
+    // with generated class names, not in conventional .price/.promo nodes.
+    // Find visible *text nodes* saying "Cena z kodem" and inspect only their
+    // small, local product-page ancestors; never ship or parse full page HTML.
+    if (typeof document.createTreeWalker==="function") {
+      const scopes=[
+        typeof document.querySelector==="function"
+          ? document.querySelector("main") : null,
+        document.body
+      ];
+      const inspected=new Set();
+      for (const scope of scopes) {
+        if (!scope || inspected.has(scope)) continue;
+        inspected.add(scope);
+        const walker=document.createTreeWalker(
+          scope,globalThis.NodeFilter?.SHOW_TEXT || 4);
+        let node,seen=0,anchors=0;
+        while ((node=walker.nextNode()) && seen++<9000 && anchors<18) {
+          const value=String(node.nodeValue || "");
+          if (!/(?:cena\s+z\s+kodem|z\s+kodem\s+rabatowym)/i.test(value)) continue;
+          anchors++;
+          let parent=node.parentElement;
+          for (let depth=0;parent && depth<7;depth++,parent=parent.parentElement) {
+            if (parent.closest?.("footer,header,nav,aside,[aria-hidden=true]")) break;
+            if (typeof parent.getClientRects==="function" &&
+                !parent.getClientRects().length) break;
+            const txt=String(parent.innerText ?? parent.textContent ?? "");
+            if (txt.length>1100) break;
+            if (/\b[A-Z0-9][A-Z0-9_-]{3,29}\b/.test(txt) &&
+                /(?:zł|PLN)/i.test(txt) && /cena\s+z\s+kodem/i.test(txt)) {
+              elements.add(parent);
+              break;
+            }
+          }
+        }
+      }
+    }
     const matches=[];
     for (const element of elements) {
       if (element.closest?.('footer,header,nav,aside,[aria-hidden="true"]')) continue;
       if (typeof element.getClientRects==="function" &&
           element.getClientRects().length===0) continue;
       const raw=String(element.innerText ?? element.textContent ?? "");
-      if (!raw || raw.length>750) continue;
+      if (!raw || raw.length>1100) continue;
       const text=raw.replace(/[  \s]+/g," ").trim();
       // Must explicitly state the code and the discounted amount nearby.
       const codes=Array.from(text.matchAll(
-        /(?:cena\s+z\s+kodem|z\s+kodem(?:\s+rabatowym)?|kod\s+rabatowy|kod\s+promocyjny)\s*:?\s*([A-Z0-9][A-Z0-9_-]{3,29})\b/gi));
+        /(?:cena\s+z\s+kodem|z\s+kodem(?:\s+rabatowym)?|kod\s+rabatowy|kod\s+promocyjny)\s*:?\s*([A-Z0-9][A-Z0-9_-]{3,29})(?=\s|$|[.,;:])/gi));
       if (codes.length!==1) continue;
       const code=codes[0][1].toUpperCase();
       if (!/[A-Z]/.test(code) || !/[0-9]/.test(code)) continue;
@@ -186,9 +223,16 @@ export function traceCartQueuedProductProjection() {
         }
         return priceValue(raw.replace(/ /g,""));
       }
-      const near=prices.filter(p=>Math.abs((p.index||0)-(codes[0].index||0))<105 &&
-          !/(?:rata|raty|miesi[eę]cznie)/i.test(
-             text.slice(Math.max(0,(p.index||0)-15),(p.index||0))))
+      const codeEnd=(codes[0].index||0)+codes[0][0].length;
+      // Prefer the amount *after* the coupon code. An earlier "Taniej o
+      // 700,99 zł" is the saving, not the 2 799,00 zł product price.
+      const follows=prices.filter(p=>(p.index||0)>=codeEnd &&
+         (p.index||0)-codeEnd<115);
+      const candidates=follows.length?follows:prices.filter(p=>
+         Math.abs((p.index||0)-(codes[0].index||0))<95);
+      const near=candidates.filter(p=>
+          !/(?:rata|raty|miesi[eę]cznie|taniej\s+o)/i.test(
+             text.slice(Math.max(0,(p.index||0)-20),(p.index||0))))
         .map(p=>codeAdjacentPrice(p[1]))
         .filter(p=>p!==null && Number(p)<Number(listedPrice));
       const different=[...new Set(near)];

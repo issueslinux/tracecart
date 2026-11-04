@@ -148,3 +148,39 @@ test("unrelated hidden or ambiguous promotion widgets cannot become sale price",
       ? [{...b,innerText:"2 799,00 zł z kodem BW1610-0112"},b] : [];
   assert.equal(traceCartQueuedProductProjection().promotion,undefined);
 });
+
+test("visible DOM text near conditional checkout price is found without standard price CSS classes",()=>{
+  page([product("3499.99")]);
+  const phrase="Taniej o 700,99 zł Cena z kodem: BW1610-0112 2\u202f799 00 zł Cena z kodem obowiązuje do 01.12.2026 r. 3 499,99 zł Cena przed kodem";
+  const candidate={
+    innerText:phrase,textContent:phrase,
+    getClientRects:()=>[{width:250}],
+    closest:()=>null,parentElement:null
+  };
+  const node={nodeValue:"Cena z kodem:",parentElement:candidate};
+  let used=false;
+  globalThis.document.querySelector=selector=>
+    selector==="main"?{tagName:"MAIN"}:null;
+  globalThis.document.createTreeWalker=()=>({
+    nextNode:()=>used?null:(used=true,node)
+  });
+  const result=traceCartQueuedProductProjection();
+  assert.equal(result.snapshot.offers.price,"3499.99");
+  assert.deepEqual(result.promotion,{
+    price:"2799.00",currency:"PLN",code:"BW1610-0112",
+    valid_until:"2026-12-01",source:"VISIBLE_PRODUCT_PRICE_WITH_CODE"
+  });
+});
+
+test("a saving amount ahead of a code must not become product price",()=>{
+  page([product("3499.99")]);
+  const phrase="Taniej o 700,99 zł. Cena z kodem: BW1610-0112 2 799 00 zł";
+  const candidate={innerText:phrase,getClientRects:()=>[{}],closest:()=>null};
+  const node={nodeValue:"Cena z kodem:",parentElement:candidate};
+  let used=false;
+  globalThis.document.createTreeWalker=()=>({
+    nextNode:()=>used?null:(used=true,node)
+  });
+  const result=traceCartQueuedProductProjection();
+  assert.equal(result.promotion?.price,"2799.00");
+});

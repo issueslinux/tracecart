@@ -741,6 +741,8 @@ class CartResearchJobs:
                 "final_verdict":verdict,
                 "input_price":record.get("input_price"),
                 "browser_auto_batch":self.browser_auto_batch_status(job_id),
+                "browser_claims":(record.get("browser_claims") or [])[:2],
+                "indexed_browser_checks":(record.get("indexed_browser_checks") or [])[:12],
                 "link_safety":record.get("link_safety",{"status":"NOT_STARTED"}),
                 "payment_authorized":False,
             }
