@@ -41,8 +41,8 @@ test("blocked primary HTTP 403 is explained instead of NO MATCHED SOURCE",()=>{
     evidence_offers:{"offer-0":{status:"NO_MATCHED_INDEPENDENT_SOURCE",
       reference_answers:[]}}};
   const row=live.sourceTasks(input)[0];
-  assert.equal(row.state,"HTTP 403 BLOCKED");
-  assert.match(row.detail,/does not bypass access restrictions/);
+  assert.equal(row.state,"SERVER HTTP 403");
+  assert.match(row.detail,/not the product/);
 });
 test("index-only cards are grouped instead of 12 meaningless NO SOURCE URL tasks",()=>{
   const data={
@@ -222,4 +222,36 @@ test("completed research shows evidence-specific unresolved checks, not rotating
   const other=live.questionTasks(data,"offer-1");
   assert.equal(other.filter(x=>x.state==="UNRESOLVED").length,1);
   assert.ok(other.some(x=>x.title.includes("another manufacturer manual")));
+});
+
+test("current source assessment takes priority over completed, stale, or running model",()=>{
+  const fresh={status:"PRELIMINARY",origin:"DETERMINISTIC_CURRENT_EVIDENCE_NOT_LLM",
+    summary:"Browser coupon available, not checkout-verified",
+    purchase_insights:{selected_price:"2799.00 PLN"}};
+  for(const state of ["QUEUED","RUNNING","COMPLETE",
+      "UNAVAILABLE","STALE_AFTER_SHOPPING_REFRESH","SKIPPED_NOT_NEEDED"]){
+    const snapshot={final_verdict:{status:state,summary:"old 3499.99 PLN",
+        purchase_insights:{selected_price:"3499.99 PLN"}},
+      instant_assessment:fresh};
+    const chosen=live.verdictForDisplay(snapshot);
+    assert.equal(chosen.shown,fresh);
+    assert.equal(chosen.model.status,state);
+    assert.equal(chosen.live,true);
+    assert.equal(chosen.shown.purchase_insights.selected_price,"2799.00 PLN");
+  }
+  const legacy=live.verdictForDisplay({final_verdict:{status:"COMPLETE",
+    summary:"old archived"}});
+  assert.equal(legacy.live,false);
+  assert.equal(legacy.shown.summary,"old archived");
+});
+
+test("optional local-model skip is a terminal state but evidence remains visible",()=>{
+  const base={state:"READY",progress_stage:"FINAL_VERDICT_SKIPPED_NOT_NEEDED",
+    evidence_progress:{status:"COMPLETE",processed:2,planned:2},
+    final_verdict:{status:"SKIPPED_NOT_NEEDED"},
+    instant_assessment:{status:"CURRENT",summary:"Published evidence comparison"}};
+  assert.equal(live.isTerminal(base),true);
+  const src=fs.readFileSync(path.join(__dirname,"../assets/live-workspace.js"),"utf8");
+  assert.ok(src.includes("setBusy(!researchDone&&!snapshot.instant_assessment)"));
+  assert.ok(src.includes("renderPurchaseAlternatives(target,snapshot,app,v.purchase_insights)"));
 });

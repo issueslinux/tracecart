@@ -293,7 +293,7 @@
     if(evidenceStatus!=="COMPLETE")return false;
     const verdict=(snapshot.final_verdict||{}).status||"NOT_SCHEDULED";
     if(["COMPLETE","UNAVAILABLE","INTERRUPTED",
-        "STALE_AFTER_SHOPPING_REFRESH"].includes(verdict))
+        "STALE_AFTER_SHOPPING_REFRESH","SKIPPED_NOT_NEEDED"].includes(verdict))
       return true;
     // Old durable jobs predate the verdict phase. Never retroactively
     // describe those saved reports as local LLM conclusions.
@@ -534,28 +534,54 @@
     target.appendChild(container);
   }
 
+  // Live evidence always takes precedence over a possibly stale Qwen result.
+  // This is a display choice, not a modification of stored model receipts.
+  function verdictForDisplay(snapshot){
+    const model=snapshot.final_verdict||{};
+    const instant=snapshot.instant_assessment||null;
+    return {model,instant,shown:instant||model,
+            live:!!instant};
+  }
   function renderVerdict(target,snapshot,app) {
     if(!target)return;
-    const v=snapshot.final_verdict||{};
+    const {model,instant,shown:v,live}=verdictForDisplay(snapshot);
     const stats=(snapshot.graph||{}).stats||{};
     const legacy=snapshot.state==="READY" &&
-      (!v.status||v.status==="NOT_SCHEDULED")&&isTerminal(snapshot);
+      (!model.status||model.status==="NOT_SCHEDULED")&&isTerminal(snapshot);
     const ready=snapshot.state==="READY" &&
-      ["COMPLETE","UNAVAILABLE","INTERRUPTED"].includes(v.status);
-    target.hidden=!(ready||legacy);
+      ["COMPLETE","UNAVAILABLE","INTERRUPTED",
+       "SKIPPED_NOT_NEEDED","STALE_AFTER_SHOPPING_REFRESH"].includes(model.status);
+    target.hidden=!(live||ready||legacy);
     if(target.hidden)return;
     target.replaceChildren();
     const head=item("div","verdict-head");
-    const title=v.status==="COMPLETE"?"Offer comparison results":
-      v.status==="UNAVAILABLE"?"Offer comparison · model unavailable":
+    const title=live?"Current evidence-based comparison":
+      model.status==="COMPLETE"?"Offer comparison results":
+      model.status==="UNAVAILABLE"?"Offer comparison · model unavailable":
       legacy?"Research result · earlier saved job":"Research interrupted";
     head.appendChild(item("strong","",title));
-    const tag=item("span","verdict-tag"+(v.status==="UNAVAILABLE"?" unavailable":""),
+    const tag=item("span","verdict-tag"+(!live && model.status==="UNAVAILABLE"?" unavailable":""),
+      live?(instant.status==="CURRENT"?
+        "Updated from current evidence · no checkout verified":
+        "Preliminary · updates as sources arrive"):
       v.comparison_projection_updated?"Reassessed from saved evidence · index prices unverified":
-      v.status==="COMPLETE"?"Local Qwen · conditional assessment · indexed prices":
-      v.status==="UNAVAILABLE"?"Local Qwen timed out · source-based assessment":
+      model.status==="COMPLETE"?"Local Qwen · conditional assessment · indexed prices":
+      model.status==="UNAVAILABLE"?"Local Qwen timed out · source-based assessment":
+      model.status==="SKIPPED_NOT_NEEDED"?"Model unnecessary · source-based assessment":
       "Research from archived job");
     head.appendChild(tag);target.appendChild(head);
+    if(live){
+      const modelNote=model.status==="RUNNING"?"Optional Qwen classification running; this assessment is available now.":
+        model.status==="QUEUED"?"Optional Qwen not yet finished; this assessment does not wait.":
+        model.status==="COMPLETE"?"Previous Qwen classification: "+
+          String(model.verdict||"INDETERMINATE").replace(/_/g," ")+
+          " · may predate newer browser observations; current source facts take precedence.":
+        model.status==="UNAVAILABLE"?"Model unavailable; latest source evidence remains available.":
+        model.status==="SKIPPED_NOT_NEEDED"?"No qualifying documented semantic conflict was found by current rules.":
+        model.status==="STALE_AFTER_SHOPPING_REFRESH"?"Previous model classification is stale; current sources were reassessed.":
+        "Assessment uses recorded evidence only; no model inference required for display.";
+      target.appendChild(item("p","verdict-model-note",modelNote));
+    }
     const text=v.summary || (
       "Research finished. This saved job has no final local-LLM synthesis. "+
       (stats.documented_product_declarations||0)+" documented product declarations, "+
@@ -563,17 +589,29 @@
       (stats.verified_checkout_prices||0)+" confirmed checkout prices."
     );
     target.appendChild(item("p","verdict-summary",text));
-    if(v.status==="COMPLETE")
-      target.appendChild(item("p","verdict-tag",
-        v.purchase_insights?.status==="FUNCTIONAL_INDEX_LEADS_NEED_SPEC_VERIFICATION"?
-          "Functional alternatives found · retailer and spec verification required":
-        v.purchase_insights?.status==="UNIT_PRICE_LEADS_NOT_CHECKOUT"?
-          "Compare unit costs · retailer price and variant unverified":
-        v.purchase_insights?.status==="SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS"?
-          "Input offer leads on observed price · verify checkout":
-        v.verdict==="COMPARE_WITH_CAUTION"?"Worth comparing — prices unverified":
-        v.verdict==="INSUFFICIENT_EVIDENCE"?"Potential alternatives; checkout not verified":
-        "No comparable listing evidence found"));
+    if(live||v.status==="COMPLETE"){
+      const comparisonStatus=v.purchase_insights?.status||"";
+      const comparisonLabel={
+        FUNCTIONAL_INDEX_LEADS_NEED_SPEC_VERIFICATION:
+          "Functional alternatives found · verify technical specs and retailer total",
+        UNIT_PRICE_LEADS_NOT_CHECKOUT:
+          "Compare index unit costs · retailer total and variant unverified",
+        SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS:
+          "Input offer leads on observed price · verify checkout",
+        CHEAPER_INDEX_COMPARABLE_LEADS:
+          "Cheaper indexed comparable leads · prices and variants unverified",
+        CHEAPER_BUT_DIFFERENT_INDEX_LEADS:
+          "Cheaper indexed alternatives differ in specifications",
+        COMPARABLE_INDEX_OFFERS_FOUND:
+          "Comparable index offers found · no verified final price",
+        INPUT_PRICE_UNKNOWN_NO_VALUE_RECOMMENDATION:
+          "Selected seller price unknown · no reliable value ranking",
+        NO_RELIABLE_COMPARABLE_INDEX_LEADS:
+          "No reliable comparable index offers yet",
+      }[comparisonStatus]||
+        "Source-based assessment only · verify variant, retailer and checkout";
+      target.appendChild(item("p","verdict-tag",comparisonLabel));
+    }
     renderPurchaseAlternatives(target,snapshot,app,v.purchase_insights);
     const findings=(v.observations||[]).filter(x=>x&&typeof x.text==="string");
     if(findings.length){
@@ -604,7 +642,7 @@
     target.appendChild(item("p","verdict-limits",
       "Search-title specifications and seller claims are not independent tests. "+
       "Index prices are not checkout totals. No purchase was authorized."+
-      (v.status==="COMPLETE" && v.coverage&&v.coverage.observations_omitted?
+      (!live && v.status==="COMPLETE" && v.coverage&&v.coverage.observations_omitted?
        " Local-model context omitted "+v.coverage.observations_omitted+
        " source observations; full audit remains available.":"")));
   }
@@ -763,18 +801,25 @@
       renderItems($("live-question-tasks"),questions);
       const phase=snapshot.progress_stage||snapshot.state||"STARTING";
       const researchDone=isTerminal(snapshot);
-      setBusy(!researchDone);
+      // The usable source assessment is already available before optional
+      // inference finishes. Keep the graph stream running, but unlock input.
+      setBusy(!researchDone&&!snapshot.instant_assessment);
       renderVerdict(verdictBox,snapshot,app);
       renderLinkSafety(linkSafetyBox,snapshot);
       const finalStatus=(snapshot.final_verdict||{}).status;
       status.textContent=snapshot.state==="FAILED"?"Research failed":
         snapshot.state==="INTERRUPTED"?"Research interrupted":
         researchDone?
-        ((finalStatus==="COMPLETE"?"Verdict ready":
+        ((snapshot.instant_assessment?"Evidence assessment ready":
+          finalStatus==="COMPLETE"?"Verdict ready":
           finalStatus==="STALE_AFTER_SHOPPING_REFRESH"
           ?"Offers updated · old verdict stale":"Research finished")+
          " · "+(activity.processed||0)+"/"+
          (activity.planned||0)+" checked"):
+        snapshot.instant_assessment&&finalStatus==="RUNNING"?
+          "Evidence assessment ready · optional Qwen running":
+        snapshot.instant_assessment?
+          "Evidence assessment ready · research updating":
         finalStatus==="RUNNING"?"Qwen synthesizing evidence":
         finalStatus==="QUEUED"&&activity.status==="COMPLETE"?
           "Preparing final verdict":
@@ -859,6 +904,7 @@
         const v=(lastSnapshot||{}).final_verdict||{};
         status.textContent=(lastSnapshot.state==="FAILED"?"Research failed":
           lastSnapshot.state==="INTERRUPTED"?"Research interrupted":
+          (lastSnapshot.instant_assessment)?"Evidence assessment ready":
           v.status==="COMPLETE"?"Verdict ready":
           v.status==="STALE_AFTER_SHOPPING_REFRESH"
             ?"Offers updated · previous verdict needs refreshing"
@@ -879,7 +925,8 @@
   }
   if(typeof module!=="undefined"&&module.exports)
     module.exports={sourceTasks,questionTasks,emptyGraph,
-      isTerminal,renderVerdict,renderLinkSafety,offerSafetyLabel};
+      isTerminal,renderVerdict,renderLinkSafety,offerSafetyLabel,
+      verdictForDisplay};
   if(typeof document!=="undefined"){
     if(document.readyState==="loading")
       document.addEventListener("DOMContentLoaded",boot,{once:true});

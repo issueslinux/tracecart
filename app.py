@@ -645,7 +645,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                         evidence=="COMPLETE" and
                         ((not verdict_status or verdict_status=="NOT_SCHEDULED") and
                          stage=="PER_OFFER_MODEL_COMPLETE" or
-                         verdict_status in ("COMPLETE","UNAVAILABLE","INTERRUPTED")))
+                         verdict_status in ("COMPLETE","UNAVAILABLE","INTERRUPTED",
+                                            "SKIPPED_NOT_NEEDED")))
                     if finished:
                         self.wfile.write(b"event: settled\ndata: {}\n\n")
                         self.wfile.flush()
