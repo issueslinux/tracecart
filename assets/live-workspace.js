@@ -125,6 +125,42 @@
             ". Checkout unverified."
           :"No browser price available. "+status;
       }
+      const autoInputTask=id==="offer-0"?(data.browser_auto_batch?.tasks||[])
+        .find(t=>t.url===d.url):null;
+      if(autoInputTask){
+        const browserStatus=autoInputTask.status;
+        if(browserStatus==="SITE_PERMISSION_REQUIRED"){
+          mode="BLOCKED";label="BROWSER PERMISSION REQUIRED";
+          detail="Chromium Companion could not open this merchant: its host permission is missing. " +
+            "Open Browser capture, grant permission to this HTTPS site in the extension popup, " +
+            "enable the queue and retry. The earlier HTTP 403 was from the server.";
+        }else if(browserStatus==="ACCESS_CHALLENGE"){
+          mode="BLOCKED";label="BROWSER ACCESS CHALLENGE";
+          detail="The merchant redirected the browser to a human/security challenge. " +
+            "Open the product in your regular browser and complete any challenge yourself; " +
+            "automatic research will not bypass it. No seller price was captured.";
+        }else if(browserStatus==="REDIRECTED"){
+          mode="BLOCKED";label="BROWSER REDIRECTED";
+          detail="The merchant navigated away from the requested product URL. " +
+            "TraceCart rejected the new page to avoid attaching the wrong price. " +
+            "No checkout price was verified.";
+        }else if(browserStatus==="QUEUED"){
+          mode="QUEUED";label="BROWSER QUEUED";
+          detail="Waiting for a paired, enabled Chromium Companion with this merchant granted. " +
+            "A queued task is not an active browser visit.";
+        }else if(browserStatus==="IN_PROGRESS"){
+          mode="RUNNING";label="BROWSER CHECKING";
+          detail="An authorized browser is checking the seller page.";
+        }else if(browserStatus==="INTERRUPTED_ON_RESTART"){
+          mode="BLOCKED";label="BROWSER INTERRUPTED";
+          detail="The browser process restarted before verification. " +
+            "Reconnect Companion and retry. No price was confirmed.";
+        }else if(browserStatus!=="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"){
+          mode="BLOCKED";label="BROWSER: "+browserStatus;
+          detail="The browser visit did not yield one unambiguous product price. " +
+            "The server's earlier HTTP 403 does not establish product availability.";
+        }
+      }
       const inputBrowser=id==="offer-0"?(details[id]||{}).browser_observation:null;
       if(inputBrowser?.status==="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"){
         mode="REFERENCE";label="BROWSER CAPTURED";
@@ -696,6 +732,9 @@
         questions=questionTasks(snapshot,(app._traceCartGraphView||{}).focus||
           "offer-0");
       const auto=snapshot.browser_auto_batch||{};
+      const retryAuto=$("retry-browser-auto");
+      if(retryAuto) retryAuto.hidden=!(["COMPLETE_WITH_FAILURES",
+        "INTERRUPTED_ON_RESTART","SKIPPED_NO_PERMISSION"].includes(auto.status));
       if(["QUEUED","COMPLETE","COMPLETE_WITH_FAILURES",
           "INTERRUPTED_ON_RESTART"].includes(auto.status)){
         sources.unshift({key:"AUTO BROWSER",title:
@@ -704,8 +743,15 @@
            auto.status==="COMPLETE_WITH_FAILURES"?"Browser checks partly blocked: ":
            "Browser jobs interrupted on restart: ")+
           (auto.queued_count||0)+" page(s)",
-          detail:"Browser checks start only for sites granted permissions "+
-            "in Chromium. No CAPTCHA bypass or checkout.",
+          detail:(()=>{
+            const failed=(auto.tasks||[]).filter(t=>
+              !["PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+                "QUEUED","IN_PROGRESS"].includes(t.status));
+            const reasons=[...new Set(failed.map(t=>t.status))];
+            return (reasons.length?"Browser outcome: "+reasons.join(", ")+". ":"")+
+              "Grant merchant permissions in Chromium Companion before retrying. " +
+              "Access challenges are not bypassed; no checkout is verified.";
+          })(),
           mode:auto.status==="COMPLETE_WITH_FAILURES"?"BLOCKED":"REFERENCE",
           state:auto.status,weight:2});
       }else if(auto.status==="SKIPPED_QUEUE_FULL"){

@@ -22,6 +22,17 @@ async function localFetch(config, path, options={}) {
   if (!response.ok) throw new Error("LOCAL_BROKER_HTTP_"+response.status);
   return response.json();
 }
+// A merchant can redirect a background tab to a security interstitial.
+// Report the denial, not an ordinary product redirect. Never bypass it.
+function redirectFailure(url) {
+  try {
+    const target=new URL(url);
+    if (target.protocol==="https:" && target.hostname==="www.ebay.com" &&
+        target.pathname==="/splashui/challenge") return "ACCESS_CHALLENGE";
+  } catch (_) { /* Invalid final URL remains a rejected redirect. */ }
+  return "REDIRECTED";
+}
+
 async function snapshotJob(job) {
   let origin;
   try {
@@ -56,7 +67,7 @@ async function snapshotJob(job) {
     // No redirects to another offer or host: the research queue must refer
     // to exactly the requested URL, with no silent price reassignment.
     const actual=String(state.url || "");
-    if (actual !== job.url) return {error:"REDIRECTED"};
+    if (actual !== job.url) return {error:redirectFailure(actual)};
     const data=await chrome.scripting.executeScript({
       target:{tabId}, func:traceCartQueuedProductProjection
     });
@@ -64,7 +75,7 @@ async function snapshotJob(job) {
     if (!projection || projection.error) {
       return {error:projection?.error || "BROWSER_ERROR"};
     }
-    if (projection.url!==job.url) return {error:"REDIRECTED"};
+    if (projection.url!==job.url) return {error:redirectFailure(projection.url)};
     // Do not forward already collected fields if permission was revoked
     // while the tab was being inspected.
     if (!(await chrome.permissions.contains({origins:[origin]}))) {
