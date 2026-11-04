@@ -20,6 +20,18 @@ machine-operated browser sessions from manual extension observations.
 
 **Feature freeze (2026-11-04):** search, interactive evidence graph and purchase-decision engine are locked at tag `tracecart-core-freeze-2026-11-04`. See the [contest submission readiness audit](docs/PAYPAL_HACKATHON_SUBMISSION_GATE_2026-11-04.md) for verified status and remaining PayPal/Devpost gates.
 
+**One-click hackathon demo:** Open `http://127.0.0.1:<PORT>/demo/store` and
+click **Add to cart** in the fictional retail storefront. No URL needs to be
+pasted: TraceCart automatically starts the frozen research engine, shows its
+live evidence graph, generates a local-Qwen advisory risk plan, then requires
+explicit buyer approval for a fixed **USD 29.00 Sandbox-only** quote payable to
+an explicitly fictional **TraceCart Demo Intermediary**. The demo retailer
+can update its *simulated* order status only after read-only verification of a
+real Sandbox `APPROVED` order. **There is no real purchase, checkout capture,
+shipment or payment to the sample retailer.** The demo fails closed without
+running Qwen or Sandbox credentials. See
+[one-click Sandbox demo guide](docs/ADD_TO_CART_PAYPAL_SANDBOX_DEMO_2026-11-04.md).
+
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 

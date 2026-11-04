@@ -6,6 +6,24 @@ job **after Add to Cart**, independently of the payment flow. The result is
 intended to be shown **before final checkout**, while leaving the customer's
 original cart unchanged.
 
+## One-click merchant-cart demo (2026-11-04)
+
+`/demo/store` now demonstrates the **buyer-facing** journey: on a
+**fictional local retailer**, clicking **Add to cart** is sufficient to
+trigger the existing `CartResearchJobs.submit` backend event, then the live
+evidence graph, a local Qwen risk plan, an independently locked sandbox USD
+quote, explicit buyer consent, PayPal Sandbox approval and a simulated shop
+order status. The customer never types or pastes a product URL. The page
+refreshes automatically during research and AI planning.
+
+The mock retailer is **not** a plugin installed in a genuine third-party
+store: real integration still requires that retailer's **authorized backend**
+to send the protected `/api/cart/added` event. The integrated scenario is
+fully documented in
+[ADD_TO_CART_PAYPAL_SANDBOX_DEMO_2026-11-04.md](ADD_TO_CART_PAYPAL_SANDBOX_DEMO_2026-11-04.md).
+The original `/cart` URL entry remains available for manual developer QA.
+**No genuine merchant checkout or actual payment capture is performed.**
+
 ## URL-only entry point (current default)
 
 The initial customer-facing form at **/cart** asks for **only the

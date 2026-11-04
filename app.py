@@ -31,6 +31,9 @@ from browser_capture import parse_browser_capture
 from browser_companion_queue import CompanionQueue
 from country_suggestion import suggested_country
 from guided_decision import build_decision_projection
+from demo_purchase import (DEMO_SKU, DemoPurchaseOrders, mock_merchant_item,
+                           approved_sandbox_order)
+from demo_purchase_pages import store_html, order_html
 
 FLOW_ASSETS = {
     "/assets/decision-flow.css": ("text/css; charset=utf-8", "decision-flow.css"),
@@ -38,6 +41,7 @@ FLOW_ASSETS = {
     "/assets/offer-graph.js": ("text/javascript; charset=utf-8", "offer-graph.js"),
     "/assets/live-workspace.js": ("text/javascript; charset=utf-8", "live-workspace.js"),
     "/assets/live-workspace.css": ("text/css; charset=utf-8", "live-workspace.css"),
+    "/assets/demo-autoverify.js": ("text/javascript; charset=utf-8", "demo-autoverify.js"),
 }
 
 FLOW_CSP = (
@@ -386,13 +390,26 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         # Do not log form payloads or PayPal approval tokens.
         print("TraceCart:", format_ % args)
 
-    def send_page(self, body, status=200):
-        data = PAGE.replace("{{body}}", body).encode("utf-8")
+    def send_page(self, body, status=200, refresh_seconds=None, demo_script=False):
+        template=PAGE
+        if demo_script:
+            template=template.replace("</head>",
+                '<script defer src="/assets/demo-autoverify.js"></script></head>',1)
+        if refresh_seconds is not None:
+            if type(refresh_seconds) is not int or not 1 <= refresh_seconds <= 10:
+                raise ValueError("INVALID_REFRESH_INTERVAL")
+            template=template.replace("<title>",
+                '<meta http-equiv="refresh" content="{}"><title>'.format(
+                refresh_seconds),1)
+        data = template.replace("{{body}}", body).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Security-Policy",
-                         "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
+            "default-src 'none'; script-src 'self'; connect-src 'self'; "
+            "style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'"
+            if demo_script else
+            "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
         self.send_header("Content-Length", str(len(data)))
@@ -777,6 +794,13 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     return self.companion_json({"error": "UNKNOWN_RESEARCH_JOB"}, 404)
             return self.companion_json(row)
+        if path == "/demo/store":
+            return self.demo_store_page()
+        if path.startswith("/demo/order/"):
+            try:
+                return self.demo_order_page(path[len("/demo/order/"):])
+            except ValueError:
+                return self.send_page('<section class="error">Unknown demo order</section>',404)
         if path == "/":
             menu = "".join("<li><b>{}</b> — {} USD · {}</li>".format(h(name), h(value[1]), h(value[0]))
                            for name, value in CATALOG.items())
@@ -793,7 +817,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 </section><section><h2>Evidence-based decision research</h2>
                 <p>Research offers and third-party reviews, run an independent critic,
                 and export the full expandable decision tree with unanswered questions.</p>
-                <p><a class="btn" href="/cart">Try cart-triggered analysis</a>
+                <p><a class="btn" href="/demo/store">Add to cart → AI → PayPal Sandbox demo</a>
+                <a class="btn" href="/cart">Try cart-triggered analysis</a>
                 <a class="btn" href="/research">Research lab</a>
                 <a class="btn" href="/compare">Compare offers</a>
                 <a class="btn" href="/research/companion">Browser companion</a></p>
@@ -1501,6 +1526,21 @@ https://www.adafruit.com/product/3400</textarea></label>
         body += '</section><p><a class="btn" href="/">Start another request</a></p>'
         self.send_page(body)
 
+    def demo_store_page(self):
+        self.send_page(store_html(self.hidden()))
+
+    def demo_order_page(self, job_id):
+        demo=self.server.demo_orders.get(job_id)
+        research=self.server.cart_jobs.read(job_id)
+        if research["state"]=="READY":
+            self.server.demo_orders.maybe_start_ai(job_id,research)
+            demo=self.server.demo_orders.get(job_id)
+        quote=self.server.store.read(demo["quote_id"])
+        body,refresh=order_html(job_id,demo,research,quote,self.hidden())
+        self.send_page(body,refresh_seconds=refresh,
+            demo_script=(quote["state"]=="PAYER_ACTION_REQUIRED" and
+                         demo["simulated_state"]!="SIMULATED_ACCEPTED"))
+
     def cart_event_api(self):
         # Server-to-server integration for an authorized checkout application.
         # This local demo does not automatically install a WooCommerce webhook.
@@ -1567,6 +1607,52 @@ https://www.adafruit.com/product/3400</textarea></label>
                 return self.companion_json({"error": "INVALID_COMPANION_RECEIPT"}, 400)
         try:
             form = self.form()
+            if self.path == "/demo/store/add":
+                item=mock_merchant_item(form.get("sku"))
+                cart_id=self.server.cart_jobs.submit(item)
+                quote=self.server.store.quote(DEMO_SKU,1)
+                self.server.demo_orders.register(cart_id,quote["id"])
+                self.send_response(303)
+                self.send_header("Location","/demo/order/"+cart_id)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
+            if self.path.startswith("/demo/order/"):
+                tail=self.path[len("/demo/order/"):]
+                job_id,sep,action=tail.rpartition("/")
+                if sep!="/" or action not in ("approve","paypal","verify"):
+                    raise ValueError("INVALID_DEMO_ACTION")
+                demo=self.server.demo_orders.get(job_id)
+                research=self.server.cart_jobs.read(job_id)
+                if (research["state"]!="READY" or demo["ai_status"]!="AI_READY"):
+                    raise ValueError("DEMO_RESEARCH_AND_AI_NOT_READY")
+                quote=self.server.store.read(demo["quote_id"])
+                if action=="approve":
+                    self.server.store.approve(quote["id"],
+                        form.get("consent",""),form.get("expected_total",""))
+                    # This one-off sandbox create is authorized by exact consent.
+                    # If credentials are absent the approved quote remains safe.
+                    try:
+                        self.server.store.create_sandbox_order(
+                            quote["id"],SandboxPayPal())
+                    except RuntimeError as exc:
+                        if "PayPal sandbox credentials missing" not in str(exc):
+                            raise
+                elif action=="paypal":
+                    self.server.store.create_sandbox_order(
+                        quote["id"],SandboxPayPal())
+                else:
+                    approval=approved_sandbox_order(SandboxPayPal(),quote)
+                    if approval=="APPROVED_NOT_CAPTURED":
+                        self.server.demo_orders.mark_simulated_shop_acceptance(
+                            job_id,approval)
+                self.send_response(303)
+                self.send_header("Location","/demo/order/"+job_id)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
             if (self.path.startswith("/cart/status/") and
                     self.path.endswith("/search-index")):
                 cart_job_id=self.path[len("/cart/status/"):-len("/search-index")]
@@ -1829,6 +1915,7 @@ def run():
     server.store = CheckoutStore(str(args.db))
     server.reports = ReportStore(server.store.db)
     server.cart_jobs = CartResearchJobs(args.db)
+    server.demo_orders = DemoPurchaseOrders(args.db)
     server.companion = CompanionQueue(token_path=args.db.parent /
                                       "browser_companion.token")
     from automatic_browser_verification import enqueue_for_completed_cart
@@ -1850,6 +1937,7 @@ def run():
     except KeyboardInterrupt:
         pass
     finally:
+        server.demo_orders.close()
         browser_worker.close()
         server.server_close()
         server.cart_jobs.close()

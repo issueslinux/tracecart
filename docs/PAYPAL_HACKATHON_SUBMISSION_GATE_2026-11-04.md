@@ -91,3 +91,22 @@ AI setup and product inputs must follow README; `GET http://127.0.0.1:8765` is t
 - https://developer.paypal.com/community/blog/PayPal_AI_Hackathon/
 
 Judging is **Stage One pass/fail** on theme and API/SDK applicability, then equally weighted implementation, design, impact, innovation, and presentation. Prioritize a genuine working PayPal Sandbox demonstration rather than polishing frozen search features.
+
+## G. Post-audit implementation update: one-click storefront demo
+
+A separate *fictional* local retailer at `/demo/store` now has a real
+**Add to cart** HTML button, and clicking it dispatches the existing cart
+research event without URL entry, automatically launches the frozen evidence
+engine and the local-Qwen risk plan, and renders an explicit-amount PayPal
+Sandbox quote for the fictional intermediary. A validated Sandbox buyer
+approval can update the **simulated** store state, but no actual merchant
+order or payment capture is possible. A bounded client-side status poll uses
+read-only Sandbox GET requests, not create-order retries. The fixed USD
+catalog amount is independent of AI and any scraped offer. See
+[one-click demo integration](ADD_TO_CART_PAYPAL_SANDBOX_DEMO_2026-11-04.md).
+
+Offline mocked-gateway tests and an actual Chromium button-click + live
+local-Qwen plan were verified. **These do not close P0-1**: real authorized
+PayPal Sandbox credentials, OAuth, hosted buyer approval and a real Sandbox
+`APPROVED` GET response remain necessary. Likewise a judge-accessible demo,
+video and final contest submission remain outstanding.
