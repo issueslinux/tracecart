@@ -480,6 +480,7 @@
       const cards=item("div","purchase-options");
       rows.forEach(row=>{
         const card=item("article","purchase-option");
+        if(row.offer_id)card.dataset.offerId=row.offer_id;
         const summary=item("div","purchase-option-heading");
         summary.appendChild(item("strong","",row.title||"Listing"));
         summary.appendChild(item("span","purchase-price",
@@ -522,10 +523,11 @@
             hidden.type="hidden";hidden.name=name;hidden.value=value;
             sandbox.appendChild(hidden);
           }
-          const btn=item("button","","PayPal Sandbox demo");
+          const btn=item("button","tc-paypal-open","Płacę z PayPal");
           btn.type="submit";
-          btn.title="Review an illustrative quote; this does not buy at the listed retailer.";
+          btn.title="Płatność testowa PayPal Sandbox — bez zakupu w sklepie.";
           sandbox.appendChild(btn);
+          sandbox.appendChild(item("small","tc-paypal-sandbox-tag","SANDBOX"));
           actions.appendChild(sandbox);
         }
         if(row.source_url){

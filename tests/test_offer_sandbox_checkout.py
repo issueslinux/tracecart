@@ -160,11 +160,14 @@ class OfferHTTPTests(unittest.TestCase):
         self.thread.join(5)
         self.server.server_close()
         self.temp.cleanup()
-    def req(self,path,values=None):
+    def req(self,path,values=None,accept_json=False):
         data=urlencode(values).encode() if values is not None else None
+        headers=({"Content-Type":"application/x-www-form-urlencoded",
+                  "Origin":self.base} if data is not None else {})
+        if accept_json:
+            headers["Accept"]="application/json"
         req=Request(self.base+path,data=data,method="POST" if data is not None else "GET",
-            headers={"Content-Type":"application/x-www-form-urlencoded",
-                     "Origin":self.base} if data is not None else {})
+            headers=headers)
         try:
             with urlopen(req,timeout=5) as r:
                 return r.status,r.read().decode(),r.geturl()
@@ -209,6 +212,109 @@ class OfferHTTPTests(unittest.TestCase):
             self.assertEqual(status,200)
             self.assertIn("payer approval is not yet confirmed",page)
             check.assert_called_once_with(qid)
+
+    def test_modal_json_create_and_read_only_verification(self):
+        import json
+        action="/cart/status/researchJob1234567890/paypal/select"
+        code,body,_=self.req(action,
+            {"csrf":self.server.csrf,"offer_id":"offer-1"},accept_json=True)
+        self.assertEqual(code,200,body)
+        data=json.loads(body)["quote"]
+        qid=data["id"]
+        self.assertEqual((data["state"],data["amount"],data["currency"]),
+                         ("QUOTED","132.60","PLN"))
+        self.assertFalse(data["payment_captured"])
+        self.assertFalse(data["merchant_checkout_verified"])
+        self.assertNotIn("request_id",data)
+        self.assertGreater(data["expires_at"],data["id"] and __import__("time").time())
+        path="/cart/sandbox/"+qid
+        code,body,_=self.req(path+"/approve",
+            {"csrf":self.server.csrf,"consent":checkout.CONSENT,
+             "expected_total":"0.01"},accept_json=True)
+        self.assertEqual(code,400)
+        self.assertEqual(json.loads(body)["error"],"CONSENT_OR_AMOUNT_MISMATCH")
+        self.assertEqual(json.loads(body)["quote"]["state"],"QUOTED")
+        code,body,_=self.req(path+"/approve",
+            {"csrf":self.server.csrf,"consent":checkout.CONSENT,
+             "expected_total":"132.60"},accept_json=True)
+        self.assertEqual(code,200,body)
+        self.assertEqual(json.loads(body)["quote"]["state"],"APPROVED")
+        fake=FakeGateway()
+        fake.quote_id=qid
+        requests=[]
+        def fake_payment(url,method,body,headers,timeout=15):
+            requests.append((url,method))
+            self.assertTrue(url.endswith("/v2/checkout/orders"))
+            self.assertEqual(method,"POST")
+            payload=json.loads(body)
+            self.assertEqual(payload["purchase_units"][0]["amount"],
+                             {"currency_code":"PLN","value":"132.60"})
+            self.assertNotIn("/capture",url)
+            return {"id":fake.id,"status":"CREATED",
+                    "purchase_units":[{"reference_id":qid,
+                        "amount":{"currency_code":"PLN","value":"132.60"}}],
+                    "links":[{"rel":"approve",
+                        "href":"https://www.sandbox.paypal.com/checkoutnow?token="+fake.id}]}
+        with patch.object(checkout,"SandboxPayPal",return_value=fake),patch.object(
+                checkout,"_request_json",side_effect=fake_payment):
+            code,body,_=self.req(path+"/create",
+                {"csrf":self.server.csrf},accept_json=True)
+            self.assertEqual(code,200,body)
+            data=json.loads(body)["quote"]
+            self.assertEqual(data["state"],"PAYER_ACTION_REQUIRED")
+            self.assertEqual(data["paypal_order_id"],fake.id)
+            self.assertTrue(data["approval_url"].startswith(
+                "https://www.sandbox.paypal.com/checkoutnow"))
+            self.assertEqual(len(requests),1)
+            code,body,_=self.req(path+"/create",
+                {"csrf":self.server.csrf},accept_json=True)
+            self.assertEqual(code,400,body)
+            self.assertEqual(json.loads(body)["error"],
+                             "SANDBOX_ORDER_ALREADY_STARTED_OR_NOT_APPROVED")
+            self.assertEqual(len(requests),1)
+            code,body,_=self.req(path+".json?verify=1",accept_json=True)
+            self.assertEqual(code,200,body)
+            self.assertEqual(json.loads(body)["quote"]["state"],
+                             "PAYER_ACTION_REQUIRED")
+            fake.approved=True
+            code,body,_=self.req(path+".json?verify=1",accept_json=True)
+            self.assertEqual(code,200,body)
+            self.assertEqual(json.loads(body)["quote"]["state"],
+                             "VERIFIED_APPROVED")
+            code,body,_=self.req(path+"?token=INVALIDORDER123")
+            self.assertEqual(code,200)
+            self.assertNotIn('paypal-popup-return.js',body)
+            code,body,_=self.req(path+"?token="+fake.id)
+            self.assertEqual(code,200)
+            self.assertIn('paypal-popup-return.js',body)
+            self.assertEqual(len(requests),1)
+
+    def test_modal_json_csrf_and_uncertain_create_no_retry(self):
+        import json
+        action="/cart/status/researchJob1234567890/paypal/select"
+        code,body,_=self.req(action,
+            {"csrf":"wrong","offer_id":"offer-1"},accept_json=True)
+        self.assertEqual(code,400)
+        self.assertEqual(json.loads(body)["error"],"SANDBOX_REQUEST_REJECTED")
+        self.assertNotIn("quote",json.loads(body))
+        qid=self.server.offer_sandbox.select(
+            self.server.cart_jobs,"researchJob1234567890","offer-1")
+        self.server.offer_sandbox.approve(qid,checkout.CONSENT,"132.60")
+        path="/cart/sandbox/"+qid
+        fake=FakeGateway()
+        with patch.object(checkout,"SandboxPayPal",return_value=fake), patch.object(
+                 checkout,"_request_json",side_effect=OSError("simulated timeout")) as send:
+            code,body,_=self.req(path+"/create",
+                {"csrf":self.server.csrf},accept_json=True)
+            self.assertEqual(code,503,body)
+            data=json.loads(body)
+            self.assertEqual(data["quote"]["state"],"CREATE_UNCERTAIN")
+            self.assertEqual(data["error"],"SANDBOX_REQUEST_UNAVAILABLE")
+            code,body,_=self.req(path+"/create",
+                {"csrf":self.server.csrf},accept_json=True)
+            self.assertEqual(code,400,body)
+            self.assertEqual(json.loads(body)["quote"]["state"],"CREATE_UNCERTAIN")
+            self.assertEqual(send.call_count,1)
 
     def test_existing_recommendation_to_sandbox_review(self):
         action="/cart/status/researchJob1234567890/paypal/select"

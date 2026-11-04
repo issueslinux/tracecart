@@ -7,8 +7,10 @@
   <title>TraceCart</title>
   <link rel="stylesheet" href="/assets/decision-flow.css">
   <link rel="stylesheet" href="/assets/live-workspace.css">
+  <link rel="stylesheet" href="/assets/paypal-checkout-modal.css">
   <script defer src="/assets/offer-graph.js"></script>
   <script defer src="/assets/live-workspace.js"></script>
+  <script defer src="/assets/paypal-checkout-modal.js"></script>
 </head>
 <body class="live-page">
   <main id="decision-app" class="live-workspace"
@@ -104,6 +106,48 @@
       </aside>
     </div>
   </main>
+  <dialog id="tc-paypal-modal" class="tc-paypal-modal"
+          aria-labelledby="tc-paypal-title" aria-describedby="tc-paypal-description">
+    <div class="tc-paypal-shell">
+      <header class="tc-paypal-head">
+        <div><span class="tc-paypal-eyebrow">TRACECART <span aria-hidden="true">/</span>
+          SANDBOX CHECKOUT</span>
+          <h2 id="tc-paypal-title">Płatność z PayPal</h2>
+          <p id="tc-paypal-description">Bezpieczna demonstracja zakupu testowego.</p>
+        </div>
+        <button type="button" id="tc-paypal-close" class="tc-paypal-close"
+                aria-label="Zamknij okno">×</button>
+      </header>
+      <ol id="tc-paypal-steps" class="tc-paypal-steps" aria-label="Etapy transakcji">
+        <li data-step="1"><span>01</span><strong>Produkt</strong></li>
+        <li data-step="2"><span>02</span><strong>Zgoda</strong></li>
+        <li data-step="3"><span>03</span><strong>PayPal</strong></li>
+        <li data-step="4"><span>04</span><strong>Wynik</strong></li>
+      </ol>
+      <div class="tc-paypal-body">
+        <div class="tc-paypal-product">
+          <div class="tc-paypal-product-icon" aria-hidden="true">↗</div>
+          <div class="tc-paypal-product-text">
+            <span>WYBRANA PROPOZYCJA</span>
+            <strong id="tc-paypal-product">Ładowanie propozycji…</strong>
+          </div>
+          <div id="tc-paypal-amount" class="tc-paypal-price"></div>
+        </div>
+        <p class="tc-paypal-caveat"><strong>Tryb testowy:</strong> podana cena pochodzi
+          z oferty indeksowanej, nie z koszyka sprzedawcy. Zatwierdzenie w
+          PayPal Sandbox <strong>nie kupuje produktu</strong> ani nie pobiera pieniędzy.</p>
+        <div id="tc-paypal-status" class="tc-paypal-status" role="status"
+             aria-live="polite">Przygotowanie transakcji…</div>
+        <div id="tc-paypal-content" class="tc-paypal-content"></div>
+        <p id="tc-paypal-error" class="tc-paypal-error" role="alert" hidden></p>
+      </div>
+      <footer class="tc-paypal-footer">
+        <span><span class="tc-paypal-secure" aria-hidden="true">◈</span>
+          PayPal <b>Sandbox</b> · Bez pobierania środków</span>
+        <a id="tc-paypal-fallback" href="#" hidden>Otwórz widok awaryjny ↗</a>
+      </footer>
+    </div>
+  </dialog>
   <noscript><p>JavaScript is needed for live graph updates. <a href="{{AUDIT_URL}}">View the saved research audit.</a></p></noscript>
 </body>
 </html>
