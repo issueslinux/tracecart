@@ -2,6 +2,8 @@
 
 **Development status: public MIT-licensed, testable MVP; NOT A CONTEST SUBMISSION.**
 
+**Feature freeze (2026-11-04):** search, interactive evidence graph and purchase-decision engine are locked at tag `tracecart-core-freeze-2026-11-04`. See the [contest submission readiness audit](docs/PAYPAL_HACKATHON_SUBMISSION_GATE_2026-11-04.md) for verified status and remaining PayPal/Devpost gates.
+
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
