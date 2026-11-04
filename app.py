@@ -34,6 +34,7 @@ from guided_decision import build_decision_projection
 from demo_purchase import (DEMO_SKU, DemoPurchaseOrders, mock_merchant_item,
                            approved_sandbox_order)
 from demo_purchase_pages import store_html, order_html
+from offer_sandbox_checkout import OfferSandboxOrders, CONSENT as OFFER_SANDBOX_CONSENT
 
 FLOW_ASSETS = {
     "/assets/decision-flow.css": ("text/css; charset=utf-8", "decision-flow.css"),
@@ -714,6 +715,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{INPUT_PRICE_ACTION}}":"/cart/status/"+job_id+"/input-price",
             "{{INPUT_PRICE_VALUE}}":(result.get("input_price") or {}).get("price") or "",
             "{{INPUT_PROMOTION_CODE}}":(result.get("input_price") or {}).get("promotion_code") or "",
+            "{{SANDBOX_ACTION}}":"/cart/status/"+job_id+"/paypal/select",
         }
         for key,value in substitutions.items():
             tmpl=tmpl.replace(key,h(value))
@@ -762,6 +764,62 @@ class TraceCartHandler(BaseHTTPRequestHandler):
     def hidden(self):
         return '<input type="hidden" name="csrf" value="{}">'.format(h(self.server.csrf))
 
+    def cart_offer_sandbox_page(self, quote_id, error=""):
+        quote=self.server.offer_sandbox.read(quote_id)
+        state=quote["state"]
+        source='<a href="{}" target="_blank" rel="noopener noreferrer">Source listing ↗</a>'.format(
+            h(quote["source_url"])) if quote["source_url"].startswith("https://") else "Source listing link unavailable"
+        body="""<section><div class="tag">PAYPAL SANDBOX ONLY · SELECTED RECOMMENDATION</div>
+          <h2>{title}</h2><p>Selected from the original TraceCart recommendation list:
+          <code>{offer}</code></p><p>{source}</p>
+          <p class="total">{price} {currency}</p>
+          <p class="warning"><b>UNVERIFIED LISTING PRICE, NOT A RETAILER CHECKOUT TOTAL.</b>
+          This is an isolated PayPal Sandbox demonstration for a fictional
+          TraceCart intermediary. The real Sandbox payee is the business account
+          connected to your developer application, NOT the external retailer.
+          No genuine store purchase, stock reservation, delivery, payout,
+          payment capture or charge is performed. The AI cannot authorize payment.</p>
+          <p>State: <code>{state}</code></p>""".format(
+             title=h(quote["title"]),offer=h(quote["offer_id"]),source=source,
+             price=h(quote["total"]),currency=h(quote["currency"]),state=h(state))
+        if error:
+            body+='<p class="error">{}</p>'.format(h(error))
+        if state=="QUOTED":
+            body+="""<h3>Explicit Sandbox confirmation</h3>
+              <p>Type the amount exactly as shown above and then enter:
+              <code>{consent}</code></p>
+              <form method="post" action="/cart/sandbox/{qid}/approve">{csrf}
+              <label>Exact illustrative amount (no currency symbol)
+              <input type="text" name="expected_total" placeholder="{total}"
+                required autocomplete="off"></label>
+              <label>Consent phrase
+              <input type="text" name="consent" required autocomplete="off"></label>
+              <button>Approve demo amount only</button></form>""".format(
+                  consent=h(OFFER_SANDBOX_CONSENT),qid=h(quote_id),
+                  csrf=self.hidden(),total=h(quote["total"]))
+        elif state=="APPROVED":
+            body+="""<p>You approved the illustrative amount; no PayPal order exists yet.</p>
+              <form method="post" action="/cart/sandbox/{qid}/create">{csrf}
+              <button>Create ONE PayPal Sandbox order (no capture)</button>
+              </form>""".format(qid=h(quote_id),csrf=self.hidden())
+        elif state in ("PAYER_ACTION_REQUIRED","VERIFIED_APPROVED"):
+            if state=="PAYER_ACTION_REQUIRED":
+                body+="""<p>Sandbox order created. PayPal order:
+                  <code>{order}</code></p>
+                  <p><a class="btn" href="{url}" target="_blank"
+                      rel="noopener noreferrer">Approve in PayPal Sandbox ↗</a></p>
+                  <form method="post" action="/cart/sandbox/{qid}/verify">{csrf}
+                    <button>Read-only verification of PayPal approval</button>
+                  </form>""".format(order=h(quote["paypal_id"]),
+                     url=h(quote["approval_url"]),qid=h(quote_id),csrf=self.hidden())
+            else:
+                body+="<p class='tag'>Sandbox payer approval VERIFIED; no capture and no merchant purchase.</p>"
+        else:
+            body+="<p class='warning'>Order creation uncertain. Do not retry or create another order for this quote. Reconcile the existing order with PayPal using read-only tools.</p>"
+        body+="""<p><a href="/cart/status/{job}">← Return to original evidence graph</a></p>
+          </section>""".format(job=h(quote["research_id"]))
+        self.send_page(body)
+
     def do_GET(self):
         if not self.trusted_host():
             return
@@ -794,6 +852,11 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     return self.companion_json({"error": "UNKNOWN_RESEARCH_JOB"}, 404)
             return self.companion_json(row)
+        if path.startswith("/cart/sandbox/"):
+            try:
+                return self.cart_offer_sandbox_page(path[len("/cart/sandbox/"):])
+            except ValueError:
+                return self.send_page('<section class="error">Unknown Sandbox selection</section>',404)
         if path == "/demo/store":
             return self.demo_store_page()
         if path.startswith("/demo/order/"):
@@ -1607,6 +1670,44 @@ https://www.adafruit.com/product/3400</textarea></label>
                 return self.companion_json({"error": "INVALID_COMPANION_RECEIPT"}, 400)
         try:
             form = self.form()
+            if (self.path.startswith("/cart/status/") and
+                self.path.endswith("/paypal/select")):
+                job_id=self.path[len("/cart/status/"):-len("/paypal/select")]
+                qid=self.server.offer_sandbox.select(
+                    self.server.cart_jobs,job_id,form.get("offer_id",""))
+                self.send_response(303)
+                self.send_header("Location","/cart/sandbox/"+qid)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
+            if self.path.startswith("/cart/sandbox/"):
+                tail=self.path[len("/cart/sandbox/"):]
+                qid,sep,action=tail.rpartition("/")
+                if sep!="/" or action not in ("approve","create","verify"):
+                    raise ValueError("INVALID_SANDBOX_ACTION")
+                try:
+                    if action=="approve":
+                        self.server.offer_sandbox.approve(
+                            qid,form.get("consent",""),form.get("expected_total",""))
+                    elif action=="create":
+                        self.server.offer_sandbox.create(
+                            qid,return_port=self.server.server_port)
+                    else:
+                        self.server.offer_sandbox.verify(qid)
+                except ValueError as exc:
+                    if str(exc) in ("CONSENT_OR_AMOUNT_MISMATCH","QUOTE_EXPIRED"):
+                        return self.cart_offer_sandbox_page(
+                            qid,"Incorrect amount or consent phrase. Check exact text and amount."
+                            if str(exc)=="CONSENT_OR_AMOUNT_MISMATCH" else
+                            "Quote expired; return to the research recommendations.")
+                    raise
+                self.send_response(303)
+                self.send_header("Location","/cart/sandbox/"+qid)
+                self.send_header("Cache-Control","no-store")
+                self.send_header("Content-Length","0")
+                self.end_headers()
+                return
             if self.path == "/demo/store/add":
                 item=mock_merchant_item(form.get("sku"))
                 cart_id=self.server.cart_jobs.submit(item,allow_paid_shopping=False)
@@ -1916,6 +2017,7 @@ def run():
     server.reports = ReportStore(server.store.db)
     server.cart_jobs = CartResearchJobs(args.db)
     server.demo_orders = DemoPurchaseOrders(args.db)
+    server.offer_sandbox = OfferSandboxOrders(args.db)
     server.companion = CompanionQueue(token_path=args.db.parent /
                                       "browser_companion.token")
     from automatic_browser_verification import enqueue_for_completed_cart
