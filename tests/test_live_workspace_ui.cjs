@@ -255,3 +255,27 @@ test("optional local-model skip is a terminal state but evidence remains visible
   assert.ok(src.includes("setBusy(!researchDone&&!snapshot.instant_assessment)"));
   assert.ok(src.includes("renderPurchaseAlternatives(target,snapshot,app,v.purchase_insights)"));
 });
+
+
+test("changed graph Qwen proposals are shown only as unresolved questions",()=>{
+  const base={
+    state:"READY",evidence_progress:{status:"COMPLETE",processed:2,planned:2},
+    progress_stage:"FINAL_VERDICT_SKIPPED_NOT_NEEDED",
+    final_verdict:{status:"SKIPPED_NOT_NEEDED"},
+    graph:{offer_details:{"offer-0":{high_impact_questions:[]}}},
+    model_offers:{},evidence_offers:{},
+    graph_question_review:{status:"COMPLETE",runs:1,
+      questions:[{offer_id:"offer-0",anchor_id:"seller:abc",
+        question:"Which independent test validates this seller claim?",
+        origin:"LOCAL_LLM_QUESTION_NOT_EVIDENCE",
+        evidence_confirmed:false}]}
+  };
+  const rows=live.questionTasks(base,"offer-0");
+  assert.ok(rows.some(q=>q.state==="PROPOSED"&&
+    q.title.includes("independent test")));
+  assert.ok(!rows.some(q=>q.state==="VERIFIED"));
+  const stale=live.questionTasks({...base,graph_question_review:{
+    status:"STALE_AFTER_GRAPH_CHANGE",questions:base.graph_question_review.questions
+  }},"offer-0");
+  assert.ok(!stale.some(q=>q.title.includes("independent test")));
+});

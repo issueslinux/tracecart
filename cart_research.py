@@ -20,6 +20,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 
 from decision_tree import _node, to_html_tree
 from live_graph_bus import MemoryLiveGraphCache
+from graph_review_runtime import GraphQuestionReviewMixin
 from unit_economics import unit_cost
 
 USER_AGENT = "TraceCart/0.4 (https://github.com/issueslinux/tracecart)"
@@ -575,7 +576,7 @@ def research_cart(item, fetch=_get_json, max_candidates=MAX_CANDIDATES,
     return report
 
 
-class CartResearchJobs:
+class CartResearchJobs(GraphQuestionReviewMixin):
     """Durable bounded async jobs; SQLite accessed only through per-call connections."""
 
     def __init__(self, db_path, runner=research_cart, worker_limit=2):
@@ -614,6 +615,14 @@ class CartResearchJobs:
             db.execute("""CREATE TABLE IF NOT EXISTS cart_final_verdict (
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 result_json TEXT, error_type TEXT)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS cart_graph_question_review (
+                job_id TEXT PRIMARY KEY, evidence_digest TEXT NOT NULL,
+                status TEXT NOT NULL, questions_json TEXT NOT NULL,
+                runs INTEGER NOT NULL DEFAULT 0, updated_at TEXT,
+                error_type TEXT)""")
+            db.execute("""UPDATE cart_graph_question_review
+                SET status='INTERRUPTED_ON_RESTART', questions_json='[]'
+                WHERE status IN ('QUEUED','RUNNING')""")
             db.execute("""CREATE TABLE IF NOT EXISTS cart_link_safety (
                 job_id TEXT PRIMARY KEY, status TEXT NOT NULL,
                 result_json TEXT)""")
@@ -681,6 +690,8 @@ class CartResearchJobs:
         self.evidence_stop = threading.Event()
         self.model_pool = ThreadPoolExecutor(max_workers=1)
         self.model_stop = threading.Event()
+        self._graph_question_pending = set()
+        self._graph_question_lock = threading.Lock()
         self.lock = threading.Lock()
 
     def _db(self):
@@ -736,6 +747,10 @@ class CartResearchJobs:
                     verdict={**verdict,"purchase_insights":updated,
                              "summary":updated["headline"],
                              "comparison_projection_updated":True}
+            from graph_question_review import graph_context,attach_model_questions
+            revision_digest=graph_context(projection,graph)[1]
+            review=self.graph_question_review(job_id,revision_digest)
+            graph=attach_model_questions(graph,review)
             return {
                 "state":record["state"],
                 "offer_queue":[{"id":o["id"],"title":o.get("title"),
@@ -750,6 +765,7 @@ class CartResearchJobs:
                 "source_search":record.get("source_search",{}),
                 "final_verdict":verdict,
                 "instant_assessment":instant,
+                "graph_question_review":review,
                 "input_price":record.get("input_price"),
                 "browser_auto_batch":self.browser_auto_batch_status(job_id),
                 "browser_claims":(record.get("browser_claims") or [])[:2],
@@ -827,6 +843,8 @@ class CartResearchJobs:
                error_type=?,updated_at=? WHERE job_id=?""",
                (state,error,datetime.now(timezone.utc).isoformat(),job_id))
         self.live_bus.signal(job_id)
+        if state=="COMPLETE":
+            self.schedule_graph_question_review(job_id)
         if state=="COMPLETE" and self.browser_auto_enabled():
             callback=getattr(self,"on_research_ready",None)
             if callback:
@@ -1031,6 +1049,8 @@ class CartResearchJobs:
                 (status,datetime.now(timezone.utc).isoformat(),capture_id))
         for (cart_job_id,) in rows:
             self.live_bus.signal(cart_job_id)
+            if status=="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED":
+                self.schedule_graph_question_review(cart_job_id)
 
     def index_browser_checks(self, cart_job_id):
         """Bounded per-offer status, with optional completed source projection."""
@@ -1111,11 +1131,15 @@ class CartResearchJobs:
                 VALUES (?,?,?,?,?,?)""",
                 (ident,source,when,now,digest,raw))
             affected=db.execute("""SELECT id FROM cart_research_jobs
-                WHERE json_extract(item,'$.merchant_url')=?""",(source,)).fetchall()
+                WHERE json_extract(item,'$.merchant_url')=? ORDER BY created DESC""",(source,)).fetchall()
         # Wake the main live decision graph when a new source observation
         # arrives, including for a cart job that is already READY.
         for (job_id,) in affected[:200]:
             self.live_bus.signal(job_id)
+        # A shared browser receipt may match many archived carts. Limit
+        # fresh model work to the three newest, never queue 200 calls.
+        for (job_id,) in affected[:3]:
+            self.schedule_graph_question_review(job_id)
         return {"capture_id":ident,"source_url":source,
                 "cart_jobs_signalled":min(len(affected),200),
                 "checkout_verified":False}
@@ -1363,6 +1387,10 @@ class CartResearchJobs:
                        ("INTERRUPTED" if self.evidence_stop.is_set()
                         else "COMPLETE",job_id))
         self.live_bus.signal(job_id)
+        # A settled source batch is one meaningful graph revision, not 16
+        # model requests. React asynchronously and cap local inference.
+        if not self.evidence_stop.is_set():
+            self.schedule_graph_question_review(job_id)
         # The last stage must be a substantive local-model synthesis,
         # not the earlier question-planning batch. One model_pool worker
         # serializes all inference; HTTP/source extraction runs separately.
@@ -1602,6 +1630,7 @@ class CartResearchJobs:
                  datetime.now(timezone.utc).isoformat(),
                  promotion_code,valid_until,public_source_url))
         self.live_bus.signal(job_id)
+        self.schedule_graph_question_review(job_id)
         return {"price":amount,"currency":currency,"origin":origin,
                 "promotion_code":promotion_code,"valid_until":valid_until,
                 "public_source_url":public_source_url,"checkout_verified":False}

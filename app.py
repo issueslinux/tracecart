@@ -589,10 +589,16 @@ class TraceCartHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(output)
 
-    def send_knowledge_graph_projection(self, record):
-        """Read-only offer/claims/source graph. No paid queries or model calls."""
+    def send_knowledge_graph_projection(self, record, job_id=None):
+        """Read-only graph plus saved source-anchored model questions."""
         from offer_knowledge_graph import build_offer_knowledge_graph
-        graph=build_offer_knowledge_graph(build_decision_projection(record))
+        projection=build_decision_projection(record)
+        graph=build_offer_knowledge_graph(projection)
+        if job_id is not None:
+            from graph_question_review import graph_context,attach_model_questions
+            digest=graph_context(projection,graph)[1]
+            review=self.server.cart_jobs.graph_question_review(job_id,digest)
+            graph=attach_model_questions(graph,review)
         output=json.dumps(graph,ensure_ascii=False,
                           separators=(",",":")).encode("utf-8")
         self.send_response(200)
@@ -647,7 +653,8 @@ class TraceCartHandler(BaseHTTPRequestHandler):
                          stage=="PER_OFFER_MODEL_COMPLETE" or
                          verdict_status in ("COMPLETE","UNAVAILABLE","INTERRUPTED",
                                             "SKIPPED_NOT_NEEDED")))
-                    if finished:
+                    if finished and (snapshot.get("graph_question_review") or
+                                     {}).get("status") not in ("RUNNING","QUEUED"):
                         self.wfile.write(b"event: settled\ndata: {}\n\n")
                         self.wfile.flush()
                         return
@@ -876,7 +883,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             elif projected:
                 self.send_flow_projection(result)
             elif knowledge_graph:
-                self.send_knowledge_graph_projection(result)
+                self.send_knowledge_graph_projection(result,job_id)
             elif raw:
                 output = json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8")
                 self.send_response(200)

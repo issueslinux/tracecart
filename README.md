@@ -5,6 +5,19 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-04: local LLM reacting to evidence graph changes
+
+Graph changes now drive bounded, asynchronous local Qwen research-question
+proposals: a material source-revision hash selects new evidence, the model
+sees a small read-only fact projection, and valid questions link back to
+their original source nodes. The verified graph is never modified by model
+claims. The live UI also prioritizes unresolved price anomalies, conditional
+coupons and missing delivered totals without waiting for a model.
+
+Budget: two Qwen calls per cart at most, 18 seconds per call; no additional
+merchant requests or search charges. See
+[REACTIVE_GRAPH_LLM_2026-11-04.md](docs/REACTIVE_GRAPH_LLM_2026-11-04.md).
+
 ## 2026-11-04: immediate source-based purchase assessment
 
 The central graph and offers now produce a **preliminary purchase assessment
