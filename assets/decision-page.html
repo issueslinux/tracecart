@@ -81,6 +81,12 @@
               <button type="submit" id="verify-indexed-button">
                 Verify indexed retailer offers in parallel</button>
             </form>
+            <form method="post" action="{{AUTO_VERIFY_ACTION}}"
+                  id="retry-browser-auto" class="verify-indexed-form" hidden>
+              <input type="hidden" name="csrf" value="{{CSRF}}">
+              <button type="submit" id="retry-browser-auto-button">
+                Retry browser check after granting permission</button>
+            </form>
             <a id="graph-export" href="{{KNOWLEDGE_GRAPH_URL}}" target="_blank" rel="noopener noreferrer">Graph JSON</a>
             <a id="audit-link" href="{{AUDIT_URL}}" target="_blank" rel="noopener noreferrer">Audit</a>
           </nav>

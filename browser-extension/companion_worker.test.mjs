@@ -73,6 +73,31 @@ test("approved URL executes one filtered capture and closes tab",async()=>{
   assert.equal(executed,1);
   assert.equal(closed,1);
 });
+test("eBay security redirect is an access challenge, not a product redirect",async()=>{
+  config={...config,enabled:true};
+  permit=true;
+  next={job_id:"job-ebay-challenge",url:"https://www.ebay.com/itm/880062986898"};
+  const old=chrome.tabs.get;
+  const before=executed;
+  chrome.tabs.get=async()=>({id:123,status:"complete",
+    url:"https://www.ebay.com/splashui/challenge?ru=https%3A%2F%2Fwww.ebay.com%2Fitm%2F880062986898"});
+  try {
+    const done=await tick();
+    assert.equal(done.error,"ACCESS_CHALLENGE");
+    assert.equal(done.snapshot,null);
+    assert.equal(executed,before);
+  } finally {chrome.tabs.get=old;}
+});
+test("an unrelated eBay destination stays rejected as redirected",async()=>{
+  permit=true;next={job_id:"job-ebay-wrong-item",url:"https://www.ebay.com/itm/880062986898"};
+  const old=chrome.tabs.get;const before=executed;
+  chrome.tabs.get=async()=>({id:123,status:"complete",
+    url:"https://www.ebay.com/itm/OTHER_ITEM"});
+  try{
+    const done=await tick();assert.equal(done.error,"REDIRECTED");
+    assert.equal(executed,before);
+  }finally{chrome.tabs.get=old;}
+});
 test("permission revoked after loading prevents executeScript",async()=>{
   config={...config,enabled:true};
   permit=true; next={job_id:"job-revoked-after-open",url:source};

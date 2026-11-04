@@ -870,6 +870,11 @@ class CartResearchJobs(GraphQuestionReviewMixin):
         if not urls or len(urls)!=len(capture_ids) or len(urls)>12:
             raise ValueError("INVALID_BROWSER_AUTO_LINKS")
         with self._db() as db:
+            # An explicit retry is a new batch; past failed tasks must not
+            # contaminate its completion count. Completed claim receipts remain
+            # in the independent append-only observation table.
+            db.execute("DELETE FROM cart_browser_auto_tasks WHERE cart_job_id=?",
+                       (job_id,))
             db.executemany("""INSERT INTO cart_browser_auto_tasks
               (capture_id,cart_job_id,source_url,status)
               VALUES (?,?,?,'QUEUED')""",
@@ -906,11 +911,16 @@ class CartResearchJobs(GraphQuestionReviewMixin):
         self.live_bus.signal(job_id)
 
     def browser_auto_batch_status(self, job_id):
+        """Expose per-source browser outcomes without tokens or captured data."""
         with self._db() as db:
             row=db.execute("""SELECT status,queued_count FROM cart_browser_auto_batches
                 WHERE cart_job_id=?""",(job_id,)).fetchone()
-        return {"status":row[0],"queued_count":row[1]} if row else {
-            "status":"NOT_REQUESTED","queued_count":0}
+            tasks=db.execute("""SELECT source_url,status FROM cart_browser_auto_tasks
+                WHERE cart_job_id=? ORDER BY rowid LIMIT 12""",(job_id,)).fetchall()
+        return ({"status":row[0],"queued_count":row[1],
+                 "tasks":[{"url":url,"status":status} for url,status in tasks]}
+                if row else {"status":"NOT_REQUESTED","queued_count":0,
+                             "tasks":[]})
 
     def mark_browser_auto_batch(self, job_id, status, count=0):
         if status not in ("QUEUED","SKIPPED_NO_PERMISSION",

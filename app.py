@@ -687,6 +687,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{SHORT_ID}}":job_id[:8],
             "{{PRODUCT_URL}}":(result.get("item") or {}).get("merchant_url") or "",
             "{{VERIFY_INDEXED_ACTION}}":"/cart/status/"+job_id+"/verify-indexed",
+            "{{AUTO_VERIFY_ACTION}}":"/cart/status/"+job_id+"/auto-verify",
             "{{SEARCH_INDEX_ACTION}}":"/cart/status/"+job_id+"/search-index",
             "{{SHOPPING_PROVIDER_LABEL}}":("Shopping discovery · ACTIVE" if
               self.server.cart_jobs.shopping_provider_status()["configured"] else

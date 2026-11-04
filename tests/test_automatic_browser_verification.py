@@ -10,6 +10,7 @@ from automatic_browser_verification import enqueue_for_completed_cart
 from browser_companion_queue import CompanionQueue
 from cart_research import CartResearchJobs
 from tests.test_index_browser_parallel import indexed_report
+from tests.test_browser_companion_queue import receipt, sample
 
 
 class AutomaticBrowserVerificationTests(unittest.TestCase):
@@ -63,6 +64,37 @@ class AutomaticBrowserVerificationTests(unittest.TestCase):
         self.assertEqual(status["queued_count"],3)
         self.assertEqual(self.cart.index_browser_checks(self.job)[0]["status"],
                          "QUEUED")  # indexed status has its own receipt pipeline
+
+    def test_permission_failure_visible_and_retry_resets_old_failed_tasks(self):
+        self.cart.set_browser_auto_enabled(True)
+        first=enqueue_for_completed_cart(self.server,self.job)
+        self.assertEqual(first["queued"],3)
+        for _ in range(3):
+            task=self.queue.take()
+            self.queue.report(receipt(task,error="SITE_PERMISSION_REQUIRED"))
+            self.cart.finish_browser_auto_task(task["job_id"],
+                                               "SITE_PERMISSION_REQUIRED")
+            self.cart.finish_index_browser_task(task["job_id"],
+                                                "SITE_PERMISSION_REQUIRED")
+        prior=self.cart.browser_auto_batch_status(self.job)
+        self.assertEqual(prior["status"],"COMPLETE_WITH_FAILURES")
+        self.assertEqual(len(prior["tasks"]),3)
+        self.assertEqual({x["status"] for x in prior["tasks"]},
+                         {"SITE_PERMISSION_REQUIRED"})
+        _,snapshot=self.cart.live_snapshot(self.job)
+        self.assertEqual(snapshot["browser_auto_batch"]["tasks"],prior["tasks"])
+        retry=enqueue_for_completed_cart(self.server,self.job)
+        self.assertEqual(retry["status"],"QUEUED")
+        self.assertEqual(len(self.cart.browser_auto_batch_status(self.job)["tasks"]),3)
+        for _ in range(3):
+            task=self.queue.take()
+            self.queue.report(receipt(task,snapshot=sample()))
+            self.cart.finish_browser_auto_task(
+                task["job_id"],"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED")
+        status=self.cart.browser_auto_batch_status(self.job)
+        self.assertEqual(status["status"],"COMPLETE")
+        self.assertEqual(status["queued_count"],3)
+        self.assertEqual(len(status["tasks"]),3)
 
     def test_auto_queue_marks_interrupted_jobs_after_restart(self):
         self.cart.set_browser_auto_enabled(True)
