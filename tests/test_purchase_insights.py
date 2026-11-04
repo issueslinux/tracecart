@@ -83,6 +83,67 @@ class PurchaseInsightsTests(unittest.TestCase):
         self.assertFalse(out["selected_price_available_in_seller_page"])
         self.assertIn("no confirmed saving can be calculated",out["headline"])
 
+    def test_matched_browser_coupon_becomes_selected_price_not_index_leader(self):
+        report=example()
+        obs={"status":"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+             "checkout_verified":False,"declared_price":"3499.99",
+             "currency":"PLN","promotion":{
+                "price":"2799.00","currency":"PLN","code":"BW1610-0112",
+                "valid_until":"2099-12-01","condition":"CODE_REQUIRED"}}
+        evidence={"offer_details":{"offer-0":{"browser_observation":obs}}}
+        out=build_purchase_insights(report,evidence)
+        self.assertEqual(out["selected_price"],"2799.00 PLN")
+        self.assertEqual(out["selected_price_source"],
+                         "BROWSER_VISIBLE_CONDITIONAL_CODE_PRICE_NOT_CHECKOUT")
+        self.assertEqual(out["promotion_code"],"BW1610-0112")
+        self.assertTrue(out["selected_price_available_in_seller_page"])
+        self.assertFalse(out["selected_price_verified"])
+        self.assertFalse(out["payment_authorized"])
+        self.assertEqual(out["status"],
+                         "SELECTED_PRICE_UNDERCUTS_AVAILABLE_INDEX_PEERS")
+        self.assertTrue(out["headline"].startswith(
+            "The selected product is listed at 2799.00 PLN with promotion code BW1610-0112"))
+        self.assertNotIn("The selected seller price is unavailable",out["headline"])
+        self.assertFalse(out["options"])
+        self.assertTrue(out["higher_priced_comparables"])
+
+    def test_browser_list_price_and_expired_coupon_are_not_2799(self):
+        obs={"status":"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+             "checkout_verified":False,"declared_price":"3499.99",
+             "currency":"PLN","promotion":{
+                "price":"2799.00","currency":"PLN","code":"OLD-CODE",
+                "valid_until":"2020-01-01","condition":"CODE_REQUIRED"}}
+        g={"offer_details":{"offer-0":{"browser_observation":obs}}}
+        out=build_purchase_insights(example(),g)
+        self.assertEqual(out["selected_price"],"3499.99 PLN")
+        self.assertEqual(out["selected_price_source"],
+                         "BROWSER_SELLER_LISTED_PRICE_NOT_CHECKOUT")
+        self.assertIsNone(out["promotion_code"])
+        self.assertEqual(out["status"],"CHEAPER_INDEX_COMPARABLE_LEADS")
+        self.assertIn("3399.96 PLN",out["headline"])
+        obs["promotion"]=None
+        no_coupon=build_purchase_insights(example(),g)
+        self.assertEqual(no_coupon["selected_price"],"3499.99 PLN")
+
+    def test_browser_claim_without_matched_selected_offer_does_not_set_price(self):
+        out=build_purchase_insights(example(),{"offer_details":{}})
+        self.assertIsNone(out["selected_price"])
+        self.assertIn("The selected seller price is unavailable",out["headline"])
+
+    def test_explicit_user_price_not_silently_replaced_by_browser_coupon(self):
+        report=example()
+        report["input_price"]={"price":"2500.00","currency":"PLN",
+                                "origin":"USER_OBSERVED_NOT_CHECKOUT"}
+        g={"offer_details":{"offer-0":{"browser_observation":{
+            "status":"PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED",
+            "checkout_verified":False,"declared_price":"3499.99",
+            "currency":"PLN","promotion":{"condition":"CODE_REQUIRED",
+                 "price":"2799.00","currency":"PLN","code":"BW1610-0112"}}}}}
+        out=build_purchase_insights(report,g)
+        self.assertEqual(out["selected_price"],"2500.00 PLN")
+        self.assertEqual(out["selected_price_source"],"USER_OBSERVED_NOT_CHECKOUT")
+        self.assertNotEqual(out["promotion_code"],"BW1610-0112")
+
     def test_139_95_not_declared_the_cheapest_new_laptop(self):
         out=build_purchase_insights(example())
         self.assertEqual(len(out["suspicious_price_quotes"]),1)

@@ -4,6 +4,7 @@ Always distinguish advertised/indexed specifications and prices from fetched
 seller prices, independent lab results, and checkout totals. Never manufacture
 exact-model equivalence or a checkout recommendation.
 """
+from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from statistics import median
 
@@ -212,6 +213,40 @@ def build_purchase_insights(projection,graph=None):
     input_price=_number(observed.get("price"))
     input_currency=observed.get("currency")
     input_provenance=observed.get("origin")
+    promotion=observed.get("promotion_code")
+    promotion_until=observed.get("valid_until")
+    # A browser receipt must be attached to offer-0 by the knowledge graph:
+    # that projection validates the selected URL and rejects SKU/GTIN conflicts.
+    # It is a seller-visible quote, never a verified checkout or an overwrite
+    # of an explicit user price observation.
+    if input_price is None:
+        selected_detail=((graph or {}).get("offer_details") or {}).get("offer-0") or {}
+        browser=selected_detail.get("browser_observation") or {}
+        if (browser.get("status")=="PRODUCT_CLAIMS_EXTRACTED_NOT_CHECKOUT_VERIFIED"
+                and browser.get("checkout_verified") is False):
+            base=_number(browser.get("declared_price"))
+            currency=browser.get("currency")
+            if base is not None and currency in ("PLN","EUR","USD"):
+                input_price,input_currency=base,currency
+                input_provenance="BROWSER_SELLER_LISTED_PRICE_NOT_CHECKOUT"
+                conditional=browser.get("promotion") or {}
+                coupon=_number(conditional.get("price"))
+                until=conditional.get("valid_until")
+                valid_date=(until is None)
+                if isinstance(until,str):
+                    try:
+                        valid_date=date.fromisoformat(until)>=date.today()
+                    except ValueError:
+                        valid_date=False
+                if (conditional.get("condition")=="CODE_REQUIRED" and
+                    conditional.get("currency")==currency and
+                    isinstance(conditional.get("code"),str) and
+                    1<=len(conditional["code"])<=48 and
+                    coupon is not None and coupon<base and valid_date):
+                    input_price=coupon
+                    input_provenance="BROWSER_VISIBLE_CONDITIONAL_CODE_PRICE_NOT_CHECKOUT"
+                    promotion=conditional["code"]
+                    promotion_until=until
     if input_price is None and source_intake.get("price_status")=="SELLER_DECLARED":
         input_price=_number(from_source.get("price"))
         input_currency=from_source.get("currency")
@@ -221,8 +256,6 @@ def build_purchase_insights(projection,graph=None):
         input_provenance="NOT_AVAILABLE"
     input_price_label=(_money(input_price,input_currency) if input_price and
                        input_currency in ("PLN","EUR","USD") else None)
-    promotion=observed.get("promotion_code")
-    promotion_until=observed.get("valid_until")
     if input_price_label:
         for item,amount in clean:
             if item["currency"]!=input_currency:continue
@@ -331,7 +364,9 @@ def build_purchase_insights(projection,graph=None):
         "selected_price":input_price_label,
         "selected_price_source":input_provenance,
         "selected_price_available_in_seller_page":(
-            input_provenance=="FETCHED_SELLER_DECLARATION_NOT_CHECKOUT"),
+            input_provenance in ("FETCHED_SELLER_DECLARATION_NOT_CHECKOUT",
+                                  "BROWSER_SELLER_LISTED_PRICE_NOT_CHECKOUT",
+                                  "BROWSER_VISIBLE_CONDITIONAL_CODE_PRICE_NOT_CHECKOUT")),
         "promotion_code":promotion,
         "promotion_valid_until":promotion_until,
         "pricing_basis":"SELECTED_UNVERIFIED_PRICE_VS_UNVERIFIED_INDEX_QUOTES",
