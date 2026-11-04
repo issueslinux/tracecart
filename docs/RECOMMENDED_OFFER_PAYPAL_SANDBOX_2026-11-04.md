@@ -32,7 +32,9 @@ When the user chooses a recommended offer:
    A read-only GET validates matching order ID, currency, value and quote
    reference. Nothing is captured and the external merchant is not paid.
    PayPal Sandbox returns to the same localhost review page after buyer
-   approval or cancellation; this is no guarantee that an order was captured.
+   approval or cancellation; on return with the stored matching PayPal order
+   token, TraceCart performs a read-only API GET and shows the approval result.
+   No capture is performed.
 
 The gateway domain is pinned to `api-m.sandbox.paypal.com`; approval
 links are accepted only on `www.sandbox.paypal.com/checkoutnow` and with

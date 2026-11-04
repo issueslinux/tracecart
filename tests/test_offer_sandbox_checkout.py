@@ -171,6 +171,45 @@ class OfferHTTPTests(unittest.TestCase):
         except HTTPError as exc:
             return exc.code,exc.read().decode(),exc.url
 
+    def test_paypal_return_verifies_only_matching_existing_order(self):
+        qid=self.server.offer_sandbox.select(
+            self.server.cart_jobs,"researchJob1234567890","offer-1")
+        self.server.offer_sandbox.approve(qid,checkout.CONSENT,"132.60")
+        with self.server.offer_sandbox.connect() as db:
+            db.execute("""UPDATE offer_sandbox_orders
+                SET state='PAYER_ACTION_REQUIRED',paypal_id='FAKEORDER123',
+                approval_url='https://www.sandbox.paypal.com/checkoutnow?token=FAKEORDER123'
+                WHERE id=?""",(qid,))
+        base="/cart/sandbox/"+qid
+        with patch.object(self.server.offer_sandbox,"verify") as verify:
+            status,page,_=self.req(base+"?token=INVALIDORDER123")
+            self.assertEqual(status,200)
+            self.assertIn("does not match this Sandbox quote",page)
+            verify.assert_not_called()
+            status,page,_=self.req(base)
+            self.assertEqual(status,200)
+            verify.assert_not_called()
+            verify.return_value={"state":"VERIFIED_APPROVED"}
+            status,page,_=self.req(base+"?token=FAKEORDER123")
+            self.assertEqual(status,200)
+            verify.assert_called_once_with(qid)
+
+    def test_paypal_return_shows_unapproved_status_without_capture(self):
+        qid=self.server.offer_sandbox.select(
+            self.server.cart_jobs,"researchJob1234567890","offer-1")
+        self.server.offer_sandbox.approve(qid,checkout.CONSENT,"132.60")
+        with self.server.offer_sandbox.connect() as db:
+            db.execute("""UPDATE offer_sandbox_orders
+                SET state='PAYER_ACTION_REQUIRED',paypal_id='FAKEORDER123',
+                approval_url='https://www.sandbox.paypal.com/checkoutnow?token=FAKEORDER123'
+                WHERE id=?""",(qid,))
+        with patch.object(self.server.offer_sandbox,"verify",
+                          return_value={"state":"PAYER_ACTION_REQUIRED"}) as check:
+            status,page,_=self.req("/cart/sandbox/"+qid+"?token=FAKEORDER123")
+            self.assertEqual(status,200)
+            self.assertIn("payer approval is not yet confirmed",page)
+            check.assert_called_once_with(qid)
+
     def test_existing_recommendation_to_sandbox_review(self):
         action="/cart/status/researchJob1234567890/paypal/select"
         code,body,_=self.req(action,{"csrf":"wrong","offer_id":"offer-1"})
