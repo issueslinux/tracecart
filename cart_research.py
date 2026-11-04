@@ -708,6 +708,16 @@ class CartResearchJobs:
             record=self.read(job_id)
             projection=build_decision_projection(record)
             graph=build_offer_knowledge_graph(projection)
+            # Source-constrained evaluation is cheap and refreshed on every
+            # genuine evidence update. It never waits for the Qwen worker.
+            instant=None
+            if record["state"] in ("READY","RUNNING") and (
+                    record.get("report") or record.get("preview_report")):
+                from instant_evidence import current_assessment
+                instant=current_assessment(
+                    projection,graph,
+                    (record.get("evidence_progress") or {}).get("status",
+                                                                  "NOT_STARTED"))
             # Recompute the presentation of historical completed jobs from
             # persisted inputs, without rewriting the saved model verdict or
             # source audit. Earlier rule versions incorrectly discarded
@@ -739,6 +749,7 @@ class CartResearchJobs:
                 "evidence_offers":record.get("evidence_offers",{}),
                 "source_search":record.get("source_search",{}),
                 "final_verdict":verdict,
+                "instant_assessment":instant,
                 "input_price":record.get("input_price"),
                 "browser_auto_batch":self.browser_auto_batch_status(job_id),
                 "browser_claims":(record.get("browser_claims") or [])[:2],
@@ -1500,8 +1511,19 @@ class CartResearchJobs:
             record=self.read(job_id)
             projection=build_decision_projection(record)
             graph=build_offer_knowledge_graph(projection)
-            result=generate_final_verdict(projection,graph)
-            status="COMPLETE"
+            from instant_evidence import semantic_review_needed
+            if semantic_review_needed(projection,graph):
+                result=generate_final_verdict(projection,graph)
+                status="COMPLETE"
+            else:
+                # No semantic ambiguity to resolve. A missing seller receipt
+                # is missing evidence, not an LLM classification problem.
+                result=insufficient_verdict(graph,projection=projection)
+                status="SKIPPED_NOT_NEEDED"
+                result["status"]=status
+                result["origin"]="DETERMINISTIC_NO_SEMANTIC_REVIEW_NEEDED"
+                result["model"]=None
+                result["semantic_review_needed"]=False
             error=None
         except (ValueError,KeyError,TypeError,OSError,RuntimeError,
                 TimeoutError) as exc:

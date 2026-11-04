@@ -113,7 +113,9 @@ class FinalVerdictTests(unittest.TestCase):
                         (job_id,status,result_json,error_type)
                         VALUES (?,'QUEUED',NULL,NULL)""",(job_id,))
                 original=jobs.read(job_id)["report"]
-                with patch("model_verdict.generate_final_verdict",
+                with patch("instant_evidence.semantic_review_needed",
+                           return_value=True), patch(
+                           "model_verdict.generate_final_verdict",
                            side_effect=TimeoutError("test only")):
                     jobs._generate_final_verdict(job_id)
                 result=jobs.read(job_id)

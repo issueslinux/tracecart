@@ -5,6 +5,18 @@
 **Public source:** https://github.com/issueslinux/tracecart — this repository contains only TraceCart; no private Hunter data or PayPal credentials.
 Project for [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/rules), deadline **November 12, 2026, 12:00 p.m. Pacific** (21:00 CET). Entire implementation created after the contest started; no existing TraceCart product reused.
 
+## 2026-11-04: immediate source-based purchase assessment
+
+The central graph and offers now produce a **preliminary purchase assessment
+without waiting for Qwen**. Browser receipts, refreshed offers and buyer price
+observations update that summary even after an old model verdict was stored.
+Optional Qwen classification is skipped for straightforward evidence gaps;
+semantic documentary conflicts can still use the model asynchronously.
+Neither indexed prices nor coupon browser claims are verified checkout totals.
+
+See [INSTANT_EVIDENCE_ASSESSMENT_2026-11-04.md](
+docs/INSTANT_EVIDENCE_ASSESSMENT_2026-11-04.md).
+
 ## 2026-11-04: local decision-model benchmark (experimental)
 
 TraceCart now has a **read-only benchmark harness** for locally hosted
