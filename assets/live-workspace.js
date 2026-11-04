@@ -245,6 +245,16 @@
           state:complete?"UNRESOLVED":"OPEN",mode:"QUEUED"});
       }
     }
+    const review=data.graph_question_review||{};
+    const generated=[];
+    const priority=[];
+    for(const q of (data.instant_assessment?.priority_checks||[])){
+      if(q.offer_id===selectedId)priority.push({key:"PRIORITY",title:q.question,state:"VERIFY",mode:"QUEUED"});
+    }
+    if(review.status==="COMPLETE")for(const q of (review.questions||[])){
+      if(q.offer_id===selectedId)generated.push({key:"GRAPH QWEN",title:q.question,detail:"Unverified · source: "+q.anchor_id,state:"PROPOSED",mode:"QUEUED"});
+    }
+    if(review.status==="RUNNING")generated.push({key:"GRAPH MODEL",title:"New questions under review",state:"INFERENCE",mode:"RUNNING"});
     // Finished work is not a queue. The old revision-rotating generic
     // probes made completed jobs appear to be indefinitely processing.
     // Show actual documented findings and selected-offer gaps, not 18×24
@@ -260,12 +270,12 @@
           (data.evidence_progress.planned||0)+
           " offers checked. Unresolved items require additional sources.",
         state:"COMPLETE",mode:"REFERENCE",
-      },...selectedEvidence.slice(0,5),...selectedGaps.slice(0,9)];
+      },...priority,...generated,...selectedEvidence.slice(0,5),...selectedGaps.slice(0,9)];
     }
     const changed=Number(data.progress_revision)||0;
     const rotated=open.length?
       open.slice(changed%open.length).concat(open.slice(0,changed%open.length)):[];
-    const lead=running.slice(0,1).concat(answered.slice(0,5))
+    const lead=priority.slice(0,3).concat(running.slice(0,1)).concat(answered.slice(0,5))
       .concat(proposed.slice(0,2));
     return lead.concat(rotated.slice(0,Math.max(0,18-lead.length)));
   }
