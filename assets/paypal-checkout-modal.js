@@ -12,7 +12,8 @@
   const error=$("tc-paypal-error"),fallback=$("tc-paypal-fallback");
   const steps=[...$("tc-paypal-steps").querySelectorAll("li")];
   let quote=null,offerId=null,popup=null,pollTimer=null,pollBusy=false;
-  let pollCount=0,creating=false,generation=0;
+  let pollCount=0,creating=false,opening=false,generation=0;
+  let paymentOpened=false;
   let openerButton=null;
 
   function node(tag,className,text){
@@ -63,22 +64,22 @@
     const response=await fetch(path,options);
     let data;
     try{data=await response.json();}
-    catch(_ignore){throw Error("Nie udało się odczytać odpowiedzi TraceCart.");}
+    catch(_ignore){throw Error("TraceCart returned an unreadable response.");}
     if(!response.ok){
-      const ex=Error("Operacja nie została potwierdzona przez serwer.");
+      const ex=Error("The server could not complete the request.");
       ex.code=data.error||"SERVER_ERROR";
       ex.quote=data.quote||null;
       throw ex;
     }
     if(!data.quote||typeof data.quote.id!=="string"){
-      throw Error("Brakuje potwierdzonej wyceny.");
+      throw Error("Missing the server-validated Sandbox quote.");
     }
     return data.quote;
   }
   function quotePath(){return "/cart/sandbox/"+encodeURIComponent(quote.id);}
   function progress(state){
-    const current=state==="LOADING"?1:state==="QUOTED"?2:
-      state==="APPROVED"||state==="CREATE_UNCERTAIN"?3:
+    const current=state==="LOADING"?1:
+      state==="QUOTED"||state==="APPROVED"||state==="CREATE_UNCERTAIN"?2:
       state==="PAYER_ACTION_REQUIRED"?3:4;
     steps.forEach((li,i)=>{
       const step=i+1;
@@ -94,7 +95,7 @@
     status.className="tc-paypal-status tc-status-busy";
     status.textContent=label;
     content.replaceChildren(node("div","tc-paypal-wait",
-      "Weryfikuję dane bez zmiany ceny ani sprzedawcy."));
+      "Reading the selected product and price from saved evidence."));
   }
   function setStatus(label,kind="normal"){
     status.className="tc-paypal-status tc-status-"+kind;
@@ -106,7 +107,7 @@
       if(card.dataset.offerId!==quote.offer_id)return;
       card.classList.add("tc-paypal-verified-card");
       const button=card.querySelector(".tc-paypal-open");
-      if(button)button.textContent="✓ PayPal — zatwierdzono";
+      if(button)button.textContent="✓ PayPal approved";
     });
   }
   function paymentLink(){
@@ -121,108 +122,71 @@
   }
   function explain(ex){
     const codes={
-      CONSENT_OR_AMOUNT_MISMATCH:"Kwota lub formuła zgody jest niepoprawna. Porównaj je z wyceną.",
-      QUOTE_EXPIRED:"Wycena wygasła. Wybierz produkt ponownie z listy propozycji.",
-      SANDBOX_CONSENT_EXPIRED:"Zgoda wygasła. Nie utworzono nowego zamówienia.",
+      CONSENT_OR_AMOUNT_MISMATCH:"The amount or consent text did not match this quote.",
+      QUOTE_EXPIRED:"This quote expired. Select the product again.",
+      SANDBOX_CONSENT_EXPIRED:"The quote expired before the Sandbox order started.",
       SANDBOX_ORDER_ALREADY_STARTED_OR_NOT_APPROVED:
-        "Ta próba była już rozpoczęta. Nie ponawiam tworzenia zamówienia.",
-      QUOTE_NOT_AWAITING_APPROVAL:"Ta wycena nie oczekuje już na zgodę.",
+        "An order was already started. TraceCart will not create another.",
+      QUOTE_NOT_AWAITING_APPROVAL:"This quote is no longer awaiting approval.",
       SANDBOX_REQUEST_UNAVAILABLE:
-        "Nie udało się zakończyć żądania. Jeśli dotarło do PayPal, nie wolno go ponawiać.",
+        "The request's outcome is uncertain. No automatic payment retry is allowed.",
+      SANDBOX_REQUEST_REJECTED:"The server rejected the Sandbox checkout request.",
       SANDBOX_STATUS_UNAVAILABLE:
-        "Nie udało się odczytać statusu PayPal. Nie ponawiam zamówienia.",
-      UNKNOWN_SANDBOX_QUOTE:"Nie znaleziono zapisanej wyceny.",
+        "PayPal status is temporarily unavailable. No new order was created.",
+      UNKNOWN_SANDBOX_QUOTE:"The saved quote could not be found.",
     };
-    return codes[ex.code]||ex.message||"Nie udało się ukończyć operacji.";
+    return codes[ex.code]||ex.message||"Checkout could not be completed.";
   }
   function render(){
     if(!quote)return;
     const state=quote.state;
     progress(state);
-    product.textContent=quote.title||"Wybrany produkt";
+    product.textContent=quote.title||"Selected product";
     amount.textContent=quote.amount+" "+quote.currency;
     content.replaceChildren();
     fallback.hidden=false;
     fallback.href=quotePath();
     if(state==="QUOTED"){
-      setStatus("Etap 2 / 4 · Potwierdź wybraną kwotę testową","normal");
-      const intro=node("div","tc-paypal-instruction");
-      intro.appendChild(node("h3","","Kontrola przed przejściem do PayPal"));
-      intro.appendChild(node("p","",
-        "Sprawdź wskazany produkt, wpisz dokładną kwotę i potwierdź świadomą zgodę. "+
-        "System nie może zatwierdzić tej czynności za Ciebie."));
-      const form=document.createElement("form");
-      form.className="tc-paypal-review-form";
-      const amountLabel=node("label","tc-paypal-field","Kwota w "+quote.currency);
-      const total=document.createElement("input");
-      total.type="text";total.required=true;total.autocomplete="off";
-      total.inputMode="decimal";total.placeholder=quote.amount;
-      total.name="expected_total";
-      total.setAttribute("aria-label","Wpisz dokładną kwotę: "+quote.amount);
-      amountLabel.appendChild(total);
-      const consentLabel=node("label","tc-paypal-field","Potwierdzenie zgody");
-      const consent=document.createElement("input");
-      consent.type="text";consent.required=true;consent.autocomplete="off";
-      consent.name="consent";consent.placeholder=quote.consent_text;
-      consent.setAttribute("aria-label","Przepisz wymaganą formułę zgody");
-      consentLabel.appendChild(consent);
-      form.append(intro,amountLabel,
-        node("p","tc-paypal-consent-hint","Wymagany tekst: "+quote.consent_text),
-        consentLabel);
-      const submit=node("button","tc-paypal-button tc-paypal-primary",
-        "Potwierdzam kwotę testową →");
-      submit.type="submit";form.appendChild(submit);
-      form.addEventListener("submit",async ev=>{
-        ev.preventDefault();
-        if(creating)return;
-        const generationAtStart=generation;
-        creating=true;submit.disabled=true;clearWarning();
-        setStatus("Zapisuję Twoją zgodę…","busy");
-        try{
-          const value=await request(quotePath()+"/approve",
-            {expected_total:total.value,consent:consent.value});
-          if(generationAtStart!==generation)return;
-          quote=value;saveQuote();render();
-        }catch(ex){
-          if(generationAtStart!==generation)return;
-          if(ex.quote){quote=ex.quote;saveQuote();}
-          render();
-          warning(explain(ex));
-        }finally{creating=false;}
-      });
-      content.appendChild(form);
+      setStatus("Step 2 of 4 · Previous quote awaiting manual review","alert");
+      content.append(
+        node("h3","","This quote was created by the previous checkout flow"),
+        node("p","tc-paypal-instruction",
+          "The updated one-click checkout uses the amount stored on the server. "+
+          "Select the product again to begin a new Sandbox-only checkout."),
+        action("Restart one-click checkout",()=>{
+          forgetId(offerId);
+          modal.close();
+          window.setTimeout(()=>openerButton&&openerButton.click(),0);
+        },"secondary"));
       return;
     }
     if(state==="APPROVED"){
-      setStatus("Etap 3 / 4 · Twoja zgoda została zapisana","ready");
-      content.append(
-        node("h3","","Gotowe do bezpiecznego przekierowania"),
-        node("p","tc-paypal-instruction",
-          "Następny krok utworzy jedno zamówienie testowe w PayPal Sandbox. "+
-          "Strona płatności otworzy się w osobnym, bezpiecznym oknie PayPal."),
-        action("Otwórz PayPal Sandbox ↗",createPayPal,"paypal"));
+      setStatus("Step 2 of 4 · Preparing your PayPal Sandbox order","busy");
+      content.replaceChildren(node("div","tc-paypal-wait",
+        "Your selected offer and amount are locked. "+
+        "Opening the PayPal Sandbox checkout without any extra confirmation."));
       return;
     }
     if(state==="PAYER_ACTION_REQUIRED"){
-      setStatus("Etap 3 / 4 · Oczekiwanie na zatwierdzenie u PayPal","busy");
+      setStatus("Step 3 of 4 · Waiting for PayPal approval","busy");
       const wait=node("div","tc-paypal-pending");
       wait.appendChild(node("div","tc-paypal-pulse","●"));
-      wait.appendChild(node("h3","","Czekam na potwierdzenie…"));
+      wait.appendChild(node("h3","","Waiting for PayPal confirmation…"));
       wait.appendChild(node("p","",
-        "Zaloguj się na konto Sandbox Personal w otwartym oknie PayPal. "+
-        "TraceCart sprawdza status w trybie tylko do odczytu."));
+        "Approve the test order in the secure PayPal Sandbox window. "+
+        "TraceCart checks this order using read-only requests."));
       const ref=node("p","tc-paypal-order-ref",
-        "Zamówienie Sandbox: "+(quote.paypal_order_id||""));
+        "Sandbox order: "+(quote.paypal_order_id||""));
       wait.appendChild(ref);
       const controls=node("div","tc-paypal-controls");
       const link=paymentLink();
       if(link){
         const a=node("a","tc-paypal-button tc-paypal-paypal-outline",
-          "Otwórz ponownie PayPal ↗");
+          "Open PayPal again ↗");
         a.href=link;a.rel="noopener noreferrer";a.target="_blank";
         controls.appendChild(a);
       }
-      controls.appendChild(action("Sprawdź status teraz",()=>{
+      controls.appendChild(action("Check status now",()=>{
         refreshStatus(true);
       },"secondary"));
       wait.appendChild(controls);
@@ -232,26 +196,26 @@
     }
     stopPoll();
     if(state==="VERIFIED_APPROVED"){
-      setStatus("Etap 4 / 4 · Zatwierdzenie Sandbox zweryfikowane","success");
+      setStatus("Step 4 of 4 · Sandbox approval verified","success");
       const box=node("section","tc-paypal-success");
       box.appendChild(node("div","tc-paypal-success-check","✓"));
-      box.appendChild(node("h3","","PayPal potwierdził zgodę"));
+      box.appendChild(node("h3","","PayPal approval verified"));
       box.appendChild(node("p","",
-        "Status: APPROVED. Zamówienie testowe zostało zweryfikowane po stronie serwera. "+
-        "Nie pobrano pieniędzy i nie dokonano zakupu u sprzedawcy."));
+        "Status: APPROVED. The test order was verified by the server. "+
+        "No real funds were captured and no retailer purchase occurred."));
       box.appendChild(node("p","tc-paypal-order-ref",
-        "ID zamówienia: "+(quote.paypal_order_id||"")));
-      box.appendChild(action("Wróć do propozycji produktów",()=>modal.close()));
+        "Order ID: "+(quote.paypal_order_id||"")));
+      box.appendChild(action("Back to product recommendations",()=>modal.close()));
       content.appendChild(box);
       updateVerifiedCard();
       return;
     }
-    setStatus("Transakcja wymaga wyjaśnienia · bez ponawiania płatności","alert");
+    setStatus("Order status uncertain · No payment retry","alert");
     const block=node("div","tc-paypal-uncertain");
-    block.appendChild(node("h3","","Nie tworzę kolejnego zamówienia"));
+    block.appendChild(node("h3","","No new order will be created"));
     block.appendChild(node("p","",
-      "Wynik żądania tworzenia nie jest pewny. Bezpieczna procedura wymaga "+
-      "sprawdzenia istniejącego zamówienia w PayPal, a nie ponownego wysyłania POST."));
+      "The order creation response is uncertain. Check the existing PayPal order; "+
+      "do not submit another create request."));
     content.appendChild(block);
   }
 
@@ -266,7 +230,7 @@
       quote=value;saveQuote();
       if(value.state!==was){clearWarning();render();}
       else if(verify&&value.state==="PAYER_ACTION_REQUIRED")
-        setStatus("Oczekiwanie na zatwierdzenie w PayPal Sandbox…","busy");
+        setStatus("Waiting for approval in PayPal Sandbox…","busy");
     }catch(ex){
       if(round!==generation)return;
       if(ex.quote){
@@ -287,8 +251,8 @@
       pollCount++;
       if(pollCount>30){
         stopPoll();
-        warning("Automatyczna kontrola została wstrzymana po 2,5 minuty. "+
-          "Możesz sprawdzić stan ręcznie — nie utworzy to nowego zamówienia.");
+        warning("Automatic polling paused after 2½ minutes. "+
+          "You can check status manually without creating a new order.");
         return;
       }
       refreshStatus(true);
@@ -298,48 +262,54 @@
     if(creating||!quote||quote.state!=="APPROVED")return;
     const round=generation;
     creating=true;clearWarning();
-    setStatus("Przekazuję pojedyncze zamówienie do PayPal Sandbox…","busy");
+    setStatus("Creating one PayPal Sandbox order…","busy");
     content.replaceChildren(node("div","tc-paypal-wait",
-      "Tworzenie zamówienia tylko raz. Nie ponawiaj żądania ani nie odświeżaj strony."));
-    // A new window must be opened synchronously from this click to avoid popup
-    // blockers. The only real navigation is the server-approved Sandbox link.
-    try{
-      popup=window.open("about:blank","tcSandboxPayPal_"+quote.id,
-        "width=560,height=760,scrollbars=yes,resizable=yes");
-      if(popup&&!popup.closed){
-        popup.document.title="TraceCart · łączenie z PayPal Sandbox";
-        popup.document.body.textContent="Łączenie z PayPal Sandbox…";
-      }
-    }catch(_ignore){popup=null;}
+      "Only one Sandbox order is being created. Do not retry or refresh the page."));
+    // The PayPal window was already opened synchronously by the
+    // original Pay with PayPal click, before any asynchronous work.
     try{
       const value=await request(quotePath()+"/create",{});
       if(round!==generation)return;
       quote=value;saveQuote();render();
       const link=paymentLink();
-      if(link&&popup&&!popup.closed)popup.location.assign(link);
-      else if(popup&&!popup.closed)popup.close();
-      if(!link)warning("Zamówienie mogło zostać utworzone, ale link PayPal "+
-                       "nie jest dostępny. Nie ponawiaj tworzenia zamówienia.");
+      if(link&&popup&&!popup.closed){
+        popup.location.assign(link);
+        paymentOpened=true;
+      }else if(popup&&!popup.closed)popup.close();
+      if(!link)warning("The Sandbox order may exist, but its PayPal link "+
+                       "is unavailable. Do not create another order.");
     }catch(ex){
       if(round!==generation)return;
       if(popup&&!popup.closed)popup.close();
       popup=null;
       if(ex.quote){quote=ex.quote;saveQuote();render();}
       else{
-        setStatus("Nie udało się potwierdzić wyniku żądania","alert");
-        content.replaceChildren(node("p","","Nie wykonuję ponownej próby."));
+        setStatus("Could not confirm the request outcome","alert");
+        content.replaceChildren(node("p","","No automatic retry will be attempted."));
       }
       warning(explain(ex));
     }finally{creating=false;}
   }
   async function openFromCard(id){
-    if(creating)return;
+    if(creating||opening)return;
+    opening=true;
     offerId=id;quote=null;stopPoll();clearWarning();
     const round=++generation;
+    paymentOpened=false;
     if(!modal.open)modal.showModal();
-    product.textContent="Weryfikuję proponowany produkt…";
+    // Reserve a popup as a direct consequence of this ONE user click.
+    // Navigating after the async server response would be popup-blocked.
+    try{
+      popup=window.open("about:blank","tcSandboxPayPal_"+id,
+        "width=560,height=760,scrollbars=yes,resizable=yes");
+      if(popup&&!popup.closed){
+        popup.document.title="TraceCart · Connecting to PayPal Sandbox";
+        popup.document.body.textContent="Connecting to PayPal Sandbox…";
+      }
+    }catch(_ignore){popup=null;}
+    product.textContent="Checking the recommended product…";
     amount.textContent="";fallback.hidden=true;
-    loading("Etap 1 / 4 · Sprawdzam propozycję");
+    loading("Step 1 of 4 · Checking the selected offer");
     try{
       let value=null;
       const previous=rememberedId(id);
@@ -348,24 +318,40 @@
           const old=await request("/cart/sandbox/"+encodeURIComponent(previous)+".json");
           if(old.offer_id===id&&old.research_id===
                  app.dataset.sandboxAction.split("/")[3]&&
+             old.state!=="QUOTED"&&
              !(old.expires_at&&Date.now()>old.expires_at*1000)){
             value=old;
           }else forgetId(id);
         }catch(_ignore){forgetId(id);}
       }
-      if(!value)value=await request(app.dataset.sandboxAction,{offer_id:id});
+      if(!value)value=await request(app.dataset.sandboxStart,{offer_id:id});
       if(round!==generation)return;
       quote=value;saveQuote();render();
+      if(value.state==="APPROVED"){
+        opening=false;
+        await createPayPal();
+      }else if(value.state==="PAYER_ACTION_REQUIRED"){
+        const link=paymentLink();
+        if(link&&popup&&!popup.closed){
+          popup.location.assign(link);
+          paymentOpened=true;
+        }else if(popup&&!popup.closed)popup.close();
+      }else if(popup&&!popup.closed){
+        popup.close();
+      }
     }catch(ex){
       if(round!==generation)return;
+      if(popup&&!popup.closed&&!paymentOpened)popup.close();
       if(ex.quote){quote=ex.quote;saveQuote();render();}
       else{
         progress("LOADING");
-        setStatus("Wybór propozycji nie powiódł się","alert");
+        setStatus("Could not select the offer","alert");
         content.replaceChildren(node("p","",
-          "Wróć do grafu i wybierz produkt ponownie."));
+          "Return to the evidence graph and select a product again."));
       }
       warning(explain(ex));
+    }finally{
+      opening=false;
     }
   }
   app.addEventListener("submit",event=>{
@@ -380,6 +366,9 @@
   $("tc-paypal-close").addEventListener("click",()=>modal.close());
   modal.addEventListener("close",()=>{
     stopPoll();generation++;
+    if(!paymentOpened){
+      try{if(popup&&!popup.closed)popup.close();}catch(_ignore){}
+    }
     if(openerButton&&openerButton.isConnected)openerButton.focus();
   });
   // Same-origin PayPal redirect helper. Never trust a postMessage from

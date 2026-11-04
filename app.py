@@ -722,6 +722,7 @@ class TraceCartHandler(BaseHTTPRequestHandler):
             "{{INPUT_PRICE_VALUE}}":(result.get("input_price") or {}).get("price") or "",
             "{{INPUT_PROMOTION_CODE}}":(result.get("input_price") or {}).get("promotion_code") or "",
             "{{SANDBOX_ACTION}}":"/cart/status/"+job_id+"/paypal/select",
+            "{{SANDBOX_START_ACTION}}":"/cart/status/"+job_id+"/paypal/start",
         }
         for key,value in substitutions.items():
             tmpl=tmpl.replace(key,h(value))
@@ -1743,10 +1744,16 @@ https://www.adafruit.com/product/3400</textarea></label>
         try:
             form = self.form()
             if (self.path.startswith("/cart/status/") and
-                self.path.endswith("/paypal/select")):
-                job_id=self.path[len("/cart/status/"):-len("/paypal/select")]
-                qid=self.server.offer_sandbox.select(
-                    self.server.cart_jobs,job_id,form.get("offer_id",""))
+                self.path.endswith(("/paypal/select","/paypal/start"))):
+                one_click=self.path.endswith("/paypal/start")
+                suffix="/paypal/start" if one_click else "/paypal/select"
+                job_id=self.path[len("/cart/status/"):-len(suffix)]
+                if one_click:
+                    qid=self.server.offer_sandbox.start(
+                        self.server.cart_jobs,job_id,form.get("offer_id",""))["id"]
+                else:
+                    qid=self.server.offer_sandbox.select(
+                        self.server.cart_jobs,job_id,form.get("offer_id",""))
                 if "application/json" in self.headers.get("Accept",""):
                     return self.companion_json(
                         {"quote":self.sandbox_quote_payload(qid)})
@@ -2082,7 +2089,7 @@ https://www.adafruit.com/product/3400</textarea></label>
             if ("application/json" in self.headers.get("Accept","") and
                     (self.path.startswith("/cart/sandbox/") or
                      (self.path.startswith("/cart/status/") and
-                      self.path.endswith("/paypal/select")))):
+                      self.path.endswith(("/paypal/select","/paypal/start"))))):
                 # In particular, CREATE_UNCERTAIN must be reported truthfully
                 # without auto-retrying a possibly completed PayPal order.
                 result={"error":("SANDBOX_REQUEST_REJECTED" if

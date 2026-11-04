@@ -213,6 +213,82 @@ class OfferHTTPTests(unittest.TestCase):
             self.assertIn("payer approval is not yet confirmed",page)
             check.assert_called_once_with(qid)
 
+    def test_one_click_paypal_starts_server_priced_quote_without_typing(self):
+        import json
+        action="/cart/status/researchJob1234567890/paypal/start"
+        with patch.object(checkout,"_request_json") as gateway:
+            status,body,_=self.req(
+                action,{"csrf":self.server.csrf,"offer_id":"offer-1"},
+                accept_json=True)
+        self.assertEqual(status,200,body)
+        data=json.loads(body)["quote"]
+        self.assertEqual((data["amount"],data["currency"],data["state"]),
+                         ("132.60","PLN","APPROVED"))
+        self.assertFalse(data["payment_captured"])
+        self.assertNotIn("request_id",data)
+        self.assertFalse(data["merchant_checkout_verified"])
+        self.assertEqual(self.server.offer_sandbox.read(data["id"])["state"],
+                         "APPROVED")
+        gateway.assert_not_called()  # creating PayPal requires a second, guarded API call
+        # The clicked offer ID alone cannot override server price/currency.
+        with patch.object(checkout,"_request_json") as gateway:
+            status,body,_=self.req(action,
+                {"csrf":self.server.csrf,"offer_id":"offer-2",
+                 "expected_total":"0.01","currency":"USD",
+                 "consent":"FAKE"},accept_json=True)
+        self.assertEqual(status,400,body)
+        self.assertEqual(json.loads(body)["error"],"SANDBOX_REQUEST_REJECTED")
+        gateway.assert_not_called()
+        # A missing or incorrect CSRF must not create any quote.
+        with patch.object(checkout,"_request_json") as gateway:
+            status,body,_=self.req(action,
+                {"csrf":"wrong","offer_id":"offer-1"},accept_json=True)
+        self.assertEqual(status,400,body)
+        self.assertEqual(json.loads(body)["error"],"SANDBOX_REQUEST_REJECTED")
+        gateway.assert_not_called()
+
+    def test_one_click_no_browser_amount_and_one_create_with_readonly_verify(self):
+        import json
+        action="/cart/status/researchJob1234567890/paypal/start"
+        status,body,_=self.req(action,
+            {"csrf":self.server.csrf,"offer_id":"offer-1"},accept_json=True)
+        self.assertEqual(status,200,body)
+        quote=json.loads(body)["quote"]
+        qid=quote["id"]
+        path="/cart/sandbox/"+qid
+        fake=FakeGateway()
+        fake.quote_id=qid
+        calls=[]
+        def create(url,method,body,headers,timeout=15):
+            calls.append(method)
+            payload=json.loads(body)
+            self.assertEqual(payload["purchase_units"][0]["amount"],
+                             {"currency_code":"PLN","value":"132.60"})
+            self.assertTrue(url.endswith("/v2/checkout/orders"))
+            self.assertEqual(method,"POST")
+            return {"id":fake.id,"status":"CREATED",
+                    "purchase_units":[{"reference_id":qid,
+                        "amount":{"currency_code":"PLN","value":"132.60"}}],
+                    "links":[{"rel":"approve",
+                        "href":"https://www.sandbox.paypal.com/checkoutnow?token="+fake.id}]}
+        with patch.object(checkout,"SandboxPayPal",return_value=fake),patch.object(
+                checkout,"_request_json",side_effect=create):
+            status,body,_=self.req(path+"/create",
+                {"csrf":self.server.csrf},accept_json=True)
+            self.assertEqual(status,200,body)
+            self.assertEqual(json.loads(body)["quote"]["state"],
+                             "PAYER_ACTION_REQUIRED")
+            status,body,_=self.req(path+"/create",
+                {"csrf":self.server.csrf},accept_json=True)
+            self.assertEqual(status,400,body)
+            self.assertEqual(len(calls),1)
+            fake.approved=True
+            status,body,_=self.req(path+".json?verify=1",accept_json=True)
+            self.assertEqual(status,200,body)
+            self.assertEqual(json.loads(body)["quote"]["state"],
+                             "VERIFIED_APPROVED")
+            self.assertEqual(len(calls),1)
+
     def test_modal_json_create_and_read_only_verification(self):
         import json
         action="/cart/status/researchJob1234567890/paypal/select"

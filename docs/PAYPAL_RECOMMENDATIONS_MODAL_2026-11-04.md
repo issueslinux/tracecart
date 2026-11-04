@@ -1,75 +1,78 @@
-# TraceCart — modalny checkout PayPal Sandbox z istniejących propozycji
+# TraceCart — one-click PayPal Sandbox from recommended offers
 
-Data: 2026-11-04. Zmiana dotyczy **wyłącznie stagingu i ścieżki Sandbox**.
+Updated on 2026-11-04. This change is for the Sandbox demonstration only.
 
-## Zakres
+## User-facing behavior
 
-W istniejącym widoku `/cart/status/<research-id>` proponowane produkty
-mają przycisk **„Płacę z PayPal”** z widoczną etykietą **SANDBOX**.
-Kliknięcie nie przenosi już użytkownika na osobną stronę:
-otwiera modal w tym samym widoku nad interaktywnym grafem.
+The existing evidence graph and recommendations at
+`/cart/status/<research-id>` are unchanged. Each eligible suggested
+product has an English **Pay with PayPal** button with a visible
+**SANDBOX** badge.
 
-Modal pokazuje cztery etapy:
-1. **Produkt** — serwer ponownie odczytuje proponowaną ofertę z aktualnej,
-   utrwalonej analizy. Przeglądarka nie przesyła ceny ani sprzedawcy.
-2. **Zgoda** — jawne potwierdzenie identycznej kwoty oraz formuły
-   `I APPROVE SANDBOX DEMO`.
-3. **PayPal** — odrębne kliknięcie tworzy **jedno** zamówienie w rzeczywistym
-   PayPal Sandbox API. PayPal-hosted approval otwiera się w osobnym,
-   ograniczonym rozmiarem oknie. Trwa obserwacja stanu przez read-only
-   GET; gdy popup zostanie zablokowany, dostępny jest bezpośredni link.
-4. **Wynik** — po odczytanym potwierdzeniu `APPROVED` modal pokazuje
-   jednoznaczny wynik i oznacza kartę produktu jako zatwierdzoną
-   **w Sandbox**, bez zmiany wyniku merytorycznego analizy.
+**One explicit click** starts the new checkout path. There is no input
+field for the amount, no manually entered consent phrase, and no second
+confirmation button in TraceCart.
 
-Płynne przejścia realizuje `assets/paypal-checkout-modal.js`,
-a osobny styl `assets/paypal-checkout-modal.css` nie zmienia
-samego grafu. Dane utrwala istniejąca tabela SQLite
-`offer_sandbox_orders`. API JSON jest opt-in (`Accept: application/json`);
-wszystkie dotychczasowe formularze i adresy URL pozostają aktywne.
-Po powrocie PayPal Script `assets/paypal-popup-return.js`
-powiadamia okno macierzyste wyłącznie na tym samym origin.
+The modal remains above the existing graph and displays four stages:
 
-## API i zabezpieczenia
+1. **Product** — retrieve the offer title and exact indexed price from
+   the server's saved and recomputed recommendation. Never accept a
+   price, currency or seller from browser input.
+2. **Order** — atomically record the click's request for a *test*
+   checkout in a server-side quote, then start a single PayPal Sandbox
+   Orders v2 creation request. Display the amount already locked by
+   the server. No extra user action is required in TraceCart.
+3. **PayPal** — open the secure PayPal-hosted Sandbox page in a
+   separate window for the buyer's own required Sandbox approval.
+   The modal polls existing order status using read-only API calls.
+4. **Result** — once PayPal confirms `APPROVED`, show success with
+   the order ID. If status is uncertain, never retry creating an order.
 
-- `POST /cart/status/<job>/paypal/select` — serwerowa selekcja
-  zapisanej propozycji; zwraca JSON zamiast 303 tylko gdy przeglądarka
-  żąda JSON.
-- `POST /cart/sandbox/<quote>/approve` — zapis świadomej zgody.
-- `POST /cart/sandbox/<quote>/create` — tylko jednorazowy POST
-  do PayPal Sandbox Orders v2, po uprzedniej zgodzie.
-- `GET /cart/sandbox/<quote>.json` — wyłącznie bezpieczny stan wyceny.
-  Z `?verify=1` wykonywany jest odczyt `GET` istniejącego zamówienia
-  w PayPal Sandbox, **nigdy ponowny create ani capture**.
-- `/cart/sandbox/<quote>` nadal działa jako strona awaryjna;
-  poprzednie zamówienia i zapisy są zachowane.
-- Wycena ma 15-minutowy limit na zgodę. Po niepewnym POST stan
-  `CREATE_UNCERTAIN` blokuje ponowny create; wyświetlana jest informacja
-  o konieczności ręcznego uzgodnienia istniejącego zamówienia.
-- Identyfikatory wycen służą do wznowienia modalnego procesu
-  w obrębie jednej sesji przeglądarki, więc przypadkowe zamknięcie
-  okna nie wywołuje nowego zamówienia.
-- Żadne Client ID/Client Secret, idempotency token, sesja kupującego,
-  PayerID ani wynik niezależnej analizy nie są zmieniane przez JS.
+The PayPal-hosted buyer approval is a mandatory external step; it is
+**not** silently bypassed. The new modal shows only English labels and
+messages.
 
-## Granice demonstracji
+## Backend routes and safety
 
-**To nie jest rzeczywisty zakup na Allegro, w TIM ani w Media Expert.**
-Wybrana cena to cena z indeksu / obserwacji oferty, nie zweryfikowana
-kwota końcowa sprzedawcy. PayPal Sandbox Business jest testowym
-odbiorcą, a żadna płatność realna nie jest pobierana.
+- `POST /cart/status/<job>/paypal/start`: requires the existing CSRF
+  token and a selected `offer_id`. Uses `OfferSandboxOrders.start` to
+  select the server-owned product and price, persist an `APPROVED`
+  test quote, and record the user's explicit button-click intent.
+  No typed amount or consent token is fabricated.
+- `POST /cart/sandbox/<quote>/create`: still accepts **only one**
+  PayPal Sandbox order request after server-side intent is recorded.
+  It never retries a potentially uncertain creation.
+- `GET /cart/sandbox/<quote>.json?verify=1`: read-only status check
+  against the existing Sandbox order; no `capture` call.
+- The earlier `/paypal/select`, `/approve` and fallback HTML routes
+  remain available for legacy sessions, without altering historical
+  orders or preventing recovery.
+- Quote identifiers are stored in session storage for resumption on
+  reopening the modal. An existing `CREATE_UNCERTAIN` state cannot
+  be retried. The PayPal approval URL is checked against the official
+  Sandbox host and bound PayPal order ID.
+- Private REST credentials stay in the server process, never in
+  browser scripts, request payloads, documentation or GitHub.
 
-## Testy
+**Boundary:** The selected price is a third-party indexed listing
+price, not a verified merchant checkout total. The Sandbox Business
+account is not that retailer. A successful Sandbox approval does not
+purchase an item or transfer real money.
 
-- 18 dedykowanych testów Pythona z podwójnym bramkowym OAuth/PayPal
-  (bez realnego tworzenia zamówień): PASS.
-- Chromium, rzeczywiste dane Ryobi, `offer-1 = 132.60 PLN`:
-  otwarcie modalu i zapis zgody: PASS.
-- Chromium, całkowicie symulowany PayPal: wynik
-  `VERIFIED_APPROVED`, końcowy ekran i paski etapów: PASS.
-- PR wcześniejszy #93 dokumentuje **rzeczywiste** zatwierdzenie w
-  PayPal Sandbox API, dokonane przed dodaniem niniejszego modalu.
-  Nowa warstwa UI nie wymaga kolejnej rzeczywistej transakcji w API.
-- Niezależny pełny zestaw testów badawczych może wciąż zawierać
-  wcześniejsze awarie związane z timeoutami/asynchronicznością;
-  nie przypisuj im automatycznie statusu PASS.
+## Verification
+
+- 20 Python checkout/demo tests PASS, including one-click checkout
+  without typed amount, invalid CSRF, server price locking,
+  one-shot PayPal order creation and read-only verification.
+- Chromium E2E with a copied Ryobi research job
+  (`45njvY2FStBkk9WwLDQ_grQ0`) and a completely fake payment
+  gateway: a single **Pay with PayPal** click locked `132.60 PLN`,
+  opened the simulated hosted approval link, and reached
+  `VERIFIED_APPROVED` by automatic polling. No manual form or
+  extra confirmation was present, and no real Sandbox order was
+  created in this regression test.
+- PR #93 separately records a previous real Sandbox buyer approval
+  from the earlier checkout UI. That receipt is not proof of a new
+  live hosted PayPal session after this UI change.
+- The overall research test suite has known unrelated asynchronous
+  and source-recovery failures; do not describe it as fully green.
