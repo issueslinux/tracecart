@@ -1,5 +1,7 @@
 # TraceCart — PayPal AI Hackathon submission gate and feature freeze
 
+**UPDATE (2026-11-04, after original audit): P0-1 real Sandbox payer approval is VERIFIED for the existing recommended-offer pathway.** The historical blocker text below describes the original audit and is superseded by the evidence receipt in section P0-1 below. Judge-access, video and final Devpost submission gates remain open.
+
 Audit date: **2026-11-04**. Official deadline: **2026-11-12 12:00 PST = 20:00 UTC = 21:00 CET (Poland)**. Judging ends **2026-12-15**. This is an evidence-based readiness review, **not** proof of Devpost submission or real PayPal Sandbox approval.
 
 ## A. Frozen product baseline — do not restart feature development
@@ -30,6 +32,47 @@ Audit date: **2026-11-04**. Official deadline: **2026-11-12 12:00 PST = 20:00 UT
 **Need:** owner provisions/authorizes a PayPal **Sandbox REST app** and sandbox buyer account. Run *without live payments* the real flow `Qwen suggestion -> catalog-locked quote -> explicit amount approval -> OAuth -> POST /v2/checkout/orders -> PayPal-hosted sandbox payer approval`. Capture sanitized order ID, order state, environment, request/response validation and UI/video evidence; never publish secrets or buyer session details. Preserve existing safety rule: **no capture**, **no silent retries** after uncertain POST.
 
 **Acceptance:** real sandbox API order creation and buyer approval demonstrated in a repeatable browser run; test both wrong-price rejection and missing/invalid credentials. A successful fake PayPal reply is **not PASS**.
+
+### P0-1 evidence update — VERIFIED on actual PayPal Sandbox (2026-11-04)
+
+The actual interactive user journey was verified after PR #91 and PR #92
+were merged to `main` and deployed exclusively on localhost staging 8810.
+Original product research and the evidence graph remained intact; the
+buyer selected a suggested indexed retailer offer rather than using the
+unrelated demo catalogue:
+
+- Research job: `45njvY2FStBkk9WwLDQ_grQ0`, Ryobi R18PI-0.
+- Suggested option: `offer-1`, indexed/listing price `132.60 PLN`.
+- Human explicitly approved the illustrative amount in TraceCart,
+  then created a single PayPal **Sandbox** Orders v2 order.
+- The Sandbox Personal buyer completed PayPal-hosted approval and returned
+  to the bound TraceCart quote URL (`GET /cart/sandbox/<quote>?token=...`).
+- TraceCart durable order state: `VERIFIED_APPROVED`.
+- A subsequent, independent **read-only** API call to the real
+  `api-m.sandbox.paypal.com/v2/checkout/orders/<id>` returned
+  `status: APPROVED`. Reference ID, amount `132.60` and currency `PLN`
+  all matched the server-persisted quote.
+- Sandbox order ID is intentionally redacted in this public document
+  (`…5513`). No API keys, buyer identity, session token or PayerID
+  are published.
+- **No `/capture` request, no real money transfer, and no purchase at
+  Allegro/TIM/Media Expert** was performed. The Sandbox account's
+  business payee is not the seller from the offer index. The listed price
+  is expressly *not a verified merchant checkout total*.
+- Test evidence: 16 focused Python PayPal/demo tests PASS, 40
+  JavaScript tests PASS, and headless Chromium confirmed the
+  recommendation button in the actual Ryobi research graph.
+- Full unrelated Python regression suite is **not green**: 646 tests
+  executed with 5 failures and 1 error involving async timing/source
+  recovery. The deterministic `price_is_confirmed_checkout_total`
+  error reproduces on unmodified `main` baseline.
+
+**Gate result: P0-1 PASS for real Sandbox OAuth + Orders create +
+hosted buyer approval + read-only verification on recommended offers.**
+This is proof of PayPal integration, **not** proof of payment capture,
+actual merchant purchase, a public judge-accessible deployment, public
+demo video, or Devpost submission. Do not repeat the Sandbox create
+request just to reconfirm the same receipt.
 
 ### P0-2. Judge-accessible working application — BLOCKED
 
