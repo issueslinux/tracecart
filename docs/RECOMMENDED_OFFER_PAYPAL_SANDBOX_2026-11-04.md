@@ -31,6 +31,8 @@ When the user chooses a recommended offer:
 6. The buyer can approve using a PayPal Sandbox Personal account.
    A read-only GET validates matching order ID, currency, value and quote
    reference. Nothing is captured and the external merchant is not paid.
+   PayPal Sandbox returns to the same localhost review page after buyer
+   approval or cancellation; this is no guarantee that an order was captured.
 
 The gateway domain is pinned to `api-m.sandbox.paypal.com`; approval
 links are accepted only on `www.sandbox.paypal.com/checkoutnow` and with

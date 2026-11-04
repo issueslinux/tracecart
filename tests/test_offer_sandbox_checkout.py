@@ -103,6 +103,13 @@ class OfferSandboxTests(unittest.TestCase):
                              self.store.read(qid,internal=True)["request_id"])
             import json
             data=json.loads(body)
+            expected_return="http://127.0.0.1:8810/cart/sandbox/"+qid
+            self.assertEqual(
+                data["payment_source"]["paypal"]["experience_context"]["return_url"],
+                expected_return)
+            self.assertEqual(
+                data["payment_source"]["paypal"]["experience_context"]["cancel_url"],
+                expected_return)
             self.assertEqual(data["purchase_units"][0]["amount"],
                              {"currency_code":"PLN","value":"132.60"})
             self.assertNotIn("capture",url)

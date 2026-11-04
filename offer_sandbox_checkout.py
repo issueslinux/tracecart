@@ -163,7 +163,9 @@ class OfferSandboxOrders:
                        (time.time(),quote_id))
         return self.read(quote_id)
 
-    def create(self, quote_id, gateway=None):
+    def create(self, quote_id, gateway=None, return_port=8810):
+        if type(return_port) is not int or not 1 <= return_port <= 65535:
+            raise ValueError("INVALID_SANDBOX_RETURN_PORT")
         gateway = gateway or SandboxPayPal()
         initial = self.read(quote_id, internal=True)
         if initial["state"] != "APPROVED":
@@ -182,8 +184,19 @@ class OfferSandboxOrders:
             record = dict(row)
         # After this point we NEVER automatically repeat a create POST.
         token = gateway._token()
+        # Local browser returns to the same explicit review page after the
+        # hosted Sandbox approval (or cancellation). This URL is built from
+        # the listening server port, never a caller-supplied Host or AI value.
+        return_url="http://127.0.0.1:{}/cart/sandbox/{}".format(
+            return_port,record["id"])
         payload = json.dumps({
             "intent": "CAPTURE",
+            "payment_source": {"paypal": {"experience_context": {
+                "return_url": return_url,
+                "cancel_url": return_url,
+                "shipping_preference": "NO_SHIPPING",
+                "user_action": "CONTINUE",
+            }}},
             "purchase_units": [{
                 "reference_id":record["id"],
                 "description": "TraceCart test intermediary (fictional offer; no fulfillment)",
