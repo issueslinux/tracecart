@@ -1,6 +1,6 @@
 # Devpost entry — TraceCart (ready-to-paste English copy)
 
-**STATUS (2026-11-05): entrant reports submitting the TraceCart project on Devpost.** Public project URL and acceptance receipt have not yet been provided or independently verified. This document preserves the original submitted-copy draft, not proof of acceptance.
+**STATUS (2026-11-05): entrant reports submitting the TraceCart project on Devpost.** Private management reference identifies contest **31302**, submission **1283840**; anonymous access redirects to login. The public `devpost.com/software/...` project URL and authenticated confirmation remain unverified. This document preserves the entry draft, not proof of acceptance.
 YouTube link is public and verified (see below).
 YouTube link supplied and its public no-login playback endpoint verified 2026-11-05.
 The entrant reports completing the account/login and submission actions
