@@ -160,3 +160,42 @@ for normal research. A separate regression checks that no paid discovery
 callback is invoked for this demo. This safety exception touches only the
 one-job dispatch flag; the frozen search/ranking behavior for ordinary
 retailer research is unchanged.
+
+## H. Updated contest submission status — November 5, 2026
+
+This update supersedes the earlier "missing video" and "missing runnable
+judge instructions" statements above without rewriting their historical
+audit context.
+
+- **YouTube public video: PASS.** [PayPal TraceCart LIVE EN](https://www.youtube.com/watch?v=SSsUvSXVhCk)
+  has signed-out YouTube player metadata `isUnlisted=false`,
+  `isPrivate=false`, `playabilityStatus=OK` and duration 130 seconds.
+  The actual full real-time RYOBI run in this video is recorded from the
+  browser; the subsequent sandbox quote stops before payer approval.
+- **Code and OSS license: PASS.** Public GitHub repository
+  `issueslinux/tracecart`, MIT license recognized by the GitHub license API.
+- **Judge local installation: BASIC VERIFIED.** A fresh independent
+  `git clone --depth 1` and Python 3.8.10 process (with no credentials)
+  served `/`, `/cart`, and `/demo/store` with HTTP 200. The newly written
+  [Judge Quick Start](PAYPAL_HACKATHON_JUDGE_QUICKSTART.md) describes Ollama
+  and Sandbox setup. This is **not yet an independent full Qwen + Sandbox
+  clean-room test**.
+- **Automated regressions: PASS after test-only stabilization.**
+  652 Python tests and 40 Node tests passed on a dedicated isolated
+  worktree with no PayPal/Shopping provider keys. Previously, three timing
+  tests relied on short bounded waits under load and one obsolete assertion
+  relied on a fixed graph-child index despite newer nodes preceding it.
+  Only test waiting windows and stable node selection were adjusted;
+  frozen research/checkout logic was not changed.
+- **English Devpost content: DRAFT READY**, see
+  [prepared entry](DEVPOST_PAYPAL_AI_HACKATHON_2026_ENTRY.md).
+- **Actual contest submission: NOT SUBMITTED.** Joining Devpost,
+  accepting personal eligibility/terms, completing the entry form and
+  recording a submission confirmation require the entrant's authenticated
+  Devpost account. A publicly viewable YouTube link is not a Devpost entry.
+- **Rights review: PENDING.** The video depicts third-party product
+  pages and marks (e.g. RYOBI, Allegro). Official contest rules prohibit
+  including third-party trademarks/copyrighted media without permission.
+  Entrant must confirm sufficient rights, obtain permission or replace
+  problematic material. Do not implicitly claim rights.
+- **Deadline remains 2026-11-12 12:00 PST / 21:00 CET**.

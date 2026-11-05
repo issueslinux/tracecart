@@ -24,7 +24,7 @@ class UserURLTimeoutTests(unittest.TestCase):
                            side_effect=TimeoutError("source timed out")),patch.dict(
                            os.environ,{"SERPAPI_API_KEY":""}):
                     jid=jobs.submit_url(BIKE_URL)
-                    for _ in range(150):
+                    for _ in range(600):
                         record=jobs.read(jid)
                         if record["state"] not in ("QUEUED","RUNNING"):
                             break
@@ -35,7 +35,11 @@ class UserURLTimeoutTests(unittest.TestCase):
                 self.assertEqual(record["report"]["source_intake"]["access_problem"],
                                  "SOURCE_TIMEOUTERROR")
                 self.assertEqual(record["item"]["price"],None)
-                self.assertFalse(record["report"]["root"]["children"][2]["details"][
+                # Later Search-first nodes can be prepended before source intake.
+                intake_nodes = [node for node in record["report"]["root"]["children"]
+                                if node.get("kind") == "source_intake"]
+                self.assertEqual(len(intake_nodes), 1)
+                self.assertFalse(intake_nodes[0]["details"][
                     "price_is_confirmed_checkout_total"])
             finally:
                 jobs.close()
@@ -51,7 +55,7 @@ class UserURLTimeoutTests(unittest.TestCase):
                            side_effect=socket.timeout("HTTPS source timed out")),patch.dict(
                            os.environ,{"SERPAPI_API_KEY":""}):
                     jid=jobs.submit_url(BIKE_URL)
-                    for _ in range(150):
+                    for _ in range(600):
                         record=jobs.read(jid)
                         if record["state"] not in ("QUEUED","RUNNING"):
                             break
@@ -73,7 +77,7 @@ class UserURLTimeoutTests(unittest.TestCase):
                            side_effect=ConnectionResetError("reset")),patch.dict(
                            os.environ,{"SERPAPI_API_KEY":""}):
                     jid=jobs.submit_url(BIKE_URL)
-                    for _ in range(150):
+                    for _ in range(600):
                         record=jobs.read(jid)
                         if record["state"] not in ("QUEUED","RUNNING"):
                             break

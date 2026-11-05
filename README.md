@@ -1,6 +1,13 @@
 # TraceCart — AI suggestions behind a PayPal consent firewall
 
-**Development status: public MIT-licensed, testable MVP; NOT A CONTEST SUBMISSION.**
+**Contest status (2026-11-05): public MIT-licensed, testable MVP; NOT YET SUBMITTED ON DEVPOST.**
+Read [Judge Quick Start](docs/PAYPAL_HACKATHON_JUDGE_QUICKSTART.md) and
+[Devpost entry draft](docs/DEVPOST_PAYPAL_AI_HACKATHON_2026_ENTRY.md).
+English 2:10 demo video: https://www.youtube.com/watch?v=SSsUvSXVhCk.
+YouTube player metadata confirms **Public** visibility and 130-second
+duration; **Devpost account submission is still required**. The README's older
+verification sections below are dated historical snapshots, not current
+release status.
 
 
 **Automated product-browser research:** The local app starts up to three
@@ -969,7 +976,14 @@ export PAYPAL_CLIENT_SECRET=...     # sandbox REST app secret; do not commit
 python3 app.py --port 8765
 ```
 
-The application has **no live PayPal switch**. Credentials must be for a sandbox app; `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET` are unset on the testing host. Do not disclose them in repo or demo. For a successful sandbox checkout, a payer uses the PayPal-provided approval URL; no sandbox payment has been created or approved in this implementation yet.
+The application has **no live PayPal switch**. Credentials must be for
+a sandbox app and must stay private. The paragraph here originally described
+the state on 2026-11-01; as of **2026-11-04**, an actual PayPal Sandbox
+buyer-approved order was independently verified for the recommended-offer
+flow, with a read-only `APPROVED` status and exact amount/reference/currency
+match. This was not payment capture or a retailer purchase. See
+[the verification receipt](docs/PAYPAL_HACKATHON_SUBMISSION_GATE_2026-11-04.md)
+for the current evidence; a judge needs their **own** sandbox credentials.
 
 ## Recorded checks — Nov 1, 2026
 
@@ -978,7 +992,11 @@ The application has **no live PayPal switch**. Credentials must be for a sandbox
 - Adversarial prompt asking for a cent-priced charge without confirmation: model returned an invalid selection, **fail-closed** as a `ValueError`; no quote, approval or payment.
 - `python3 -m py_compile core.py app.py` passes; `GET /` on the local web UI returned HTTP **200**.
 - End-to-end real-browser **Chromium + local Qwen → consent review** PASS: natural-language request for two pendants generated a server-priced quote of **58.00 USD**, shown with the real `QUOTED` state; screenshot below. A same-origin POST issue in the initial UI was found and corrected by using `Referrer-Policy: same-origin` while retaining strict `Origin` and CSRF checks. No approval or sandbox order was placed by the browser run.
-- **Not yet verified:** *real* PayPal Sandbox OAuth/order creation, buyer approval, deployed judge-accessible instance, external model quality metrics, <3-minute video with professional narrator, YouTube upload or Devpost submission.
+- **Historical 2026-11-01 gap, partially closed since:**** real Sandbox
+  hosted buyer approval and read-only `APPROVED` verification were observed
+  on 2026-11-04; the English 2:10 video was recorded on 2026-11-05.
+  **Still outstanding:** public YouTube video, authenticated Devpost
+  submission, and a fully independent judge clean-room run.
 
 ## References and constraints
 
@@ -993,6 +1011,14 @@ The application has **no live PayPal switch**. Credentials must be for a sandbox
 
 ## Next concrete milestone
 
-Provision an authorized PayPal sandbox REST app, execute OAuth → create order → buyer approval in a test account, build a logged and repeatable UI journey, test timeout/duplicate and amount integrity, then produce a professionally narrated real-browser YouTube demonstration under three minutes, with only verified functionality, and complete the owner-approved Devpost entry. Only the owner may approve account registration, personal terms, account creation and final Devpost submission.
+Publish the completed English 2:10 demo video **publicly on YouTube**,
+review third-party screenshot/trademark permissions, test
+[the judge-run instructions](docs/PAYPAL_HACKATHON_JUDGE_QUICKSTART.md)
+from a clean clone, and complete the authenticated Devpost entry before
+2026-11-12 21:00 CET. The sandbox-only, previously verified buyer approval is
+documented separately; do not confuse the film's new pending-approval order
+with that older verified order. Participant must personally confirm
+eligibility and legal entry terms; no submission is claimed until Devpost
+issues the actual project URL/receipt.
 
 **Never use live payments or create unauthorized transactions.**

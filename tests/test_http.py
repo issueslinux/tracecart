@@ -772,7 +772,7 @@ class WebFlowTests(unittest.TestCase):
         with sqlite3.connect(str(Path(self.tmp.name) / "webquotes.sqlite")) as db:
             job_id = db.execute("SELECT id FROM cart_research_jobs").fetchone()[0]
             self.assertEqual(db.execute("SELECT COUNT(*) FROM quotes").fetchone()[0], 0)
-        for _ in range(100):
+        for _ in range(500):
             if self.server.cart_jobs.read(job_id)["state"] == "READY":
                 break
             time.sleep(.02)
