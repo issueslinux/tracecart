@@ -222,3 +222,40 @@ represent an admin edit link as a public project page or infer acceptance
 from the numeric submission ID. The entry owner can confirm the Devpost
 dashboard shows **Submitted** and share the `View project` permalink,
 at which point this record can be updated.
+
+## J. Verified live Devpost form state — November 5, 2026
+
+A direct inspection of the entrant's already-open and authenticated Firefox
+tab established a critical correction:
+
+- Submission **1283840**, contest **31302**, project **TraceCart**.
+- Devpost visibly displays **DRAFT — 3/5 steps done**. The project has
+  **not** been submitted, despite the earlier entrant report.
+- Completed: Manage team, Project overview, Project details. The latter
+  contains the English story, tags, MIT GitHub repository, judge quick-start
+  URL, public 2:10 English YouTube demo and three image-gallery screenshots
+  captured from the real video.
+- The Additional info form now has an explanatory PayPal Sandbox + Qwen
+  technical disclosure, sponsor choice **None, used other AI tools**,
+  public repository URL, local test-build quick-start link, judge
+  instructions, a sandbox integration experience assessment and AI tool
+  disclosure. A 2.4MB ZIP of the public source tree was selected in the
+  file-upload field and the form was saved; the attachment's persisted
+  server status has not been separately verified.
+- **Three personal eligibility attestations remain unchecked**. These are
+  statements that the entrant and any teammates (1) have reached the age
+  of majority, (2) are from eligible jurisdictions, and (3) are not
+  employees/representatives/agents of the hackathon sponsor, administrator
+  or affiliates. No explicit evidence of all three user-specific facts
+  was available, so the assistant **did not falsely attest to them**.
+- Final Submit step also requires the entrant to state they have read
+  and agree to the Official Rules and Devpost Terms of Service. This
+  remains unchecked, and **Submit project has not been clicked**.
+- The signed-in Devpost UI remains accessible in the user's already-open
+  Firefox tab. Once the entrant explicitly confirms these personal/legal
+  facts and rule acceptance, the remaining checkbox/submit actions can be
+  completed and the resulting public project URL recorded.
+
+This verified DRAFT state **supersedes** the prior unverified
+"entrant reported submitted" line. No claim of an accepted entry
+may be made until Devpost shows a final submitted receipt.

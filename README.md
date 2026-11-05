@@ -1,12 +1,12 @@
 # TraceCart — AI suggestions behind a PayPal consent firewall
 
-**Contest status (2026-11-05): owner reports that the TraceCart entry was submitted to PayPal AI Hackathon on Devpost.** Submission URL / receipt have **not yet been independently verified**.
+**Contest status (2026-11-05, directly inspected on the owner's signed-in Devpost tab): DRAFT, 3/5 steps complete — NOT SUBMITTED.** Devpost submission reference **1283840**; name/story/video/repo and source gallery have been entered. Mandatory personal eligibility declarations and final official-rules acceptance still require the entrant.
 Read [Judge Quick Start](docs/PAYPAL_HACKATHON_JUDGE_QUICKSTART.md) and
 [Devpost entry draft](docs/DEVPOST_PAYPAL_AI_HACKATHON_2026_ENTRY.md).
 English 2:10 demo video: https://www.youtube.com/watch?v=SSsUvSXVhCk.
 YouTube player metadata confirms **Public** visibility and 130-second
-duration; Devpost submission is **reported complete by the entrant** but
-the project URL / confirmation receipt should be recorded and checked. The README's older
+duration; the actual authenticated Devpost form remains in **DRAFT**
+status (3/5), awaiting legal eligibility attestations and final submission. The README's older
 verification sections below are dated historical snapshots, not current
 release status.
 
