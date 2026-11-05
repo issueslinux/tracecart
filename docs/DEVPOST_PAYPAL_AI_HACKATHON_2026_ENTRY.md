@@ -1,12 +1,6 @@
 # Devpost entry — TraceCart (ready-to-paste English copy)
 
-**STATUS (2026-11-05): entrant reports submitting the TraceCart project on Devpost.** Private management reference identifies contest **31302**, submission **1283840**; anonymous access redirects to login. The public `devpost.com/software/...` project URL and authenticated confirmation remain unverified. This document preserves the entry draft, not proof of acceptance.
-YouTube link is public and verified (see below).
-YouTube link supplied and its public no-login playback endpoint verified 2026-11-05.
-The entrant reports completing the account/login and submission actions
-within the entry window ending **2026-11-12 12:00 PST (21:00 CET)**.
-The signed-in Devpost project confirmation still needs to be checked.
-Eligibility and third-party media rights remain the entrant's responsibility.
+**STATUS (2026-11-05, verified in signed-in Devpost tab): DRAFT, 3/5 steps complete, NOT SUBMITTED.** Submission reference **1283840**. All project story, tags, media and video fields were entered, plus additional technical/test details. The remaining mandatory personal declarations (adult age, eligible jurisdiction, absence of sponsor affiliation) and official-rules/Devpost Terms of Service acceptance are not yet attested. The private admin URL is omitted. Public project link does not exist until submission.
 
 ## Project name
 
@@ -182,7 +176,8 @@ partner's tools.
 
 ## Entry owner checklist — still required
 
-- [x] Owner reports authenticated Devpost login and contest submission; no independent receipt yet.
+- [x] Signed-in Devpost account verified and existing draft edited.
+- [ ] Entrant confirms three eligibility declarations truthfully.
 - [ ] Adult eligibility / conflicts of interest / ownership and license
       and third-party visual rights are reviewed and confirmed.
 - [x] YouTube watch URL recorded; public metadata verified
@@ -190,5 +185,6 @@ partner's tools.
 - [ ] Full judge setup tested from clean clone; no secrets embedded.
 - [ ] Project title, full English description, AI-tool disclosure,
       GitHub URL and functional-demo instructions entered into Devpost.
-- [x] Owner reports submission completed before the deadline.
-- [ ] Official Devpost project URL + acceptance receipt independently recorded.
+- [ ] Entrant reads and accepts Official Rules and Devpost Terms.
+- [ ] Submit project and observe confirmed `Submitted` state.
+- [ ] Public Devpost project URL + acceptance receipt recorded.

@@ -7,8 +7,9 @@
 **Entry state (2026-11-05):** source code available; local demo verified;
 YouTube video https://www.youtube.com/watch?v=SSsUvSXVhCk verified
 public by signed-out player metadata (`isUnlisted=false`,
-`isPrivate=false`); entrant reports that Devpost submission is now complete,
-but the public project URL / confirmation receipt has not yet been verified.
+`isPrivate=false`); a direct inspection of the entrant's signed-in Devpost tab shows
+**DRAFT, 3/5 steps completed**. Personal eligibility and rules
+attestations plus final submission are pending.
 This document is **not** proof of entry.
 
 ## What to run first
