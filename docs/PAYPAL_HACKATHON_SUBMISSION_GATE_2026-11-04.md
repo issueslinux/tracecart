@@ -200,3 +200,25 @@ audit context.
   Entrant must confirm sufficient rights, obtain permission or replace
   problematic material. Do not implicitly claim rights.
 - **Deadline remains 2026-11-12 12:00 PST / 21:00 CET**.
+
+## I. Entrant's Devpost reference supplied — November 5, 2026
+
+The entrant shared their Devpost management link containing contest identifier
+**31302** and submission identifier **1283840**, and stated that the project
+had been submitted. This is a **private management URL**, not the public
+`devpost.com/software/...` project permalink. The private management URL
+is intentionally not copied into this public repository.
+
+An unauthenticated request to this management URL was redirected to
+`https://secure.devpost.com/users/login`. As of this check, the project
+title, final submission state, YouTube/repository fields and acceptance
+receipt **could not be independently inspected** from a signed-in Devpost
+account. A public `https://devpost.com/software/...` page was also not
+confirmed by the current public search results.
+
+**Recorded state:** entrant reports submission; submission reference exists;
+public entry URL and authenticated confirmation remain unverified. Do not
+represent an admin edit link as a public project page or infer acceptance
+from the numeric submission ID. The entry owner can confirm the Devpost
+dashboard shows **Submitted** and share the `View project` permalink,
+at which point this record can be updated.
