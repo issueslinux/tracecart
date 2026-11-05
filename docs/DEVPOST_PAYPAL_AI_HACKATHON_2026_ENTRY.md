@@ -1,11 +1,12 @@
 # Devpost entry — TraceCart (ready-to-paste English copy)
 
-**STATUS: DRAFT ONLY — NOT SUBMITTED ON DEVPOST.** Prepared 2026-11-05.
+**STATUS (2026-11-05): entrant reports submitting the TraceCart project on Devpost.** Public project URL and acceptance receipt have not yet been provided or independently verified. This document preserves the original submitted-copy draft, not proof of acceptance.
 YouTube link is public and verified (see below).
 YouTube link supplied and its public no-login playback endpoint verified 2026-11-05.
-Owner must sign into Devpost, join the hackathon,
-confirm legal eligibility/rights and submit by **2026-11-12 12:00 PST
-(21:00 CET)**.
+The entrant reports completing the account/login and submission actions
+within the entry window ending **2026-11-12 12:00 PST (21:00 CET)**.
+The signed-in Devpost project confirmation still needs to be checked.
+Eligibility and third-party media rights remain the entrant's responsibility.
 
 ## Project name
 
@@ -181,7 +182,7 @@ partner's tools.
 
 ## Entry owner checklist — still required
 
-- [ ] Owner's authenticated Devpost account has joined the hackathon.
+- [x] Owner reports authenticated Devpost login and contest submission; no independent receipt yet.
 - [ ] Adult eligibility / conflicts of interest / ownership and license
       and third-party visual rights are reviewed and confirmed.
 - [x] YouTube watch URL recorded; public metadata verified
@@ -189,5 +190,5 @@ partner's tools.
 - [ ] Full judge setup tested from clean clone; no secrets embedded.
 - [ ] Project title, full English description, AI-tool disclosure,
       GitHub URL and functional-demo instructions entered into Devpost.
-- [ ] Owner reviews and submits entry before 2026-11-12 21:00 CET.
-- [ ] Official Devpost submission URL + acceptance receipt recorded.
+- [x] Owner reports submission completed before the deadline.
+- [ ] Official Devpost project URL + acceptance receipt independently recorded.
