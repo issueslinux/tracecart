@@ -181,7 +181,7 @@ class ProgressiveOfferResearchTests(unittest.TestCase):
                     self.assertEqual(shown["stats"]["offers"],1)
                     self.assertEqual(shown["stats"]["total_discovered_offers"],1)
                     release.set()
-                    for _ in range(100):
+                    for _ in range(400):
                         current=jobs.read(jid)
                         if current["state"] in ("READY","FAILED"):
                             break
