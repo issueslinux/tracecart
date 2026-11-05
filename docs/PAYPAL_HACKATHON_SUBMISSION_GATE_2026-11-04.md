@@ -189,10 +189,11 @@ audit context.
   frozen research/checkout logic was not changed.
 - **English Devpost content: DRAFT READY**, see
   [prepared entry](DEVPOST_PAYPAL_AI_HACKATHON_2026_ENTRY.md).
-- **Actual contest submission: NOT SUBMITTED.** Joining Devpost,
-  accepting personal eligibility/terms, completing the entry form and
-  recording a submission confirmation require the entrant's authenticated
-  Devpost account. A publicly viewable YouTube link is not a Devpost entry.
+- **Actual contest submission: ENTRANT REPORTS SUBMITTED 2026-11-05.**
+  The entrant said they had logged in and submitted the TraceCart entry.
+  This has **not been independently verified** by a Devpost project URL or
+  confirmation receipt. Do not claim independent confirmation. A publicly
+  viewable YouTube link is not, on its own, a Devpost entry.
 - **Rights review: PENDING.** The video depicts third-party product
   pages and marks (e.g. RYOBI, Allegro). Official contest rules prohibit
   including third-party trademarks/copyrighted media without permission.
